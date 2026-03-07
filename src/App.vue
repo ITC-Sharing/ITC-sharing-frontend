@@ -1,6 +1,9 @@
-<script setup lang="ts"></script>
+<script setup lang="ts">
+import ButtonPrimary from "./components/ButtonPrimary.vue";
+</script>
 
 <template>
+  <ButtonPrimary />
   <h1 class="text-5xl font-bold text-amber-300">មុខវិជ្ជាក្នុងឆ្នាំទី៤</h1>
   <p class="text-xl">
     Whereas disregard and contempt for human rights have resulted
