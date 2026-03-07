@@ -25,7 +25,7 @@ export default {
                     <button type="submit" class="w-fill h-[52px] text-white rounded-lg bg-[#1B68FF]">ចូលគណនី</button>
                     <div class="flex items-center">
                         <hr class="flex-grow border-t border-gray-300">
-                        <span class="mx-4 text-gray-500">or</span>
+                        <span class="mx-4 text-gray-500">ឬ</span>
                         <hr class="flex-grow border-t border-gray-300">
                     </div>
                     <button type="button" class="w-fill h-[52px] border-2 border-[#D9D9D9] text-black rounded-lg bg-white">Continue with Google</button>
