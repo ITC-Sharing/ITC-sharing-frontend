@@ -11,11 +11,10 @@ const router = createRouter({
       component: ButtonPrimary,
     },
     {
-        path: '/login',
-        name: 'login',
-        component: Login,
+      path: '/login',
+      name: 'login',
+      component: Login,
     },
-    
   ],
 })
 
