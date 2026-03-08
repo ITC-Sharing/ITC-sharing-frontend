@@ -1,7 +1,8 @@
-<script>
+<script lang="ts">
 export default {
-  name: "Login",
-};
+  name: 'Login',
+}
+
 </script>
 
 <template>
@@ -38,8 +39,39 @@ export default {
             </div>
 
 
+          <div class="flex flex-col gap-2">
+            <label for="password">ពាក្យសម្ងាត់</label>
+            <input
+              type="password"
+              id="password"
+              name="password"
+              placeholder="បញ្ចូលពាក្យសម្ងាត់របស់អ្នក"
+              required
+              class="border-2 border-[#D9D9D9] rounded-[10px] p-2 focus:outline-none focus:ring-2 focus:ring-[#D1E9FF]"
+            />
+          </div>
+          <span class="text-[#1570EF] flex justify-end">ភ្លេចពាក្យសម្ងាត់</span>
+          <button type="submit" class="w-fill h-13 text-white rounded-lg bg-[#1B68FF]">
+            ចូលគណនី
+          </button>
+          <div class="flex items-center">
+            <hr class="grow border-t border-gray-300" />
+            <span class="mx-4 text-gray-500">or</span>
+            <hr class="grow border-t border-gray-300" />
+          </div>
+          <button
+            type="button"
+            class="w-fill h-13 border-2 border-[#D9D9D9] text-black rounded-lg bg-white"
+          >
+            Continue with Google
+          </button>
 
-        </div>
-        
+          <div class="flex justify-center gap-2">
+            <span class="text-[#98A2B3]">មិនទាន់មានគណនី?</span>
+            <a href="/register" class="text-[#1570EF]">ចុះឈ្មោះ</a>
+          </div>
+        </form>
+      </div>
     </div>
+  </div>
 </template>
