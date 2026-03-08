@@ -1,14 +1,17 @@
 import { createRouter, createWebHistory } from 'vue-router'
-import ButtonPrimary from '@/components/ButtonPrimary.vue'
 import Login from '@/components/Login.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
     {
-      path: '/button',
-      name: 'button',
-      component: ButtonPrimary,
+      path: '/',
+      component: () => import('@/layouts/UserLayout.vue'),
+      children: [
+        {path: '', name: 'home', component: () => import('@/views/HomeView.vue')},
+        {path: 'documents', name: 'documents', component: () => import('@/views/DocumentView.vue')},
+        {path: 'books', name: 'books', component: () => import('@/views/BookView.vue')}
+      ]
     },
     {
       path: '/login',
