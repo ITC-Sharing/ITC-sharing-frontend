@@ -1,5 +1,5 @@
 <template>
-  <nav class="bg-white shadow-sm">
+  <nav class="bg-white shadow-sm fixed top-0 left-0 w-full z-50">
     <div class="max-w-7xl mx-auto px-6">
       <div class="flex items-center justify-between h-16">
         <!-- Left Section -->
