@@ -1,15 +1,42 @@
-<script lang="ts">
+<script >
 export default {
   name: 'Login',
+  data() {
+    return {
+      form: {
+        email: "",
+        password: "",
+      },
+      errors: {},
+    };
+  },
+  methods: {
+    submitForm(e) {
+      e.preventDefault();
+      this.errors = {};
+
+      if (!this.form.email) {
+        this.errors.email = 'សូមបញ្ចូលអ៊ីមែល';
+      }
+
+      if (!this.form.password) {
+        this.errors.password = 'សូមបញ្ចូលពាក្យសម្ងាត់';
+      }
+
+      if (Object.keys(this.errors).length === 0) {
+        alert('Form submitted!');
+      }
+    },
+  },
 }
 </script>
 
 <template>
   <div class="flex flex-col items-center justify-center h-screen">
-    <div class="w-180 h-137.5 bg-white border-2 border-[#D9D9D9] rounded-[20px]">
+    <div class="md:w-180 h-fit bg-white border-2 border-[#D9D9D9] rounded-[20px] ">
       <h1 class="text-[36px] font-bold flex justify-center mt-5">ចូលគណនី</h1>
       <div>
-        <form action="submit" class="m-10 flex flex-col gap-4">
+        <form @submit="submitForm" class="m-10 flex flex-col gap-4">
           <div class="flex flex-col gap-2">
             <label for="email">អ៊ីមែល</label>
             <input
@@ -17,9 +44,10 @@ export default {
               id="email"
               name="email"
               placeholder="បញ្ចូលអ៊ីមែលរបស់អ្នក"
-              required
+              v-model="form.email"
               class="border-2 border-[#D9D9D9] rounded-[10px] p-2 focus:outline-none focus:ring-2 focus:ring-[#D1E9FF]"
             />
+            <p class="text-red-500 text-sm">{{ errors.email }}</p>
           </div>
 
           <div class="flex flex-col gap-2">
@@ -29,9 +57,10 @@ export default {
               id="password"
               name="password"
               placeholder="បញ្ចូលពាក្យសម្ងាត់របស់អ្នក"
-              required
+              v-model="form.password"
               class="border-2 border-[#D9D9D9] rounded-[10px] p-2 focus:outline-none focus:ring-2 focus:ring-[#D1E9FF]"
             />
+            <p class="text-red-500 text-sm">{{ errors.password }}</p>
           </div>
           <span class="text-[#1570EF] flex justify-end">ភ្លេចពាក្យសម្ងាត់</span>
           <button type="submit" class="w-fill h-13 text-white rounded-lg bg-[#1B68FF]">
