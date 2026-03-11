@@ -6,7 +6,7 @@ export default {
 
 <template>
   <div class="flex flex-col items-center justify-center h-screen">
-    <div class="w-150 h-137.5 bg-white border-2 border-[#D9D9D9] rounded-[20px]">
+    <div class="w-180 h-137.5 bg-white border-2 border-[#D9D9D9] rounded-[20px]">
       <h1 class="text-[36px] font-bold flex justify-center mt-5">ចូលគណនី</h1>
       <div>
         <form action="submit" class="m-10 flex flex-col gap-4">
@@ -51,7 +51,7 @@ export default {
 
           <div class="flex justify-center gap-2">
             <span class="text-[#98A2B3]">មិនទាន់មានគណនី?</span>
-            <a href="/register" class="text-[#1570EF]">ចុះឈ្មោះ</a>
+            <RouterLink to="/register" class="text-[#1570EF]">ចុះឈ្មោះ</RouterLink>
           </div>
         </form>
       </div>
