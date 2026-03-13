@@ -1,70 +1,107 @@
 <script>
 export default {
   name: "Register",
-     data() {
+
+  data() {
     return {
       form: {
         firstName: "",
         lastName: "",
-        gender: "",
-        dob: "",
-        email: "",
-        phone: "",
         skill: "",
-        studentId: "",
+        email: "",
         password: "",
-        confirmPassword: "",
+        confirmPassword: ""
       },
       errors: {}
     }
   },
 
   methods: {
-    submitForm(e) {
-      e.preventDefault();
-      this.errors = {};
+
+    validateFirstName() {
+      const nameRegex = /^[A-Za-z\u1780-\u17FF\s]+$/;
 
       if (!this.form.firstName) {
         this.errors.firstName = "សូមបញ្ចូលនាមត្រកូល";
+      } else if (!nameRegex.test(this.form.firstName)) {
+        this.errors.firstName = "មិនអាចមានលេខ ឬ សញ្ញាពិសេសបានទេ";
+      } else {
+        this.errors.firstName = "";
       }
+    },
+
+    validateLastName() {
+      const nameRegex = /^[A-Za-z\u1780-\u17FF\s]+$/;
 
       if (!this.form.lastName) {
         this.errors.lastName = "សូមបញ្ចូលនាមខ្លួន";
+      } else if (!nameRegex.test(this.form.lastName)) {
+        this.errors.lastName = "មិនអាចមានលេខ ឬ សញ្ញាពិសេសបានទេ";
+      } else {
+        this.errors.lastName = "";
       }
+    },
 
-      if (!this.form.gender) {
-        this.errors.gender = "សូមជ្រើសរើសភេទ";
-      }
+    validateEmail() {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
       if (!this.form.email) {
         this.errors.email = "សូមបញ្ចូលអ៊ីមែល";
+      } else if (!emailRegex.test(this.form.email)) {
+        this.errors.email = "អ៊ីមែលមិនត្រឹមត្រូវ";
+      } else {
+        this.errors.email = "";
       }
+    },
 
-      if (!this.form.phone) {
-        this.errors.phone = "សូមបញ្ចូលលេខទូរស័ព្ទ";
-      }
-
+    validatePassword() {
       if (!this.form.password) {
         this.errors.password = "សូមបញ្ចូលពាក្យសម្ងាត់";
+      } else if (this.form.password.length < 8) {
+        this.errors.password = "ពាក្យសម្ងាត់ត្រូវមានយ៉ាងតិច 8 តួ";
+      } else {
+        this.errors.password = "";
       }
+    },
 
-      if (this.form.password !== this.form.confirmPassword) {
+    validateConfirmPassword() {
+      if (!this.form.confirmPassword) {
+        this.errors.confirmPassword = "សូមបញ្ចូលបញ្ជាក់ពាក្យសម្ងាត់";
+      } else if (this.form.password !== this.form.confirmPassword) {
         this.errors.confirmPassword = "ពាក្យសម្ងាត់មិនដូចគ្នា";
+      } else {
+        this.errors.confirmPassword = "";
       }
-      if (!this.form.studentId) {
-        this.errors.studentId = "សូមបញ្ចូលលេខសម្គាល់និស្សិត";
-      }
-      if (!this.form.skill) {
-        this.errors.skill = "សូមបញ្ចូលជំនាញ";
-      }
+    },
 
-      if (Object.keys(this.errors).length === 0) {
+    validateSkill() {
+      if (!this.form.skill || this.form.skill === "ជ្រើសរើស") {
+        this.errors.skill = "សូមជ្រើសរើសជំនាញ";
+      } else {
+        this.errors.skill = "";
+      }
+    },
+
+    submitForm(e) {
+      e.preventDefault();
+
+      this.validateFirstName();
+      this.validateLastName();
+      this.validateEmail();
+      this.validatePassword();
+      this.validateConfirmPassword();
+      this.validateSkill();
+
+      if (!Object.values(this.errors).some(error => error)) {
         alert("Form submitted!");
       }
+
+      
     }
-}
+  }
 }
 </script>
+
 
 <template>
 <div class="min-h-screen bg-gray-100 flex items-center justify-center p-6 ">
@@ -75,77 +112,74 @@ export default {
       បង្កើតគណនី
     </h1>
 
-    <form class="grid grid-cols-1 md:grid-cols-2 gap-5">
+    <form @submit="submitForm" class="grid grid-cols-1 md:grid-cols-2 gap-5">
       <div>
         <label >នាមត្រកូល</label>
-        <input v-model="form.firstName" type="text" class="w-full border-2 border-[#D9D9D9] rounded-[10px] px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 " placeholder="នាមត្រកូលរបស់អ្នក">
+        <input 
+        @blur="validateFirstName" 
+        v-model="form.firstName" 
+        type="text" 
+        class="w-full border-2 border-[#D9D9D9] rounded-[10px] px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 " placeholder="នាមត្រកូលរបស់អ្នក">
         <p class="text-red-500 text-sm">{{ errors.firstName }}</p>
       </div>
 
       <div>
         <label >នាមខ្លួន</label>
-        <input v-model="form.lastName" type="text" class="w-full border-2 border-[#D9D9D9] rounded-[10px] px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="នាមខ្លួនរបស់អ្នក">
+        <input 
+        @blur="validateLastName" 
+        v-model="form.lastName" 
+        type="text" 
+        class="w-full border-2 border-[#D9D9D9] rounded-[10px] px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="នាមខ្លួនរបស់អ្នក">
         <p class="text-red-500 text-sm">{{ errors.lastName }}</p>
       </div>
 
       <div>
-        <label >ភេទ</label>
-        <select v-model="form.gender" class="w-full border-2 border-[#D9D9D9] rounded-[10px] px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
-          <option>ជ្រើសរើស</option>
-          <option>ប្រុស</option>
-          <option>ស្រី</option>
+        <label >ជំនាញ</label>
+        <select v-model="form.skill" class="w-full border-2 border-[#D9D9D9] rounded-[10px] px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 " @blur="validateSkill" >
+          <option disabled="">ជ្រើសរើស</option>
+          <option>GIC</option>
+          <option>AMS</option>
+          <option>Web Development</option>
+          <option>Mobile Development</option>
+          <option>Data Science</option>
         </select>
-        <p class="text-red-500 text-sm">{{ errors.gender }}</p>
-      </div>
-
-      <div>
-        <label >ថ្ងៃ ខែ ឆ្នាំកំណើត</label>
-        <input v-model="form.dob" type="date" class="w-full border-2 border-[#D9D9D9] rounded-[10px] px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
-        <p class="text-red-500 text-sm">{{ errors.dob }}</p>
+        <p class="text-red-500 text-sm">{{ errors.skill }}</p>
       </div>
 
       <div>
         <label >អ៊ីមែល</label>
-        <input v-model="form.email" type="email" class="w-full border-2 border-[#D9D9D9] rounded-[10px] px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="បញ្ចូលអ៊ីមែលរបស់អ្នក">
+        <input 
+        @blur="validateEmail" 
+        v-model="form.email" 
+        
+        class="w-full border-2 border-[#D9D9D9] rounded-[10px] px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="បញ្ចូលអ៊ីមែលរបស់អ្នក">
         <p class="text-red-500 text-sm">{{ errors.email }}</p>
       </div>
-
-
-      <div>
-        <label >លេខទូរស័ព្ទ</label>
-        <input v-model="form.phone" type="text" class="w-full border-2 border-[#D9D9D9] rounded-[10px] px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="បញ្ចូលលេខទូរស័ព្ទរបស់អ្នក">
-        <p class="text-red-500 text-sm">{{ errors.phone }}</p>
-      </div>
-
-
-      <div>
-        <label >ជំនាញ</label>
-        <input v-model="form.skill" type="text" class="w-full border-2 border-[#D9D9D9] rounded-[10px] px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="បញ្ចូលជំនាញរបស់អ្នក">
-        <p class="text-red-500 text-sm" >{{ errors.skill }}</p>
-      </div>
-
-
-      <div>
-        <label >លេខសម្គាល់និស្សិត</label>
-        <input v-model="form.studentId" type="text" class="w-full border-2 border-[#D9D9D9] rounded-[10px] px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="បញ្ចូលលេខសម្គាល់និស្សិតរបស់អ្នក">
-        <p class="text-red-500 text-sm" >{{ errors.studentId }}</p>
-      </div>
+ 
 
       <div>
         <label >ពាក្យសម្ងាត់</label>
-        <input v-model="form.password" type="password" class="w-full border-2 border-[#D9D9D9] rounded-[10px] px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="បញ្ចូលពាក្យសម្ងាត់របស់អ្នក">
+        <input 
+        @blur="validatePassword" 
+        v-model="form.password" 
+        type="password" 
+        class="w-full border-2 border-[#D9D9D9] rounded-[10px] px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="បញ្ចូលពាក្យសម្ងាត់របស់អ្នក">
         <p class="text-red-500 text-sm" >{{ errors.password }}</p>
       </div>
 
       <div>
         <label >បញ្ជាក់ពាក្យសម្ងាត់</label>
-        <input v-model="form.confirmPassword" type="password" class="w-full border-2 border-[#D9D9D9] rounded-[10px] px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="បញ្ចូលពាក្យសម្ងាត់របស់អ្នក">
+        <input 
+        @blur="validateConfirmPassword" 
+        v-model="form.confirmPassword" 
+        type="password" 
+        class="w-full border-2 border-[#D9D9D9] rounded-[10px] px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="បញ្ចូលពាក្យសម្ងាត់របស់អ្នក">
         <p class="text-red-500 text-sm" >{{ errors.confirmPassword }}</p>
       </div>
 
 
       <div class="md:col-span-2" >
-        <button class="w-full bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700 transition" @click="submitForm">
+        <button class="w-full bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700 transition" type="submit">
           ចុះឈ្មោះ
         </button>
       </div>

@@ -11,21 +11,38 @@ export default {
     };
   },
   methods: {
-    submitForm(e) {
-      e.preventDefault();
-      this.errors = {};
+    ValidaitonGmail() {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
       if (!this.form.email) {
-        this.errors.email = 'សូមបញ្ចូលអ៊ីមែល';
+        this.errors.email = "សូមបញ្ចូលអ៊ីមែល";
+      } else if (!emailRegex.test(this.form.email)) {
+        this.errors.email = "អ៊ីមែលមិនត្រឹមត្រូវ";
+      } else {
+        this.errors.email = "";
       }
 
+    },
+    ValidaitonPassword() {
       if (!this.form.password) {
-        this.errors.password = 'សូមបញ្ចូលពាក្យសម្ងាត់';
+        this.errors.password = "សូមបញ្ចូលពាក្យសម្ងាត់";
+      } else if (this.form.password.length < 8) {
+        this.errors.password = "ពាក្យសម្ងាត់ត្រូវមានយ៉ាងតិច 8 តួ";
+      } else {
+        this.errors.password = "";
+      }
+    },
+    submitForm(e) {
+
+      e.preventDefault();
+      this.ValidaitonGmail();
+      this.ValidaitonPassword();
+      
+
+      if (!Object.values(this.errors).some(error => error)) {
+        alert("Form submitted!");
       }
 
-      if (Object.keys(this.errors).length === 0) {
-        alert('Form submitted!');
-      }
     },
   },
 }
@@ -40,7 +57,7 @@ export default {
           <div class="flex flex-col gap-2">
             <label for="email">អ៊ីមែល</label>
             <input
-              type="email"
+              @blur="ValidaitonGmail"
               id="email"
               name="email"
               placeholder="បញ្ចូលអ៊ីមែលរបស់អ្នក"
@@ -53,6 +70,7 @@ export default {
           <div class="flex flex-col gap-2">
             <label for="password">ពាក្យសម្ងាត់</label>
             <input
+              @blur="ValidaitonPassword"
               type="password"
               id="password"
               name="password"
@@ -73,7 +91,7 @@ export default {
           </div>
           <button
             type="button"
-            class="w-fill h-13 border-2 border-[#D9D9D9] text-black rounded-lg bg-white"
+            class="w-fill h-10 border-2 border-[#D9D9D9] text-black rounded-lg bg-white"
           >
             Continue with Google
           </button>
