@@ -28,5 +28,5 @@ body {
 }
 
 .router-link-exact-active {
-  @apply text-[#008CB9] font-bold;
+  @apply text-[#008CB9];
 }
