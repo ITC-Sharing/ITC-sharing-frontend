@@ -31,7 +31,7 @@
         <router-link to="/" class="md:hidden text-xl font-bold">Logo</router-link>
 
         <!-- Desktop Menu -->
-        <ul class="hidden md:flex gap-8 font-semibold text-black text-lg">
+        <ul class="hidden md:flex gap-8 font-semibold text-black text-lg ml-22">
           <router-link to="/" class="hover:text-[#008CB9]">ទំព័រដើម</router-link>
           <router-link to="/documents" class="hover:text-[#008CB9]">ឯកសារ</router-link>
           <router-link to="/books" class="hover:text-[#008CB9]">សៀវភៅ</router-link>
@@ -55,7 +55,9 @@
             />
           </svg>
 
-          <ButtonPrimary text="ចូលគណនី" class="hidden md:block" />
+          <RouterLink to="/login">
+            <ButtonPrimary text="ចូលគណនី" class="hidden md:block" />
+          </RouterLink>
         </div>
       </div>
     </div>
