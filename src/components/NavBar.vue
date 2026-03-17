@@ -39,7 +39,7 @@
 
         <!-- Right Section -->
         <div class="flex items-center gap-4">
-          <img src="https://flagcdn.com/w40/gb.png" class="w-7 h-7 cursor-pointer" alt="English" />
+          <img src="/src/assets/images/english.png" class="w-8 h-8 cursor-pointer" alt="English" />
           <svg
             xmlns="http://www.w3.org/2000/svg"
             fill="none"
