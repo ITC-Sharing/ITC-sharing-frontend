@@ -1,6 +1,6 @@
 <script lang="ts" setup>
 import { reactive } from 'vue'
-import { useRouter, RouterLink } from 'vue-router'
+import {RouterLink } from 'vue-router'
 
 // Define the structure of the form
 interface Form {
@@ -61,10 +61,10 @@ const submitForm = (e: Event) => {
 </script>
 
 <template>
-  <div class="flex flex-col items-center justify-center h-screen">
-    <div class="md:w-130 w-80 h-fit bg-white border-2 border-[#D9D9D9] rounded-[20px]">
-      <h1 class="text-[36px] font-bold flex justify-center mt-5">ចូលគណនី</h1>
-      <form @submit="submitForm" class="m-10 flex flex-col gap-4">
+  <div class="flex flex-col">
+    <div class="md:w-130 w-80 h-fit bg-white border-2 border-[#D9D9D9] rounded-[20px] px-8">
+      <h1 class="text-[36px] font-bold flex justify-center mt-3">ចូលគណនី</h1>
+      <form @submit="submitForm" class="mt-2 mb-5 flex flex-col gap-4">
         <div class="flex flex-col gap-2">
           <label for="email">អ៊ីមែល</label>
           <input
@@ -89,10 +89,11 @@ const submitForm = (e: Event) => {
             v-model="form.password"
             class="border-2 border-[#D9D9D9] rounded-[10px] p-2 focus:outline-none focus:ring-2 focus:ring-[#1B68FF]"
           />
-          <p class="text-red-500 text-sm">{{ errors.password }}</p>
+          <div class="flex justify-between">
+            <p class="text-red-500 text-sm">{{ errors.password }}</p>
+            <span class="text-[#1570EF] flex justify-end">ភ្លេចពាក្យសម្ងាត់</span>
+          </div>
         </div>
-
-        <span class="text-[#1570EF] flex justify-end">ភ្លេចពាក្យសម្ងាត់</span>
         <button
           type="submit"
           class="w-full h-13 text-white rounded-lg bg-[#1B68FF] cursor-pointer hover:bg-[#093ABE] transition font-semibold"
@@ -108,7 +109,7 @@ const submitForm = (e: Event) => {
 
         <button
           type="button"
-          class="w-full h-13 border-2 border-[#D1E9FF] text-[#1B68FF] rounded-lg bg-[#D1E9FF] hover:bg-[#9ccfff] hover:border-[#9ccfff] flex items-center justify-center gap-2 cursor-pointer"
+          class="w-full h-13 text-[#1B68FF] rounded-lg bg-[#D1E9FF] hover:bg-[#9ccfff] flex items-center justify-center gap-2 cursor-pointer"
         >
           <img src="/src/assets/images/google.png" alt="" width="25" height="25" />
           <p>ភ្ជាប់ជាមួយ Google</p>
@@ -116,7 +117,7 @@ const submitForm = (e: Event) => {
 
         <div class="flex justify-center gap-2">
           <span class="text-[#98A2B3]">មិនទាន់មានគណនី?</span>
-          <RouterLink to="/register" class="text-[#1570EF]">ចុះឈ្មោះ</RouterLink>
+          <RouterLink to="/auth/register" class="text-[#1570EF]">ចុះឈ្មោះ</RouterLink>
         </div>
       </form>
     </div>

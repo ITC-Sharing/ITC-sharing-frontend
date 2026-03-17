@@ -1,12 +1,12 @@
 <template>
   <div>
-    <NavBar />
-    <main class="pt-30">
+    <NavBarAuth />
+    <main class="min-h-screen flex items-center justify-center">
       <RouterView />
     </main>
   </div>
 </template>
 <script setup lang="ts">
-import NavBar from '@/components/NavBar.vue'
+import NavBarAuth from '@/components/NavBarAuth.vue';
 import { RouterView } from 'vue-router'
 </script>
