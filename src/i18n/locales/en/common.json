@@ -1,0 +1,8 @@
+{
+    "nav": {
+        "home": "Home",
+        "docs": "Documents",
+        "books": "Books",
+        "login": "Login"
+    }
+}

@@ -38,18 +38,31 @@
         <ul
           class="hidden md:flex gap-8 font-semibold text-black text-lg absolute left-1/2 transform -translate-x-1/2"
         >
-          <router-link to="/" class="hover:text-[#008CB9]">ទំព័រដើម</router-link>
-          <router-link to="/documents" class="hover:text-[#008CB9]">ឯកសារ</router-link>
-          <router-link to="/books" class="hover:text-[#008CB9]">សៀវភៅ</router-link>
+          <router-link to="/" class="hover:text-[#008CB9]">{{ t('common.nav.home') }}</router-link>
+          <router-link to="/documents" class="hover:text-[#008CB9]">{{ t('common.nav.docs') }}</router-link>
+          <router-link to="/books" class="hover:text-[#008CB9]">{{ t('common.nav.books') }}</router-link>
         </ul>
 
         <!-- Right Section -->
-        <div class="flex items-center">
-          <img
-            src="/src/assets/images/english.png"
-            class="md:w-8 md:h-8 w-7 h-7 cursor-pointer mr-4 md:gap-4"
-            alt="English"
-          />
+        <div class="flex items-center gap-3">
+          <div
+            class="relative w-18 h-8 bg-gray-200 rounded-full flex items-center cursor-pointer"
+            @click="toggleLang"
+          >
+            <!-- Sliding background -->
+            <div
+              class="absolute top-0 left-0 h-8 w-1/2 bg-[#008CB9] rounded-full transition-all duration-300"
+              :class="isKm ? 'translate-x-full' : 'translate-x-0'"
+            ></div>
+
+            <!-- Labels -->
+            <div class="flex w-full z-10 text-sm font-semibold">
+              <div class="w-1/2 text-center" :class="!isKm ? 'text-white' : 'text-gray-600'">
+                EN
+              </div>
+              <div class="w-1/2 text-center" :class="isKm ? 'text-white' : 'text-gray-600'">KH</div>
+            </div>
+          </div>
           <RouterLink to="/auth/login">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640" class="w-8 h-8 md:hidden">
               <path
@@ -59,7 +72,7 @@
           </RouterLink>
 
           <RouterLink to="/auth/login">
-            <ButtonPrimary text="ចូលគណនី" class="hidden md:block" />
+            <ButtonPrimary :text="t('common.nav.login')" class="hidden md:block" />
           </RouterLink>
         </div>
       </div>
@@ -68,17 +81,35 @@
     <!-- Mobile Menu -->
     <div v-if="isOpen" class="md:hidden px-6 pb-4">
       <ul class="flex flex-col gap-4 font-semibold text-gray-800">
-        <router-link to="/">ទំព័រដើម</router-link>
-        <router-link to="/documents">ឯកសារ</router-link>
-        <router-link to="/books">សៀវភៅ</router-link>
+        <router-link to="/">{{ t('common.nav.home') }}</router-link>
+        <router-link to="/documents">{{ t('common.nav.docs') }}</router-link>
+        <router-link to="/books">{{ t('common.nav.books') }}</router-link>
       </ul>
     </div>
   </nav>
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, watch } from 'vue'
 import ButtonPrimary from '@/components/ButtonPrimary.vue'
+import { useI18n } from 'vue-i18n'
+
+const { locale, t } = useI18n({ useScope: 'global' })
+
+// ✅ better init
+const isKm = ref(locale.value === 'km')
+
+const toggleLang = () => {
+  const newLang = isKm.value ? 'en' : 'km'
+  isKm.value = !isKm.value
+
+  locale.value = newLang
+  localStorage.setItem('lang', newLang)
+}
+
+watch(locale, (val) => {
+  isKm.value = val === 'km'
+})
 
 const isOpen = ref(false)
 

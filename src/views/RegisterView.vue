@@ -1,5 +1,8 @@
 <script setup lang="ts">
 import { reactive } from 'vue'
+import { useI18n } from 'vue-i18n';
+
+const { t } = useI18n();
 
 interface Form {
   firstName: string
@@ -42,9 +45,9 @@ const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
 function validateFirstName() {
   if (!form.firstName) {
-    errors.firstName = 'សូមបញ្ចូលនាមត្រកូល'
+    errors.firstName = 'auth.register.enterFirstName'
   } else if (!nameRegex.test(form.firstName)) {
-    errors.firstName = 'មិនអាចមានលេខ ឬ សញ្ញាពិសេសបានទេ'
+    errors.firstName = 'auth.register.invaildName'
   } else {
     errors.firstName = ''
   }
@@ -52,9 +55,9 @@ function validateFirstName() {
 
 function validateLastName() {
   if (!form.lastName) {
-    errors.lastName = 'សូមបញ្ចូលនាមខ្លួន'
+    errors.lastName = 'auth.register.enterLastName'
   } else if (!nameRegex.test(form.lastName)) {
-    errors.lastName = 'មិនអាចមានលេខ ឬ សញ្ញាពិសេសបានទេ'
+    errors.lastName = 'auth.register.invaildName'
   } else {
     errors.lastName = ''
   }
@@ -62,9 +65,9 @@ function validateLastName() {
 
 function validateEmail() {
   if (!form.email) {
-    errors.email = 'សូមបញ្ចូលអ៊ីមែល'
+    errors.email = 'auth.register.emptyEmail'
   } else if (!emailRegex.test(form.email)) {
-    errors.email = 'អ៊ីមែលមិនត្រឹមត្រូវ'
+    errors.email = 'auth.register.invaildEmail'
   } else {
     errors.email = ''
   }
@@ -72,9 +75,9 @@ function validateEmail() {
 
 function validatePassword() {
   if (!form.password) {
-    errors.password = 'សូមបញ្ចូលពាក្យសម្ងាត់'
+    errors.password = 'auth.register.emptyPassword'
   } else if (form.password.length < 8) {
-    errors.password = 'ពាក្យសម្ងាត់ត្រូវមានយ៉ាងតិច 8 តួ'
+    errors.password = 'auth.register.shortPassword'
   } else {
     errors.password = ''
   }
@@ -82,9 +85,9 @@ function validatePassword() {
 
 function validateConfirmPassword() {
   if (!form.confirmPassword) {
-    errors.confirmPassword = 'សូមបញ្ចូលបញ្ជាក់ពាក្យសម្ងាត់'
+    errors.confirmPassword = 'auth.register.emptyConfirmPassword'
   } else if (form.password !== form.confirmPassword) {
-    errors.confirmPassword = 'ពាក្យសម្ងាត់មិនដូចគ្នា'
+    errors.confirmPassword = 'auth.register.notMatchPassword'
   } else {
     errors.confirmPassword = ''
   }
@@ -92,7 +95,7 @@ function validateConfirmPassword() {
 
 function validateSkill() {
   if (!form.skill || form.skill === 'ជ្រើសរើស') {
-    errors.skill = 'សូមជ្រើសរើសជំនាញ'
+    errors.skill = 'auth.register.enterMajor'
   } else {
     errors.skill = ''
   }
@@ -118,35 +121,35 @@ function submitForm(e: Event) {
 
 <template>
   <div class="md:w-180 w-80 h-fit bg-white border-2 border-[#D9D9D9] rounded-[20px] px-8 py-6">
-    <h1 class="text-[36px] font-bold flex justify-center items-center mb-3">បង្កើតគណនី</h1>
+    <h1 class="text-[36px] font-bold flex justify-center items-center mb-3">{{ t('auth.register.register') }}</h1>
 
     <form @submit="submitForm" class="grid grid-cols-1 md:grid-cols-2 gap-5">
       <div>
-        <label>នាមត្រកូល</label>
+        <label>{{ t('auth.register.firstName') }}</label>
         <input
           @blur="validateFirstName"
           v-model="form.firstName"
           type="text"
           class="w-full border-2 border-[#D9D9D9] rounded-[10px] px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-          placeholder="នាមត្រកូលរបស់អ្នក"
+          :placeholder="$t('auth.register.yourFirstName')"
         />
-        <p class="text-red-500 text-sm">{{ errors.firstName }}</p>
+        <p class="text-red-500 text-sm">{{ errors.firstName ? t(errors.firstName) : '' }}</p>
       </div>
 
       <div>
-        <label>នាមខ្លួន</label>
+        <label>{{ t('auth.register.lastName') }}</label>
         <input
           @blur="validateLastName"
           v-model="form.lastName"
           type="text"
           class="w-full border-2 border-[#D9D9D9] rounded-[10px] px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-          placeholder="នាមខ្លួនរបស់អ្នក"
+          :placeholder="$t('auth.register.yourLastName')"
         />
-        <p class="text-red-500 text-sm">{{ errors.lastName }}</p>
+        <p class="text-red-500 text-sm">{{ errors.lastName ? t(errors.lastName) : '' }}</p>
       </div>
 
       <div>
-        <label>ជំនាញ</label>
+        <label>{{ t('auth.register.major') }}</label>
         <select
           v-model="form.skill"
           required
@@ -154,7 +157,7 @@ function submitForm(e: Event) {
           :class="form.skill === '' ? 'text-gray-400' : 'text-black'"
           @blur="validateSkill"
         >
-          <option disabled value="">ជ្រើសរើស</option>
+          <option disabled value="">{{ t('auth.register.chooseMajor') }}</option>
           <option value="GIC">GIC</option>
           <option value="AMS">AMS</option>
           <option value="GTR">GTR</option>
@@ -164,44 +167,45 @@ function submitForm(e: Event) {
           <option value="GTI">GTI</option>
           <option value="GIM">GIM</option>
           <option value="GEE">GEE</option>
-          <option value="GUR">GUR</option>
+          <option value="GUR">GRU</option>
+          <option value="GUR">GGG</option>
         </select>
-        <p class="text-red-500 text-sm">{{ errors.skill }}</p>
+        <p class="text-red-500 text-sm">{{ errors.skill ? t(errors.skill) : '' }}</p>
       </div>
 
       <div>
-        <label>អ៊ីមែល</label>
+        <label>{{ t('auth.register.email') }}</label>
         <input
           @blur="validateEmail"
           v-model="form.email"
           class="w-full border-2 border-[#D9D9D9] rounded-[10px] px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-          placeholder="បញ្ចូលអ៊ីមែលរបស់អ្នក"
+          :placeholder="t('auth.register.enterEmail')"
         />
-        <p class="text-red-500 text-sm">{{ errors.email }}</p>
+        <p class="text-red-500 text-sm">{{ errors.email ? t(errors.email) : '' }}</p>
       </div>
 
       <div>
-        <label>ពាក្យសម្ងាត់</label>
+        <label>{{ t('auth.register.password') }}</label>
         <input
           @blur="validatePassword"
           v-model="form.password"
           type="password"
           class="w-full border-2 border-[#D9D9D9] rounded-[10px] px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-          placeholder="បញ្ចូលពាក្យសម្ងាត់របស់អ្នក"
+          :placeholder="t('auth.register.enterPassword')"
         />
-        <p class="text-red-500 text-sm">{{ errors.password }}</p>
+        <p class="text-red-500 text-sm">{{ errors.password ? t(errors.password) : '' }}</p>
       </div>
 
       <div>
-        <label>បញ្ជាក់ពាក្យសម្ងាត់</label>
+        <label>{{ t('auth.register.confirmPassword') }}</label>
         <input
           @blur="validateConfirmPassword"
           v-model="form.confirmPassword"
           type="password"
           class="w-full border-2 border-[#D9D9D9] rounded-[10px] px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-          placeholder="បញ្ចូលពាក្យសម្ងាត់របស់អ្នក"
+          :placeholder="t('auth.register.enterConfirmPassword')"
         />
-        <p class="text-red-500 text-sm">{{ errors.confirmPassword }}</p>
+        <p class="text-red-500 text-sm">{{ errors.confirmPassword ? t(errors.confirmPassword) : '' }}</p>
       </div>
 
       <div class="md:col-span-2">
@@ -209,13 +213,13 @@ function submitForm(e: Event) {
           class="w-full bg-[#1B68FF] text-white py-3 rounded-lg font-semibold hover:bg-[#093ABE] transition cursor-pointer"
           type="submit"
         >
-          ចុះឈ្មោះ
+          {{ t('auth.register.register') }}
         </button>
       </div>
     </form>
     <div class="flex items-center my-3">
       <hr class="grow border-t border-gray-300" />
-      <span class="mx-4 text-gray-500">ឬ</span>
+      <span class="mx-4 text-gray-500">{{ t('auth.login.or') }}</span>
       <hr class="grow border-t border-gray-300" />
     </div>
     <button
@@ -223,11 +227,11 @@ function submitForm(e: Event) {
       class="w-full h-13 border-2 border-[#D1E9FF] text-[#1B68FF] rounded-lg bg-[#D1E9FF] hover:bg-[#9ccfff] hover:border-[#9ccfff] flex items-center justify-center gap-2 cursor-pointer"
     >
       <img src="/src/assets/images/google.png" alt="" width="25" height="25" />
-      <p>ភ្ជាប់ជាមួយ Google</p>
+      <p>{{ t('auth.login.conectWith') }} Google</p>
     </button>
     <div class="flex justify-center gap-2 mt-5">
-      <span>មានគណនីរួចហើយ?</span>
-      <RouterLink to="/auth/login" class="text-[#1B68FF] ml-2">ចូលគណនី</RouterLink>
+      <span>{{ t('auth.register.haveAccount') }}</span>
+      <RouterLink to="/auth/login" class="text-[#1B68FF] ml-2">{{ t('auth.register.login') }}</RouterLink>
     </div>
   </div>
 </template>
