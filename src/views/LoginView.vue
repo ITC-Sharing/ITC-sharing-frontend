@@ -65,7 +65,7 @@ const submitForm = (e: Event) => {
 
 <template>
   <div class="flex flex-col">
-    <div class="md:w-130 w-80 h-fit bg-white border-2 border-[#D9D9D9] rounded-[20px] px-8">
+    <div class="md:w-115 w-80 h-fit bg-white border-2 border-[#D9D9D9] rounded-[20px] px-8">
       <h1 class="text-[36px] font-bold flex justify-center mt-3">{{ t('auth.login.login') }}</h1>
       <form @submit="submitForm" class="mt-2 mb-5 flex flex-col gap-4">
         <div class="flex flex-col gap-2">
@@ -104,19 +104,19 @@ const submitForm = (e: Event) => {
           {{ t('auth.login.login') }}
         </button>
 
-        <div class="flex items-center">
+        <!-- <div class="flex items-center">
           <hr class="grow border-t border-gray-300" />
           <span class="mx-4 text-gray-500">{{ t('auth.login.or') }}</span>
           <hr class="grow border-t border-gray-300" />
-        </div>
+        </div> -->
 
-        <button
+        <!-- <button
           type="button"
           class="w-full h-13 text-[#1B68FF] rounded-lg bg-[#D1E9FF] hover:bg-[#9ccfff] flex items-center justify-center gap-2 cursor-pointer"
         >
           <img src="/src/assets/images/google.png" alt="" width="25" height="25" />
           <p>{{ t('auth.login.conectWith') }} Google</p>
-        </button>
+        </button> -->
 
         <div class="flex justify-center gap-2">
           <span class="text-[#98A2B3]">{{ t('auth.login.dontHaveAccount') }}</span>

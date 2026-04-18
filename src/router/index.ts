@@ -1,7 +1,7 @@
 import { createRouter, createWebHistory } from 'vue-router'
 
 const routes = [
-  // Public pages 
+  // Public pages
   {
     path: '/',
     component: () => import('@/layouts/UserLayout.vue'),
@@ -24,7 +24,7 @@ const routes = [
     ],
   },
 
-  // Auth pages 
+  // Auth pages
   {
     path: '/auth',
     component: () => import('@/layouts/UserAuthLayout.vue'),
@@ -42,7 +42,20 @@ const routes = [
     ],
   },
 
-  // 404 page 
+  {
+    path: '/dep',
+    component: () => import('@/layouts/UserLayout.vue'),
+    children: [
+      {
+        path: ':slug', // dynamic parameter
+        name: 'department', // generic name
+        component: () => import('@/views/DepartmentView.vue'),
+        props: true, // passes route params as props
+      },
+    ],
+  },
+
+  // 404 page
   {
     path: '/:pathMatch(.*)*',
     name: 'not-found',

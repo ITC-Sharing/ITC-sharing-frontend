@@ -24,9 +24,9 @@
 
 body {
   font-family: 'Roboto', 'KantumruyPro', sans-serif;
-  background: #F5F5F5;
+  background: #F5F7F9;
 }
 
 .router-link-exact-active {
-  @apply text-[#008CB9];
+  @apply text-[#0057BD];
 }

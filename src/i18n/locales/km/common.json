@@ -4,5 +4,22 @@
     "docs": "ឯកសារ",
     "books": "សៀវភៅ",
     "login": "ចូលគណនី"
+  },
+  "departmentPage": {
+    "year1": "ឆ្នាំទី១",
+    "year2": "ឆ្នាំទី២",
+    "year3": "ឆ្នាំទី៣",
+    "year4": "ឆ្នាំទី៤",
+    "year5": "ឆ្នាំទី៥",
+    "subject": "មុខវិជ្ជា",
+    "enter": "ចូល",
+    "chooseYear": "ជ្រើសរើសឆ្នាំសិក្សារបស់អ្នក"
+  },
+  "subjectPage": {
+    "addSubject": "បន្ថែមមុខវិជ្ជាថ្មី"
+  },
+  "DocumentCard": {
+    "viewDetails": "មើលលម្អិត",
+    "download": "ទាញយក"
   }
 }

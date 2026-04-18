@@ -4,5 +4,22 @@
         "docs": "Documents",
         "books": "Books",
         "login": "Login"
+    },
+    "departmentPage": {
+        "year1": "First Year",
+        "year2": "Second Year",
+        "year3": "Third Year",
+        "year4": "Fourth Year",
+        "year5": "Fifth Year",
+        "subject": "Subject",
+        "enter": "Enter",
+        "chooseYear": "Choose your academic year"
+    },
+    "subjectPage": {
+        "addSubject": "Add New Subject"
+    },
+    "DocumentCard": {
+        "viewDetails": "View Details",
+        "download": "Download"
     }
 }
