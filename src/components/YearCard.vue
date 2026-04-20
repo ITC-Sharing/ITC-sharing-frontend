@@ -1,20 +1,22 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
+import { useRouter } from 'vue-router'
+
 const { t } = useI18n({ useScope: 'global' })
-defineProps({
-  title: {
-    type: String,
-    default: 'ឆ្នាំទី៣',
-  },
-  subtitle: {
-    type: String,
-    default: '0 មុខវិជ្ជា',
-  },
-  img: {
-    type: String,
-    default: '/src/assets/images/non-photo.jpg',
-  },
+const router = useRouter()
+
+const props = defineProps({
+  title: { type: String, default: '' },
+  subtitle: { type: String, default: '0 មុខវិជ្ជា' },
+  img: { type: String, default: '/src/assets/images/non-photo.jpg' },
+  slug: { type: String, required: true }, // ← department slug e.g. "gic"
+  year: { type: Number, required: true }, // ← year number e.g. 3
+  subjectCount: { type: Number, default: 0 },
 })
+
+function goToWhichYear() {
+  router.push(`/department/${props.slug}/year/${props.year}`)
+}
 </script>
 
 <template>
@@ -28,12 +30,11 @@ defineProps({
         {{ title }}
       </h2>
 
-      <p class="mt-2 text-sm font-normal text-[#B8B8B8]">
-        <span>0 </span>{{ subtitle }}
-      </p>
+      <p class="mt-2 text-sm font-normal text-[#B8B8B8]"><span>{{ subjectCount }}</span> {{ subtitle }}</p>
 
       <button
         type="button"
+        @click="goToWhichYear"
         class="mt-4 inline-flex items-center justify-center rounded-md bg-[#0057BD] px-4 py-2 text-sm font-medium leading-none text-white transition-colors hover:bg-[#0948A0] focus:outline-none focus:ring-4 focus:ring-[#D1E9FF] cursor-pointer"
       >
         {{ t('common.departmentPage.enter') }}

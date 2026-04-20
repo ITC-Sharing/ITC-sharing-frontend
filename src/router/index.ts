@@ -55,6 +55,12 @@ const routes = [
     ],
   },
 
+  {
+    path: '/department/:slug/year/:year',
+    component: () => import('@/views/SubjectsView.vue'),
+    meta: { requiresAuth: true },
+  },
+
   // 404 page
   {
     path: '/:pathMatch(.*)*',

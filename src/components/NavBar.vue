@@ -39,8 +39,12 @@
           class="hidden md:flex gap-8 font-semibold text-black text-lg absolute left-1/2 transform -translate-x-1/2"
         >
           <router-link to="/" class="hover:text-[#008CB9]">{{ t('common.nav.home') }}</router-link>
-          <router-link to="/documents" class="hover:text-[#008CB9]">{{ t('common.nav.docs') }}</router-link>
-          <router-link to="/books" class="hover:text-[#008CB9]">{{ t('common.nav.books') }}</router-link>
+          <router-link to="/documents" class="hover:text-[#008CB9]">{{
+            t('common.nav.docs')
+          }}</router-link>
+          <router-link to="/books" class="hover:text-[#008CB9]">{{
+            t('common.nav.books')
+          }}</router-link>
         </ul>
 
         <!-- Right Section -->
@@ -63,17 +67,68 @@
               <div class="w-1/2 text-center" :class="isKm ? 'text-white' : 'text-gray-600'">KH</div>
             </div>
           </div>
-          <RouterLink to="/auth/login">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640" class="w-8 h-8 md:hidden">
-              <path
-                d="M320 312C386.3 312 440 258.3 440 192C440 125.7 386.3 72 320 72C253.7 72 200 125.7 200 192C200 258.3 253.7 312 320 312zM290.3 368C191.8 368 112 447.8 112 546.3C112 562.7 125.3 576 141.7 576L498.3 576C514.7 576 528 562.7 528 546.3C528 447.8 448.2 368 349.7 368L290.3 368z"
-              />
-            </svg>
-          </RouterLink>
+          <div v-if="authStore.isAuthenticated" ref="accountMenuRef" class="relative">
+            <button
+              type="button"
+              @click="toggleAccountMenu"
+              class="flex items-center"
+              aria-label="Open account menu"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640" class="w-8 h-8">
+                <path
+                  d="M320 312C386.3 312 440 258.3 440 192C440 125.7 386.3 72 320 72C253.7 72 200 125.7 200 192C200 258.3 253.7 312 320 312zM290.3 368C191.8 368 112 447.8 112 546.3C112 562.7 125.3 576 141.7 576L498.3 576C514.7 576 528 562.7 528 546.3C528 447.8 448.2 368 349.7 368L290.3 368z"
+                />
+              </svg>
+            </button>
 
-          <RouterLink to="/auth/login">
-            <ButtonPrimary :text="t('common.nav.login')" class="hidden md:block" />
-          </RouterLink>
+            <div
+              v-if="isAccountMenuOpen"
+              class="absolute right-0 mt-2 w-52 bg-white border border-gray-200 rounded-lg shadow-lg py-1"
+            >
+              <div class="px-4 py-2 border-b border-gray-100 text-sm text-gray-700">
+                {{ authStore.fullName || 'Account' }}
+              </div>
+              <button
+                type="button"
+                class="block w-full text-left px-4 py-2 text-sm text-gray-400 cursor-not-allowed"
+                disabled
+              >
+                Profile
+              </button>
+              <button
+                type="button"
+                class="block w-full text-left px-4 py-2 text-sm text-gray-400 cursor-not-allowed"
+                disabled
+              >
+                Settings
+              </button>
+              <button
+                type="button"
+                @click="handleLogout"
+                class="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50"
+              >
+                Logout
+              </button>
+            </div>
+          </div>
+
+          <template v-else>
+            <RouterLink to="/auth/login">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 640 640"
+                class="w-8 h-8 md:hidden"
+              >
+                <path
+                  d="M320 312C386.3 312 440 258.3 440 192C440 125.7 386.3 72 320 72C253.7 72 200 125.7 200 192C200 258.3 253.7 312 320 312zM290.3 368C191.8 368 112 447.8 112 546.3C112 562.7 125.3 576 141.7 576L498.3 576C514.7 576 528 562.7 528 546.3C528 447.8 448.2 368 349.7 368L290.3 368z"
+                />
+              </svg>
+            </RouterLink>
+
+            <RouterLink to="/auth/login">
+              <ButtonPrimary :text="t('common.nav.login')" class="hidden md:block" />
+            </RouterLink>
+          </template>
         </div>
       </div>
     </div>
@@ -90,11 +145,15 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch } from 'vue'
+import { onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import ButtonPrimary from '@/components/ButtonPrimary.vue'
+import { useAuthStore } from '@/stores/auth.store'
+import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 
 const { locale, t } = useI18n({ useScope: 'global' })
+const authStore = useAuthStore()
+const router = useRouter()
 
 // ✅ better init
 const isKm = ref(locale.value === 'km')
@@ -116,4 +175,36 @@ const isOpen = ref(false)
 const toggleMenu = () => {
   isOpen.value = !isOpen.value
 }
+
+const isAccountMenuOpen = ref(false)
+const accountMenuRef = ref<HTMLElement | null>(null)
+
+const toggleAccountMenu = () => {
+  isAccountMenuOpen.value = !isAccountMenuOpen.value
+}
+
+const closeAccountMenu = () => {
+  isAccountMenuOpen.value = false
+}
+
+const handleClickOutside = (event: MouseEvent) => {
+  if (!accountMenuRef.value) return
+  if (!accountMenuRef.value.contains(event.target as Node)) {
+    closeAccountMenu()
+  }
+}
+
+const handleLogout = async () => {
+  authStore.logout()
+  closeAccountMenu()
+  await router.push('/')
+}
+
+onMounted(() => {
+  document.addEventListener('click', handleClickOutside)
+})
+
+onBeforeUnmount(() => {
+  document.removeEventListener('click', handleClickOutside)
+})
 </script>
