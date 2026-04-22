@@ -3,7 +3,8 @@
         "home": "Home",
         "docs": "Documents",
         "books": "Books",
-        "login": "Login"
+        "login": "Login",
+        "search": "Search"
     },
     "departmentPage": {
         "year1": "First Year",

@@ -1,3 +1,4 @@
+import path from 'path'
 import { createRouter, createWebHistory } from 'vue-router'
 
 const routes = [
@@ -56,11 +57,18 @@ const routes = [
   },
 
   {
-    path: '/department/:slug/year/:year',
-    component: () => import('@/views/SubjectsView.vue'),
-    meta: { requiresAuth: true },
+    path: '/department',
+    component: () => import('@/layouts/UserLayout.vue'),
+    children: [
+      {
+        path: ':slug/year/:year',
+        component: () => import('@/views/SubjectsView.vue'),
+        meta: { requiresAuth: true },
+      },
+    ],
   },
 
+  ,
   // 404 page
   {
     path: '/:pathMatch(.*)*',

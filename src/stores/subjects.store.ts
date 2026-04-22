@@ -22,20 +22,7 @@ export const useSubjectsStore = defineStore('subjects', () => {
       loading.value = false
     }
   }
-  async function fetchCountsByMajor(majorId: string) {
-    try {
-      const { data } = await api.get('/subjects', { params: { major_id: majorId } })
+  
 
-      // e.g. { 3: 5, 4: 7, 5: 3 }
-      const counts: Record<number, number> = {}
-      for (const subject of data) {
-        counts[subject.year_level] = (counts[subject.year_level] ?? 0) + 1
-      }
-      countsByYear.value = counts
-    } catch {
-      countsByYear.value = {}
-    }
-  }
-
-  return { subjects, countsByYear, loading, error, fetchByMajorAndYear, fetchCountsByMajor }
+  return { subjects, loading, error, fetchByMajorAndYear, countsByYear }
 })

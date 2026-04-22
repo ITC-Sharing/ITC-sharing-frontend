@@ -1,18 +1,33 @@
 <script setup lang="ts">
-import { onMounted, computed } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useRoute } from 'vue-router'
-import { useI18n } from 'vue-i18n'
 import { useSubjectsStore } from '@/stores/subjects.store'
 import { useMajorsStore } from '@/stores/majors.store'
 import SubjectCard from '@/components/SubjectCard.vue'
+import SearchButton from '@/components/SearchButton.vue'
+import FilterButton from '@/components/FilterButton.vue'
+import AddnewSubject from '@/components/AddnewSubject.vue'
 
 const route = useRoute()
-const { t } = useI18n({ useScope: 'global' })
 const subjectsStore = useSubjectsStore()
 const majorsStore = useMajorsStore()
 
+type Major = {
+  id: string
+  acronym: string
+  name: string
+}
+
+type Subject = {
+  id: string
+  name: string
+  image?: string | null
+}
+
 const slug = route.params.slug as string
 const yearLevel = Number(route.params.year)
+const searchQuery = ref('')
+const selectedSubject = ref('')
 
 // Map slug → acronym → major from store
 const slugToAcronym: Record<string, string> = {
@@ -29,8 +44,26 @@ const slugToAcronym: Record<string, string> = {
 }
 
 const currentMajor = computed(() =>
-  majorsStore.majors.find((m: any) => m.acronym === slugToAcronym[slug]),
+  (majorsStore.majors as Major[]).find((major) => major.acronym === slugToAcronym[slug]),
 )
+
+const subjectOptions = computed(() =>
+  (subjectsStore.subjects as Subject[]).map((subject) => ({
+    label: subject.name,
+    value: subject.name,
+  })),
+)
+
+const filteredSubjects = computed(() => {
+  const query = searchQuery.value.trim().toLowerCase()
+
+  return (subjectsStore.subjects as Subject[]).filter((subject) => {
+    const matchesSearch = !query || subject.name?.toLowerCase().includes(query)
+    const matchesFilter = !selectedSubject.value || subject.name === selectedSubject.value
+
+    return matchesSearch && matchesFilter
+  })
+})
 
 onMounted(async () => {
   // Fetch majors first if not already loaded (e.g. direct page visit)
@@ -45,14 +78,24 @@ onMounted(async () => {
 </script>
 
 <template>
-  <div class="mx-auto w-full max-w-6xl px-4 py-6">
+  <div class="mx-auto w-full max-w-7xl px-6">
     <!-- Header -->
-    <div class="mb-6">
+    <div class="flex justify-between items-center mb-6">
       <h1 class="text-2xl font-bold text-black">
         {{ currentMajor?.acronym }} — Year {{ yearLevel }}
       </h1>
-      <p class="text-sm text-gray-500 mt-1">{{ currentMajor?.name }}</p>
+      <div class="flex gap-3">
+        <SearchButton v-model="searchQuery" placeholder="ស្វែងរកមុខវិជ្ជា" />
+        <FilterButton
+          v-model="selectedSubject"
+          :options="subjectOptions"
+          placeholder="មុខវិជ្ជា"
+          class="w-full md:w-72"
+        />
+      </div>
     </div>
+
+    <div class="mb-3 flex flex-col gap-3 md:flex-row md:items-center"></div>
 
     <!-- Loading -->
     <div v-if="subjectsStore.loading" class="flex justify-center py-20">
@@ -78,14 +121,18 @@ onMounted(async () => {
     </div>
 
     <!-- Subject list -->
-    <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+    <div v-else-if="filteredSubjects.length === 0" class="text-center py-20 text-gray-400">
+      No subjects match your search.
+    </div>
+
+    <div v-else class="grid grid-cols-1 md:grid-cols-4 gap-2">
+      <AddnewSubject />
       <SubjectCard
-        v-for="subject in subjectsStore.subjects"
+        v-for="subject in filteredSubjects"
         :key="subject.id"
         :title="subject.name"
         :img="subject.image || '/src/assets/images/no-image.png'"
       />
     </div>
-
   </div>
 </template>
