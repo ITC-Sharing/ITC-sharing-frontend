@@ -101,7 +101,7 @@ onBeforeUnmount(() => {
         v-for="option in options"
         :key="option.value"
         type="button"
-        class="block w-full px-4 py-3 text-right text-sm text-gray-700 transition hover:bg-[#EAF6FB] hover:text-[#008CB9]"
+        class="block w-full px-4 py-3 text-left text-sm text-gray-700 transition hover:bg-[#EAF6FB] hover:text-[#008CB9]"
         @click="handleSelect(option.value)"
       >
         {{ option.label }}

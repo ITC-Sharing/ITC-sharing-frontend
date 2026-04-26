@@ -1,12 +1,21 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
-const {t} = useI18n({ useScope: 'global' })
+
+defineEmits<{
+  (e: 'open'): void
+}>()
+
+const { t } = useI18n({ useScope: 'global' })
 </script>
 
 <template>
-  <button type="button" class="group w-70 cursor-pointer rounded-xl text-center">
+  <button
+    type="button"
+    class="group w-full cursor-pointer rounded-xl text-center flex flex-col items-center justify-center"
+    @click="$emit('open')"
+  >
     <div
-      class="flex h-48 w-full items-center justify-center rounded-xl border-2 border-dashed border-[#B9B9B9] bg-[#E6E6E6] transition-colors group-hover:bg-[#DFDFDF] hover:border-[#0057BD]"
+      class="flex h-48 w-70 items-center justify-center rounded-xl border-2 border-dashed border-[#B9B9B9] bg-[#E6E6E6] transition-colors group-hover:bg-[#DFDFDF] hover:border-[#0057BD]"
     >
       <span
         class="flex h-12 w-12 items-center justify-center rounded-full bg-[#0057BD] text-white shadow-sm transition-transform group-hover:scale-105"
@@ -24,7 +33,7 @@ const {t} = useI18n({ useScope: 'global' })
       </span>
     </div>
 
-    <h2 class="mt-3 text-center text-2xl font-normal leading-tight text-black">
+    <h2 class="mt-3 min-h-14 text-center text-xl font-normal leading-tight text-black">
       {{ t('common.subjectPage.addSubject') }}
     </h2>
   </button>

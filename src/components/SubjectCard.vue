@@ -19,7 +19,15 @@ defineProps({
       </div>
     </div>
 
-    <h2 class="mt-3 text-center text-2xl font-normal leading-tight text-black">
+    <h2
+      class="mt-3 min-h-13 overflow-hidden text-center text-xl font-normal leading-tight text-black"
+      style="
+        display: -webkit-box;
+        line-clamp: 2;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+      "
+    >
       {{ title }}
     </h2>
   </div>

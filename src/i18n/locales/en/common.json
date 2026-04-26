@@ -1,26 +1,46 @@
 {
-    "nav": {
-        "home": "Home",
-        "docs": "Documents",
-        "books": "Books",
-        "login": "Login",
-        "search": "Search"
-    },
-    "departmentPage": {
-        "year1": "First Year",
-        "year2": "Second Year",
-        "year3": "Third Year",
-        "year4": "Fourth Year",
-        "year5": "Fifth Year",
-        "subject": "Subject",
-        "enter": "Enter",
-        "chooseYear": "Choose your academic year"
-    },
-    "subjectPage": {
-        "addSubject": "Add New Subject"
-    },
-    "DocumentCard": {
-        "viewDetails": "View Details",
-        "download": "Download"
-    }
+  "nav": {
+    "home": "Home",
+    "docs": "Documents",
+    "books": "Books",
+    "login": "Login",
+    "search": "Search"
+  },
+  "departmentPage": {
+    "year1": "First Year",
+    "year2": "Second Year",
+    "year3": "Third Year",
+    "year4": "Fourth Year",
+    "year5": "Fifth Year",
+    "subject": "Subject",
+    "enter": "Enter",
+    "chooseYear": "Choose your academic year"
+  },
+  "subjectPage": {
+    "addSubject": "Add Subject"
+  },
+  "filterButton": {
+    "sortBy": "Sort by",
+    "byName": "Sort By Letter A-Z",
+    "bySemester1": "Sort By Semester 1",
+    "bySemester2": "Sort By Semester 2"
+  },
+  "DocumentCard": {
+    "viewDetails": "View Details",
+    "download": "Download"
+  },
+  "subjectCreateModal": {
+    "title": "Create Subject",
+    "subtitle": "Please fill in the information below",
+    "nameLabel": "Subject",
+    "departmentLabel": "Department",
+    "yearLabel": "Academic Year",
+    "year": "Year",
+    "semesterLabel": "Semester",
+    "imageLabel": "Subject Image (optional)",
+    "dragAndDrop": "Drag and drop files here or click to select",
+    "cancelButton": "Cancel",
+    "creating": "Creating...",
+    "createButton": "Create"
+  }
 }

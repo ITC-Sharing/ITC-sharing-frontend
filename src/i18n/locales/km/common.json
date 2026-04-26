@@ -17,10 +17,30 @@
     "chooseYear": "ជ្រើសរើសឆ្នាំសិក្សារបស់អ្នក"
   },
   "subjectPage": {
-    "addSubject": "បន្ថែមមុខវិជ្ជាថ្មី"
+    "addSubject": "បន្ថែមមុខវិជ្ជា"
+  },
+  "filterButton": {
+    "sortBy": "តម្រៀបតាម",
+    "byName": "តម្រៀបតាមអក្សរ A-Z",
+    "bySemester1": "តម្រៀបតាមឆមាស 1",
+    "bySemester2": "តម្រៀបតាមឆមាស 2"
   },
   "DocumentCard": {
     "viewDetails": "មើលលម្អិត",
     "download": "ទាញយក"
+  },
+  "subjectCreateModal": {
+    "title": "បន្ថែមមុខវិជ្ជា",
+    "subtitle": "សូមបំពេញព័ត៌មានខាងក្រោម",
+    "nameLabel": "មុខវិជ្ជា",
+    "departmentLabel": "ជំនាញ",
+    "yearLabel": "ឆ្នាំសិក្សា",
+    "year": "ឆ្នាំទី",
+    "semesterLabel": "ឆមាស",
+    "imageLabel": "រូបភាពមុខវិជ្ជា (optional)",
+    "dragAndDrop": "ទាញ និងដាក់ឯកសារនៅទីនេះ ឬ ចុចដើម្បីជ្រើសរើស",
+    "cancelButton": "បោះបង់",
+    "creating": "កំពុងបង្កើត...",
+    "createButton": "បង្កើត"
   }
 }
