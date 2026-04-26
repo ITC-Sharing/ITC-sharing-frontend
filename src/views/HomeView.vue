@@ -2,6 +2,7 @@
 import { computed, onMounted } from 'vue'
 import { useMajorsStore } from '@/stores/majors.store'
 import DepartmentCard from '@/components/DepartmentCard.vue'
+import LoadingSpinner from '@/components/LoadingSpinner.vue'
 
 const majorsStore = useMajorsStore()
 
@@ -37,8 +38,8 @@ onMounted(() => {
 <template>
   <div class="flex items-center justify-center">
     <!-- Loading -->
-    <div v-if="majorsStore.loading" class="grid grid-cols-1 md:grid-cols-4 gap-4">
-      <div v-for="n in 8" :key="n" class="h-40 w-48 rounded-xl bg-gray-100 animate-pulse" />
+    <div v-if="majorsStore.loading" class="flex justify-center py-20">
+      <LoadingSpinner />
     </div>
 
     <!-- Loaded -->

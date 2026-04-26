@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, ref, watch } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 const { t } = useI18n({ useScope: 'global' })
@@ -40,8 +40,20 @@ const subjectImage = ref<File | null>(null)
 const imagePreview = ref<string | null>(null)
 const isDragActive = ref(false)
 const formError = ref('')
+const nameError = ref('')
+const nameTouched = ref(false)
+const semesterOpen = ref(false)
+const modalRef = ref<HTMLElement | null>(null)
 
 const departmentOptions = computed(() => props.departments)
+const semesterOptions = computed(() => [
+  { label: `${t('common.subjectCreateModal.semesterLabel')} 1`, value: '1' },
+  { label: `${t('common.subjectCreateModal.semesterLabel')} 2`, value: '2' },
+])
+
+const selectedSemesterLabel = computed(
+  () => semesterOptions.value.find((option) => option.value === semester.value)?.label ?? '',
+)
 
 function resetForm() {
   subjectName.value = ''
@@ -50,6 +62,9 @@ function resetForm() {
   semester.value = '1'
   subjectImage.value = null
   formError.value = ''
+  nameError.value = ''
+  nameTouched.value = false
+  semesterOpen.value = false
 
   if (imagePreview.value) {
     URL.revokeObjectURL(imagePreview.value)
@@ -80,7 +95,21 @@ watch(
 )
 
 function closeModal() {
+  semesterOpen.value = false
   emit('close')
+}
+
+function toggleSemesterMenu() {
+  semesterOpen.value = !semesterOpen.value
+}
+
+function closeSemesterMenu() {
+  semesterOpen.value = false
+}
+
+function handleSemesterSelect(value: string) {
+  semester.value = value
+  closeSemesterMenu()
 }
 
 function setSelectedFile(file: File | null) {
@@ -115,6 +144,34 @@ function handleDragLeave(event: DragEvent) {
   isDragActive.value = false
 }
 
+function validateSubjectName() {
+  const name = subjectName.value.trim()
+
+  if (!name) {
+    nameError.value = t('common.subjectCreateModal.nameRequired')
+    return false
+  }
+
+  if (name.length > 80) {
+    nameError.value = t('common.subjectCreateModal.nameTooLong')
+    return false
+  }
+
+  nameError.value = ''
+  return true
+}
+
+function handleNameBlur() {
+  nameTouched.value = true
+  validateSubjectName()
+}
+
+function handleNameInput() {
+  if (nameTouched.value) {
+    validateSubjectName()
+  }
+}
+
 function handleDrop(event: DragEvent) {
   event.preventDefault()
   isDragActive.value = false
@@ -122,14 +179,22 @@ function handleDrop(event: DragEvent) {
   setSelectedFile(file)
 }
 
+function handleClickOutside(event: MouseEvent) {
+  if (!modalRef.value) return
+  if (!modalRef.value.contains(event.target as Node)) {
+    closeSemesterMenu()
+  }
+}
+
 function handleSubmit() {
   formError.value = ''
+  nameTouched.value = true
 
-  const name = subjectName.value.trim()
-  if (!name) {
-    formError.value = 'Please enter subject name.'
+  if (!validateSubjectName()) {
     return
   }
+
+  const name = subjectName.value.trim()
 
   if (!departmentId.value) {
     formError.value = 'Department is missing.'
@@ -146,9 +211,15 @@ function handleSubmit() {
 }
 
 onBeforeUnmount(() => {
+  document.removeEventListener('click', handleClickOutside)
+
   if (imagePreview.value) {
     URL.revokeObjectURL(imagePreview.value)
   }
+})
+
+onMounted(() => {
+  document.addEventListener('click', handleClickOutside)
 })
 </script>
 
@@ -160,10 +231,13 @@ onBeforeUnmount(() => {
       @click.self="closeModal"
     >
       <div
+        ref="modalRef"
         class="w-full max-w-sm overflow-hidden rounded-3xl bg-white shadow-2xl ring-1 ring-black/10 md:max-w-md"
       >
         <div class="border-b border-black/5 px-5 py-4">
-          <p class="text-center text-2xl font-bold text-black">{{ t('common.subjectCreateModal.title') }}</p>
+          <p class="text-center text-2xl font-bold text-black">
+            {{ t('common.subjectCreateModal.title') }}
+          </p>
           <p class="mt-2 text-center text-sm text-gray-500">
             {{ t('common.subjectCreateModal.subtitle') }}
           </p>
@@ -175,14 +249,21 @@ onBeforeUnmount(() => {
         >
           <div class="space-y-2">
             <label class="text-sm font-medium text-black"
-              >{{ t('common.subjectCreateModal.nameLabel') }} <span class="text-red-500">*</span></label
+              >{{ t('common.subjectCreateModal.nameLabel') }}
+              <span class="text-red-500">*</span></label
             >
             <input
               v-model="subjectName"
               type="text"
+              maxlength="80"
+              @blur="handleNameBlur"
+              @input="handleNameInput"
               :placeholder="t('common.subjectCreateModal.nameLabel')"
-              class="w-full rounded-xl border border-[#D9D9D9] bg-white px-4 py-2.5 text-base outline-none transition focus:border-[#0057BD]"
+              class="w-full rounded-xl border border-[#D9D9D9] bg-white px-4 py-2.5 text-sm outline-none transition sm:text-base focus:border-[#0057BD]"
             />
+            <p v-if="nameError" class="text-sm text-red-600">
+              {{ nameError }}
+            </p>
           </div>
 
           <p v-if="formError" class="rounded-xl bg-red-50 px-3 py-2 text-sm text-red-600">
@@ -195,12 +276,13 @@ onBeforeUnmount(() => {
 
           <div class="space-y-2">
             <label class="text-sm font-medium text-black"
-              >{{ t('common.subjectCreateModal.departmentLabel') }} <span class="text-red-500">*</span></label
+              >{{ t('common.subjectCreateModal.departmentLabel') }}
+              <span class="text-red-500">*</span></label
             >
             <select
               v-model="departmentId"
               disabled
-              class="w-full appearance-none rounded-xl border border-[#D9D9D9] bg-[#F5F5F5] px-4 py-2.5 text-base text-gray-600 outline-none"
+              class="w-full appearance-none rounded-xl border border-[#D9D9D9] bg-[#F5F5F5] px-4 py-2.5 text-sm text-gray-600 outline-none sm:text-base"
             >
               <option disabled value="">Select department</option>
               <option
@@ -216,44 +298,69 @@ onBeforeUnmount(() => {
           <div class="grid gap-3 md:grid-cols-2">
             <div class="space-y-2">
               <label class="text-sm font-medium text-black"
-                >{{ t('common.subjectCreateModal.yearLabel') }} <span class="text-red-500">*</span></label
+                >{{ t('common.subjectCreateModal.yearLabel') }}
+                <span class="text-red-500">*</span></label
               >
               <select
                 v-model="academicYear"
                 disabled
-                class="w-full appearance-none rounded-xl border border-[#D9D9D9] bg-[#F5F5F5] px-4 py-2.5 text-base text-gray-600 outline-none"
+                class="w-full appearance-none rounded-xl border border-[#D9D9D9] bg-[#F5F5F5] px-4 py-2.5 text-sm text-gray-600 outline-none sm:text-base"
               >
-                <option :value="academicYear">{{ t('common.subjectCreateModal.year') }} {{ academicYear }}</option>
+                <option :value="academicYear">
+                  {{ t('common.subjectCreateModal.year') }} {{ academicYear }}
+                </option>
               </select>
             </div>
 
             <div class="space-y-2">
               <label class="text-sm font-medium text-black"
-                >{{ t('common.subjectCreateModal.semesterLabel') }} <span class="text-red-500">*</span></label
+                >{{ t('common.subjectCreateModal.semesterLabel') }}
+                <span class="text-red-500">*</span></label
               >
               <div class="relative">
-                <select
-                  v-model="semester"
-                  class="w-full appearance-none rounded-xl border border-[#D9D9D9] bg-white px-4 py-2.5 pr-10 text-base outline-none transition focus:border-[#0057BD]"
+                <button
+                  type="button"
+                  class="flex w-full items-center justify-between rounded-xl border border-[#D9D9D9] bg-white px-4 py-2.5 text-left text-sm outline-none transition focus:border-[#0057BD] sm:text-base"
+                  :class="semesterOpen ? 'border-[#0057BD] shadow-sm' : ''"
+                  @click.stop="toggleSemesterMenu"
                 >
-                  <option value="1">{{ t('common.subjectCreateModal.semesterLabel') }} 1</option>
-                  <option value="2">{{ t('common.subjectCreateModal.semesterLabel') }} 2</option>
-                </select>
-                <svg
-                  class="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-500"
-                  viewBox="0 0 20 20"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="1.8"
+                  <span class="truncate">{{ selectedSemesterLabel }}</span>
+
+                  <svg
+                    class="ml-3 h-4 w-4 shrink-0 text-gray-500 transition-transform duration-200"
+                    :class="semesterOpen ? 'rotate-180' : ''"
+                    viewBox="0 0 20 20"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="1.8"
+                  >
+                    <path d="m5 7.5 5 5 5-5" stroke-linecap="round" stroke-linejoin="round" />
+                  </svg>
+                </button>
+
+                <div
+                  v-if="semesterOpen"
+                  class="absolute left-0 right-0 z-30 mt-2 overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-lg"
                 >
-                  <path d="m5 7.5 5 5 5-5" stroke-linecap="round" stroke-linejoin="round" />
-                </svg>
+                  <button
+                    v-for="option in semesterOptions"
+                    :key="option.value"
+                    type="button"
+                    class="flex w-full items-center gap-3 px-4 py-3 text-left text-sm text-gray-700 transition hover:bg-[#dedede] hover:text-gray-700 sm:text-base"
+                    :class="semester === option.value ? 'bg-[#F5F5F5] text-gray-700' : ''"
+                    @click.stop="handleSemesterSelect(option.value)"
+                  >
+                    <span>{{ option.label }}</span>
+                  </button>
+                </div>
               </div>
             </div>
           </div>
 
           <div class="space-y-2">
-            <label class="text-sm font-medium text-black">{{ t('common.subjectCreateModal.imageLabel') }}</label>
+            <label class="text-sm font-medium text-black">{{
+              t('common.subjectCreateModal.imageLabel')
+            }}</label>
             <label
               class="flex min-h-36 cursor-pointer flex-col items-center justify-center rounded-2xl border-2 border-dashed px-5 py-6 text-center transition"
               :class="
@@ -272,7 +379,9 @@ onBeforeUnmount(() => {
                   alt="Selected subject image"
                   class="h-24 w-24 rounded-2xl object-cover shadow-sm"
                 />
-                <p class="text-sm text-gray-500">{{ t('common.subjectCreateModal.dragAndDrop') }}</p>
+                <p class="text-sm text-gray-500">
+                  {{ t('common.subjectCreateModal.dragAndDrop') }}
+                </p>
               </div>
 
               <template v-else>
@@ -297,7 +406,9 @@ onBeforeUnmount(() => {
                     <circle cx="9" cy="8" r="1.5" fill="currentColor" stroke="none" />
                   </svg>
                 </div>
-                <p class="text-sm font-medium text-gray-500">{{ t('common.subjectCreateModal.dragAndDrop') }}</p>
+                <p class="text-sm font-medium text-gray-500">
+                  {{ t('common.subjectCreateModal.dragAndDrop') }}
+                </p>
               </template>
             </label>
           </div>
@@ -316,7 +427,11 @@ onBeforeUnmount(() => {
               :disabled="props.submitting"
               class="rounded-xl bg-[#13A10E] px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-[#10910C] disabled:cursor-not-allowed disabled:opacity-60"
             >
-              {{ props.submitting ? t('common.subjectCreateModal.creating') : t('common.subjectCreateModal.createButton') }}
+              {{
+                props.submitting
+                  ? t('common.subjectCreateModal.creating')
+                  : t('common.subjectCreateModal.createButton')
+              }}
             </button>
           </div>
         </form>

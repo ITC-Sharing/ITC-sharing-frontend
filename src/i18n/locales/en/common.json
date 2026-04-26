@@ -41,6 +41,8 @@
     "dragAndDrop": "Drag and drop files here or click to select",
     "cancelButton": "Cancel",
     "creating": "Creating...",
-    "createButton": "Create"
+    "createButton": "Create",
+    "nameRequired": "Please enter subject name",
+    "nameTooLong": "Subject name must be 80 characters or less"
   }
 }

@@ -9,6 +9,7 @@ import SearchButton from '@/components/SearchButton.vue'
 import FilterButton from '@/components/FilterButton.vue'
 import AddnewSubject from '@/components/AddnewSubject.vue'
 import SubjectCreateModal from '@/components/SubjectCreateModal.vue'
+import LoadingSpinner from '@/components/LoadingSpinner.vue'
 
 const route = useRoute()
 const { t } = useI18n({ useScope: 'global' })
@@ -134,7 +135,9 @@ onMounted(async () => {
 <template>
   <div class="mx-auto w-full max-w-7xl px-6">
     <!-- Header -->
-    <div class="flex md:justify-between md:flex-row flex-col justify-center items-center mb-6 gap-3 md:gap-0">
+    <div
+      class="flex md:justify-between md:flex-row flex-col justify-center items-center mb-6 gap-3 md:gap-0"
+    >
       <h1 class="text-3xl font-bold text-black">I{{ yearLevel }} - {{ currentMajor?.acronym }}</h1>
       <div class="flex gap-3">
         <SearchButton v-model="searchQuery" placeholder="ស្វែងរក" />
@@ -151,15 +154,7 @@ onMounted(async () => {
 
     <!-- Loading -->
     <div v-if="subjectsStore.loading" class="flex justify-center py-20">
-      <svg
-        class="animate-spin h-8 w-8 text-[#0057BD]"
-        xmlns="http://www.w3.org/2000/svg"
-        fill="none"
-        viewBox="0 0 24 24"
-      >
-        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" />
-        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
-      </svg>
+      <LoadingSpinner />
     </div>
 
     <!-- Error -->
@@ -181,7 +176,7 @@ onMounted(async () => {
       </div>
 
       <div v-if="subjectsStore.subjects.length === 0" class="text-center text-gray-400">
-        No subjects found for this year.
+        No subjects found.
       </div>
 
       <div v-else-if="filteredSubjects.length === 0" class="text-center text-gray-400">
