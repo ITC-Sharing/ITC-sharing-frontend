@@ -2,6 +2,7 @@
 import { computed, onMounted, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import YearCard from '@/components/YearCard.vue'
+import Breadcrumb from '@/components/Breadcrumb.vue'
 import { useMajorsStore } from '@/stores/majors.store'
 import { useSubjectsStore } from '@/stores/subjects.store'
 
@@ -10,75 +11,77 @@ const { t } = useI18n({ useScope: 'global' })
 const majorsStore = useMajorsStore()
 const subjectsStore = useSubjectsStore()
 
+const DEP_IMG = `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/department`
+
 const departments = [
   {
     name: 'GIC',
     slug: 'gic',
     acronym: 'GIC',
-    img: '/src/assets/images/department/gic2.png',
+    img: `${DEP_IMG}/gic2.png`,
     fname: 'Department of Information and Communication Engineering',
   },
   {
     name: 'AMS',
     slug: 'ams',
     acronym: 'AMS',
-    img: '/src/assets/images/department/ams-removebg.png',
+    img: `${DEP_IMG}/ams-removebg.png`,
     fname: 'Department of Applied Mathematics and Statistics',
   },
   {
     name: 'GIM',
     slug: 'gim',
     acronym: 'GIM',
-    img: '/src/assets/images/department/gim-removebg.png',
+    img: `${DEP_IMG}/gim-removebg.png`,
     fname: 'Department of Industrial and Mechanical Engineering',
   },
   {
     name: 'GTR',
     slug: 'gtr',
     acronym: 'GTR',
-    img: '/src/assets/images/department/gtr-removebg.png',
+    img: `${DEP_IMG}/gtr-removebg.png`,
     fname: 'Department of Telecommunication and Network Engineering',
   },
   {
     name: 'GCA',
     slug: 'gca',
     acronym: 'GCA',
-    img: '/src/assets/images/department/gca-removebg.png',
+    img: `${DEP_IMG}/gca-removebg.png`,
     fname: 'Department of Computer Applications',
   },
   {
     name: 'GAR',
     slug: 'gar',
     acronym: 'GAR',
-    img: '/src/assets/images/department/gar-removebg.png',
+    img: `${DEP_IMG}/gar-removebg.png`,
     fname: 'Department of Architecture',
   },
   {
     name: 'GRU',
     slug: 'gru',
     acronym: 'GRU',
-    img: '/src/assets/images/department/gru.png',
+    img: `${DEP_IMG}/gru.png`,
     fname: 'Department of Rural Development',
   },
   {
     name: 'GTI',
     slug: 'gti',
     acronym: 'GTI',
-    img: '/src/assets/images/department/gti-removebg.png',
+    img: `${DEP_IMG}/gti-removebg.png`,
     fname: 'Department of Information Technology',
   },
   {
     name: 'GEE',
     slug: 'gee',
     acronym: 'GEE',
-    img: '/src/assets/images/department/gee-removebg.png',
+    img: `${DEP_IMG}/gee-removebg.png`,
     fname: 'Department of Electrical Engineering',
   },
   {
     name: 'Foundation Year',
     slug: 'foundation',
     acronym: 'Foundation',
-    img: '/src/assets/images/department/itc-removebg.png',
+    img: `${DEP_IMG}/itc-removebg.png`,
     fname: 'Foundation Year',
   },
 ]
@@ -153,6 +156,15 @@ watch(() => props.slug, loadCounts)
 </script>
 
 <template>
+  <div class="mx-auto w-full max-w-6xl px-4 mb-4">
+    <Breadcrumb
+      :items="[
+        { label: t('common.nav.home'), to: { name: 'home' } },
+        { label: selectedDepartment?.acronym ?? props.slug.toUpperCase() },
+      ]"
+    />
+  </div>
+
   <div class="mb-6 flex flex-col items-center justify-center gap-4">
     <div
       v-if="selectedDepartment"

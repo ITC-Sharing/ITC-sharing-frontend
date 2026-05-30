@@ -35,7 +35,7 @@ function goToWhichYear() {
       <button
         type="button"
         @click="goToWhichYear"
-        class="mt-4 inline-flex items-center justify-center rounded-md bg-[#0057BD] px-4 py-2 text-sm font-medium leading-none text-white transition-colors hover:bg-[#0948A0] focus:outline-none focus:ring-4 focus:ring-[#D1E9FF] cursor-pointer"
+        class="mt-4 inline-flex items-center justify-center rounded-md bg-[#008CB9] px-4 py-2 text-sm font-medium leading-none text-white transition-colors hover:bg-[#00749b] focus:outline-none focus:ring-4 focus:ring-[#D1E9FF] cursor-pointer"
       >
         {{ t('common.departmentPage.enter') }}
       </button>

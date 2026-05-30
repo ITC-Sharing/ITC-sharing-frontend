@@ -10,13 +10,19 @@ export const useSubjectsStore = defineStore('subjects', () => {
   const error = ref<string | null>(null)
   const createError = ref<string | null>(null)
 
-  async function fetchByMajorAndYear(majorId: string, yearLevel: number) {
+  async function fetchByMajorAndYear(
+    majorId: string,
+    yearLevel: number,
+    options: { semester?: number; search?: string } = {},
+  ) {
+    if (!majorId) return
     loading.value = true
     error.value = null
     try {
-      const { data } = await api.get('/subjects', {
-        params: { major_id: majorId, year_level: yearLevel },
-      })
+      const params: Record<string, string | number> = { major_id: majorId, year_level: yearLevel }
+      if (options.semester) params.semester = options.semester
+      if (options.search?.trim()) params.search = options.search.trim()
+      const { data } = await api.get('/subjects', { params })
       subjects.value = data
     } catch (e: any) {
       error.value = e.response?.data?.message ?? 'Failed to load subjects'
@@ -26,24 +32,12 @@ export const useSubjectsStore = defineStore('subjects', () => {
   }
 
   async function fetchCountsByMajor(majorId: string) {
+    if (!majorId) return
     loading.value = true
     error.value = null
-
     try {
-      const { data } = await api.get('/subjects', {
-        params: { major_id: majorId },
-      })
-
-      const nextCounts: Record<number, number> = {}
-      for (const subject of data ?? []) {
-        const year = Number(subject?.year_level)
-        if (!Number.isInteger(year) || year < 1) {
-          continue
-        }
-        nextCounts[year] = (nextCounts[year] ?? 0) + 1
-      }
-
-      countsByYear.value = nextCounts
+      const { data } = await api.get('/subjects/counts', { params: { major_id: majorId } })
+      countsByYear.value = data
     } catch (e: any) {
       error.value = e.response?.data?.message ?? 'Failed to load subject counts'
       countsByYear.value = {}
@@ -55,6 +49,7 @@ export const useSubjectsStore = defineStore('subjects', () => {
   async function createSubject(payload: {
     major_id: string
     name: string
+    slug: string
     year_level: number
     semester: number
     image?: File | null
@@ -66,6 +61,7 @@ export const useSubjectsStore = defineStore('subjects', () => {
       const formData = new FormData()
       formData.append('major_id', payload.major_id)
       formData.append('name', payload.name)
+      formData.append('slug', payload.slug)
       formData.append('year_level', String(payload.year_level))
       formData.append('semester', String(payload.semester))
       if (payload.image) {
@@ -78,7 +74,8 @@ export const useSubjectsStore = defineStore('subjects', () => {
 
       return data
     } catch (e: any) {
-      createError.value = e.response?.data?.message ?? 'Failed to create subject'
+      const msg = e.response?.data?.message
+      createError.value = Array.isArray(msg) ? msg.join(', ') : (msg ?? 'Failed to create subject')
       throw e
     } finally {
       creating.value = false

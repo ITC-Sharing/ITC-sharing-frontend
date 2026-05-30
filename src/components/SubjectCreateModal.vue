@@ -24,6 +24,7 @@ const emit = defineEmits<{
     e: 'submit',
     payload: {
       name: string
+      slug: string
       major_id: string
       year_level: number
       semester: number
@@ -33,7 +34,8 @@ const emit = defineEmits<{
 }>()
 
 const subjectName = ref('')
-const departmentId = ref('')
+const subjectSlug = ref('')
+const departmentId = ref(props.defaultDepartmentId || '')
 const academicYear = ref(String(props.yearLevel))
 const semester = ref('1')
 const subjectImage = ref<File | null>(null)
@@ -41,7 +43,9 @@ const imagePreview = ref<string | null>(null)
 const isDragActive = ref(false)
 const formError = ref('')
 const nameError = ref('')
+const slugNameError = ref('')
 const nameTouched = ref(false)
+const slugTouched = ref(false)
 const semesterOpen = ref(false)
 const modalRef = ref<HTMLElement | null>(null)
 
@@ -64,6 +68,8 @@ function resetForm() {
   formError.value = ''
   nameError.value = ''
   nameTouched.value = false
+  slugNameError.value = ''
+  slugTouched.value = false
   semesterOpen.value = false
 
   if (imagePreview.value) {
@@ -161,6 +167,23 @@ function validateSubjectName() {
   return true
 }
 
+function validateSlugName() {
+  const slug = subjectSlug.value.trim()
+
+  if (!slug) {
+    slugNameError.value = t('common.subjectCreateModal.nameRequired')
+    return false
+  }
+
+  if (slug.length > 80) {
+    formError.value = t('common.subjectCreateModal.nameTooLong')
+    return false
+  }
+
+  slugNameError.value = ''
+  return true
+}
+
 function handleNameBlur() {
   nameTouched.value = true
   validateSubjectName()
@@ -169,6 +192,18 @@ function handleNameBlur() {
 function handleNameInput() {
   if (nameTouched.value) {
     validateSubjectName()
+  }
+}
+
+function handleSlugBlur() {
+  slugTouched.value = true
+  validateSlugName()
+}
+
+function handleSlugInput() {
+  slugTouched.value = true
+  if (slugTouched.value) {
+    validateSlugName()
   }
 }
 
@@ -189,12 +224,18 @@ function handleClickOutside(event: MouseEvent) {
 function handleSubmit() {
   formError.value = ''
   nameTouched.value = true
+  slugTouched.value = true
 
   if (!validateSubjectName()) {
     return
   }
 
+  if (!validateSlugName()) {
+    return
+  }
+
   const name = subjectName.value.trim()
+  const slug = subjectSlug.value.trim()
 
   if (!departmentId.value) {
     formError.value = 'Department is missing.'
@@ -203,6 +244,7 @@ function handleSubmit() {
 
   emit('submit', {
     name,
+    slug,
     major_id: departmentId.value,
     year_level: Number(academicYear.value),
     semester: Number(semester.value),
@@ -232,19 +274,19 @@ onMounted(() => {
     >
       <div
         ref="modalRef"
-        class="w-full max-w-sm overflow-hidden rounded-3xl bg-white shadow-2xl ring-1 ring-black/10 md:max-w-md"
+        class="flex max-h-[90vh] w-full max-w-sm flex-col overflow-hidden rounded-3xl bg-white shadow-2xl ring-1 ring-black/10 md:max-w-md"
       >
         <div class="border-b border-black/5 px-5 py-4">
-          <p class="text-center text-2xl font-bold text-black">
+          <p class="text-center text-xl font-bold text-black">
             {{ t('common.subjectCreateModal.title') }}
           </p>
-          <p class="mt-2 text-center text-sm text-gray-500">
+          <p class="mt-1 text-center text-sm text-gray-500">
             {{ t('common.subjectCreateModal.subtitle') }}
           </p>
         </div>
 
         <form
-          class="max-h-[80vh] space-y-4 overflow-y-auto px-5 py-5"
+          class="min-h-0 flex-1 space-y-3 overflow-y-auto px-5 py-4"
           @submit.prevent="handleSubmit"
         >
           <div class="space-y-2">
@@ -263,6 +305,25 @@ onMounted(() => {
             />
             <p v-if="nameError" class="text-sm text-red-600">
               {{ nameError }}
+            </p>
+          </div>
+          
+          <div class="space-y-2">
+            <label class="text-sm font-medium text-black"
+              >{{ t('common.subjectCreateModal.slugLabel') }}
+              <span class="text-red-500">*</span></label
+            >
+            <input
+              v-model="subjectSlug"
+              type="text"
+              maxlength="80"
+              @blur="handleSlugBlur"
+              @input="handleSlugInput"
+              :placeholder="t('common.subjectCreateModal.slugLabel')"
+              class="w-full rounded-xl border border-[#D9D9D9] bg-white px-4 py-2.5 text-sm outline-none transition sm:text-base focus:border-[#0057BD]"
+            />
+            <p v-if="slugNameError" class="text-sm text-red-600">
+              {{ slugNameError }}
             </p>
           </div>
 
@@ -362,7 +423,7 @@ onMounted(() => {
               t('common.subjectCreateModal.imageLabel')
             }}</label>
             <label
-              class="flex min-h-36 cursor-pointer flex-col items-center justify-center rounded-2xl border-2 border-dashed px-5 py-6 text-center transition"
+              class="flex min-h-24 cursor-pointer flex-col items-center justify-center rounded-2xl border-2 border-dashed px-5 py-4 text-center transition"
               :class="
                 isDragActive
                   ? 'border-[#0057BD] bg-[#F3F8FF]'
@@ -386,11 +447,11 @@ onMounted(() => {
 
               <template v-else>
                 <div
-                  class="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-[#E8EEF8] text-[#8A8A8A]"
+                  class="mb-2 flex h-12 w-12 items-center justify-center rounded-full bg-[#E8EEF8] text-[#8A8A8A]"
                 >
                   <svg
                     viewBox="0 0 24 24"
-                    class="h-10 w-10"
+                    class="h-7 w-7"
                     fill="none"
                     stroke="currentColor"
                     stroke-width="1.7"

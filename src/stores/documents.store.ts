@@ -3,16 +3,29 @@ import { ref } from 'vue'
 import api from '@/lib/axios'
 
 export const useDocumentsStore = defineStore('documents', () => {
-  const documents = ref([])
-  const saved = ref([])
+  const documents = ref<any[]>([])
+  const saved = ref<any[]>([])
+  const docTypes = ref<string[]>([])
   const loading = ref(false)
   const error = ref<string | null>(null)
+
+  async function fetchDocTypes() {
+    try {
+      const { data } = await api.get('/documents/types')
+      docTypes.value = data.types as string[]
+    } catch {
+      // keep empty; modal falls back gracefully
+    }
+  }
 
   async function fetchAll(filters: {
     major_id?: string
     subject_id?: string
     doc_type?: string
     search?: string
+    title?: string
+    group_id?: string
+    uploader_id?: string
   }) {
     loading.value = true
     error.value = null
@@ -65,8 +78,18 @@ export const useDocumentsStore = defineStore('documents', () => {
   }
 
   return {
-    documents, saved, loading, error,
-    fetchAll, upload, trackDownload,
-    fetchSaved, saveDocument, unsaveDocument, deleteDocument,
+    documents,
+    saved,
+    docTypes,
+    loading,
+    error,
+    fetchDocTypes,
+    fetchAll,
+    upload,
+    trackDownload,
+    fetchSaved,
+    saveDocument,
+    unsaveDocument,
+    deleteDocument,
   }
 })

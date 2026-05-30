@@ -18,7 +18,7 @@ const { t } = useI18n({ useScope: 'global' })
       class="flex h-48 w-70 items-center justify-center rounded-xl border-2 border-dashed border-[#B9B9B9] bg-[#E6E6E6] transition-colors group-hover:bg-[#DFDFDF] hover:border-[#0057BD]"
     >
       <span
-        class="flex h-12 w-12 items-center justify-center rounded-full bg-[#0057BD] text-white shadow-sm transition-transform group-hover:scale-105"
+        class="flex h-12 w-12 items-center justify-center rounded-full bg-[#008CB9] text-white shadow-sm transition-transform group-hover:scale-105"
         aria-hidden="true"
       >
         <svg

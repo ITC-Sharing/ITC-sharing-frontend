@@ -27,7 +27,12 @@
   },
   "DocumentCard": {
     "viewDetails": "មើលលម្អិត",
-    "download": "ទាញយក"
+    "download": "ទាញយក",
+    "deleteTitle": "លុបឯកសារ",
+    "deleteMessage": "សកម្មភាពនេះមិនអាចត្រឡប់វិញបានទេ។",
+    "deleteCancel": "បោះបង់",
+    "deleteConfirm": "លុប",
+    "academicYear": "ឆ្នាំសិក្សា"
   },
   "subjectCreateModal": {
     "title": "បន្ថែមមុខវិជ្ជា",
@@ -43,6 +48,20 @@
     "creating": "កំពុងបង្កើត...",
     "createButton": "បង្កើត",
     "nameRequired": "សូមបញ្ចូលឈ្មោះមុខវិជ្ជា",
-    "nameTooLong": "ឈ្មោះមុខវិជ្ជាត្រូវមានមិនលើស 80 តួអក្សរ"
+    "nameTooLong": "ឈ្មោះមុខវិជ្ជាត្រូវមានមិនលើស 80 តួអក្សរ",
+    "slugLabel": "អក្សរកាត់"
+  },
+  "documentUploadModal": {
+    "docUpload": "បញ្ចូលឯកសារ",
+    "selectFile": "ទាញ និងដាក់ ឬ ចុចដើម្បីជ្រើសរើសឯកសារ",
+    "title": "ចំណងជើង",
+    "typeLabel": "ប្រភេទ",
+    "academicYearLabel": "ឆ្នាំសិក្សា",
+    "subjectLabel": "មុខវិជ្ជា",
+    "majorLabel": "ជំនាញ",
+    "yearLevelLabel": "កម្រិតឆ្នាំ",
+    "semesterLabel": "ឆមាស",
+    "uploadButton": "បញ្ចូល",
+    "uploading": "កំពុងបញ្ចូល..."
   }
 }

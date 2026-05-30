@@ -27,7 +27,12 @@
   },
   "DocumentCard": {
     "viewDetails": "View Details",
-    "download": "Download"
+    "download": "Download",
+    "deleteTitle": "Delete document",
+    "deleteMessage": "This action cannot be undone.",
+    "deleteCancel": "Cancel",
+    "deleteConfirm": "Delete",
+    "academicYear": "Academic Year"
   },
   "subjectCreateModal": {
     "title": "Create Subject",
@@ -43,6 +48,20 @@
     "creating": "Creating...",
     "createButton": "Create",
     "nameRequired": "Please enter subject name",
-    "nameTooLong": "Subject name must be 80 characters or less"
+    "nameTooLong": "Subject name must be 80 characters or less",
+    "slugLabel": "Slug"
+  },
+  "documentUploadModal": {
+    "docUpload": "Upload Document",
+    "selectFile": "Drag and drop, or click to choose a file",
+    "title": "Title",
+    "typeLabel": "Type",
+    "academicYearLabel": "Academic Year",
+    "subjectLabel": "Subject",
+    "majorLabel": "Major",
+    "yearLevelLabel": "Year Level",
+    "semesterLabel": "Semester",
+    "uploadButton": "Upload",
+    "uploading": "Uploading..."
   }
 }
