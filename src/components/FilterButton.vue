@@ -13,7 +13,6 @@ const props = defineProps({
   },
   placeholder: {
     type: String,
-    default: 'មុខវិជ្ជា',
   },
   options: {
     type: Array as () => FilterOption[],

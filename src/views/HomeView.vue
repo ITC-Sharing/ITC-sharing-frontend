@@ -6,33 +6,17 @@ import LoadingSpinner from '@/components/LoadingSpinner.vue'
 
 const majorsStore = useMajorsStore()
 
-const DEP_IMG = `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/department`
-
-const imageMap: Record<string, string> = {
-  GIC: `${DEP_IMG}/gic.jpg`,
-  AMS: `${DEP_IMG}/ams.jpg`,
-  GIM: `${DEP_IMG}/gim.jpg`,
-  GTR: `${DEP_IMG}/gtr.jpg`,
-  GCA: `${DEP_IMG}/gca.png`,
-  GAR: `${DEP_IMG}/gar.jpg`,
-  GRU: `${DEP_IMG}/gru.png`,
-  GTI: `${DEP_IMG}/gti.png`,
-  GEE: `${DEP_IMG}/gee.jpeg`,
-}
-
 const departments = computed(() =>
-  majorsStore.majors.map((major: any) => ({
+  majorsStore.majors.map((major: { id: string; name: string; acronym: string; image_url: string | null }) => ({
     id: major.id,
     name: major.acronym,
-    img: imageMap[major.acronym] ?? `${DEP_IMG}/itc.png`,
+    img: major.image_url ?? '/src/assets/images/no-image.png',
     slug: major.acronym.toLowerCase(),
   })),
 )
 
 onMounted(() => {
-  if (majorsStore.majors.length === 0) {
-    majorsStore.fetchMajors()
-  }
+  if (majorsStore.majors.length === 0) majorsStore.fetchMajors()
 })
 </script>
 

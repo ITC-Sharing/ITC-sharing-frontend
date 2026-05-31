@@ -11,30 +11,14 @@ const { t } = useI18n({ useScope: 'global' })
 <template>
   <button
     type="button"
-    class="group w-full cursor-pointer rounded-xl text-center flex flex-col items-center justify-center"
+    class="cursor-pointer flex items-center gap-2 rounded-xl bg-[#008CB9] px-4 py-3 text-sm text-white transition-colors hover:bg-[#0057BD] whitespace-nowrap"
     @click="$emit('open')"
   >
-    <div
-      class="flex h-48 w-70 items-center justify-center rounded-xl border-2 border-dashed border-[#B9B9B9] bg-[#E6E6E6] transition-colors group-hover:bg-[#DFDFDF] hover:border-[#0057BD]"
-    >
-      <span
-        class="flex h-12 w-12 items-center justify-center rounded-full bg-[#008CB9] text-white shadow-sm transition-transform group-hover:scale-105"
-        aria-hidden="true"
-      >
-        <svg
-          viewBox="0 0 24 24"
-          class="h-8 w-8"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="1.8"
-        >
-          <path d="M12 5v14M5 12h14" stroke-linecap="round" />
-        </svg>
-      </span>
-    </div>
-
-    <h2 class="mt-3 min-h-14 text-center text-xl font-normal leading-tight text-black">
-      {{ t('common.subjectPage.addSubject') }}
-    </h2>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512" class="h-4 w-4 fill-white shrink-0">
+      <path
+        d="M256 64c0-17.7-14.3-32-32-32s-32 14.3-32 32l0 160-160 0c-17.7 0-32 14.3-32 32s14.3 32 32 32l160 0 0 160c0 17.7 14.3 32 32 32s32-14.3 32-32l0-160 160 0c17.7 0 32-14.3 32-32s-14.3-32-32-32l-160 0 0-160z"
+      />
+    </svg>
+    {{ t('common.subjectPage.addSubject') }}
   </button>
 </template>

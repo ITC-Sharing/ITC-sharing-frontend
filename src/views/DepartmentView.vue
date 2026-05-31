@@ -2,7 +2,7 @@
 import { computed, onMounted, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import YearCard from '@/components/YearCard.vue'
-import Breadcrumb from '@/components/Breadcrumb.vue'
+import Breadcrumb from '@/components/BreadCrumb.vue'
 import { useMajorsStore } from '@/stores/majors.store'
 import { useSubjectsStore } from '@/stores/subjects.store'
 
@@ -11,98 +11,12 @@ const { t } = useI18n({ useScope: 'global' })
 const majorsStore = useMajorsStore()
 const subjectsStore = useSubjectsStore()
 
-const DEP_IMG = `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/department`
-
-const departments = [
-  {
-    name: 'GIC',
-    slug: 'gic',
-    acronym: 'GIC',
-    img: `${DEP_IMG}/gic2.png`,
-    fname: 'Department of Information and Communication Engineering',
-  },
-  {
-    name: 'AMS',
-    slug: 'ams',
-    acronym: 'AMS',
-    img: `${DEP_IMG}/ams-removebg.png`,
-    fname: 'Department of Applied Mathematics and Statistics',
-  },
-  {
-    name: 'GIM',
-    slug: 'gim',
-    acronym: 'GIM',
-    img: `${DEP_IMG}/gim-removebg.png`,
-    fname: 'Department of Industrial and Mechanical Engineering',
-  },
-  {
-    name: 'GTR',
-    slug: 'gtr',
-    acronym: 'GTR',
-    img: `${DEP_IMG}/gtr-removebg.png`,
-    fname: 'Department of Telecommunication and Network Engineering',
-  },
-  {
-    name: 'GCA',
-    slug: 'gca',
-    acronym: 'GCA',
-    img: `${DEP_IMG}/gca-removebg.png`,
-    fname: 'Department of Computer Applications',
-  },
-  {
-    name: 'GAR',
-    slug: 'gar',
-    acronym: 'GAR',
-    img: `${DEP_IMG}/gar-removebg.png`,
-    fname: 'Department of Architecture',
-  },
-  {
-    name: 'GRU',
-    slug: 'gru',
-    acronym: 'GRU',
-    img: `${DEP_IMG}/gru.png`,
-    fname: 'Department of Rural Development',
-  },
-  {
-    name: 'GTI',
-    slug: 'gti',
-    acronym: 'GTI',
-    img: `${DEP_IMG}/gti-removebg.png`,
-    fname: 'Department of Information Technology',
-  },
-  {
-    name: 'GEE',
-    slug: 'gee',
-    acronym: 'GEE',
-    img: `${DEP_IMG}/gee-removebg.png`,
-    fname: 'Department of Electrical Engineering',
-  },
-  {
-    name: 'Foundation Year',
-    slug: 'foundation',
-    acronym: 'Foundation',
-    img: `${DEP_IMG}/itc-removebg.png`,
-    fname: 'Foundation Year',
-  },
-]
-
-const slugToAcronym: Record<string, string> = {
-  gic: 'GIC',
-  ams: 'AMS',
-  gim: 'GIM',
-  gtr: 'GTR',
-  gca: 'GCA',
-  gar: 'GAR',
-  gru: 'GRU',
-  gti: 'GTI',
-  gee: 'GEE',
-  foundation: 'Foundation',
-}
-
-const selectedDepartment = computed(() => departments.find((d) => d.slug === props.slug))
-
+// Match by lowercased acronym — no hardcoded map needed
 const currentMajor = computed(() =>
-  majorsStore.majors.find((m: any) => m.acronym === slugToAcronym[props.slug]),
+  majorsStore.majors.find(
+    (m: { id: string; name: string; acronym: string; image_url: string | null }) =>
+      m.acronym.toLowerCase() === props.slug,
+  ),
 )
 
 const years = [
@@ -160,25 +74,25 @@ watch(() => props.slug, loadCounts)
     <Breadcrumb
       :items="[
         { label: t('common.nav.home'), to: { name: 'home' } },
-        { label: selectedDepartment?.acronym ?? props.slug.toUpperCase() },
+        { label: currentMajor?.acronym ?? props.slug.toUpperCase() },
       ]"
     />
   </div>
 
   <div class="mb-6 flex flex-col items-center justify-center gap-4">
     <div
-      v-if="selectedDepartment"
+      v-if="currentMajor?.image_url"
       class="flex h-50 w-50 items-center justify-center overflow-hidden rounded-md"
     >
       <img
-        :src="selectedDepartment.img"
-        :alt="selectedDepartment.name"
+        :src="currentMajor.image_url"
+        :alt="currentMajor.acronym"
         class="h-full w-full object-contain"
       />
     </div>
     <div class="flex md:w-full w-90 justify-center items-center">
       <h1 class="text-center text-xl font-semibold text-black">
-        {{ selectedDepartment ? selectedDepartment.fname : 'Department Not Found' }}
+        {{ currentMajor?.name ?? 'Department Not Found' }}
       </h1>
     </div>
   </div>

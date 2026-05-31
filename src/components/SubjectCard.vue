@@ -31,7 +31,7 @@ function goToDocuments() {
       </div>
     </div>
     <h2
-      class="mt-3 min-h-13 overflow-hidden text-center text-xl font-normal leading-tight text-black"
+      class="mt-3 min-h-13 overflow-hidden text-center text-xl font-normal leading-tight text-black capitalize"
       style="display: -webkit-box; line-clamp: 2; -webkit-line-clamp: 2; -webkit-box-orient: vertical;"
     >
       {{ title }}
