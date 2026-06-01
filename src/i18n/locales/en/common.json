@@ -1,4 +1,7 @@
 {
+  "common": {
+    "loading": "Loading..."
+  },
   "nav": {
     "home": "Home",
     "docs": "Documents",
@@ -19,7 +22,9 @@
   "subjectPage": {
     "addSubject": "Add Subject",
     "submitmsg": "Subject submitted for review. It will appear once approved by an admin.",
-    "noSubjects": "No subjects found"
+    "noSubjects": "No subjects found",
+    "searchPlaceholder": "Search",
+    "loadError": "Failed to load subjects. Please try again."
   },
   "filterButton": {
     "sortBy": "Sort by",
@@ -98,6 +103,7 @@
     "errorSelectFile": "Please choose a file",
     "errorAcademicYearRequired": "Please enter an academic year",
     "errorAcademicYearFormat": "Format must be YYYY-YYYY (e.g. 2024-2025)",
-    "errorAcademicYearEnd": "End year must be exactly {year}"
+    "errorAcademicYearEnd": "End year must be exactly {year}",
+    "cancelButton": "Cancel"
   }
 }

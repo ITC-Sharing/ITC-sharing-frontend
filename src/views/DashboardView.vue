@@ -181,7 +181,7 @@ onMounted(() => {
         </div>
         <button
           @click="showUpload = true"
-          class="flex items-center gap-2 bg-[#0057BD] hover:bg-[#0948A0] active:scale-95 text-white text-sm px-5 py-3 rounded-xl transition-all shadow-sm"
+          class="flex items-center gap-2 bg-[#008CB9] hover:bg-[#00749b] active:scale-95 text-white text-sm px-5 py-3 rounded-xl transition-all shadow-sm"
         >
           <svg
             xmlns="http://www.w3.org/2000/svg"

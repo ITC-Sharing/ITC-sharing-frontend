@@ -29,6 +29,11 @@ const handleSubmit = () => {
   if (props.disabled) return
   emit('search', value.value)
 }
+
+const clearSearch = () => {
+  value.value = ''
+  emit('search', '')
+}
 </script>
 
 <template>
@@ -38,13 +43,34 @@ const handleSubmit = () => {
   >
     <input
       v-model="value"
-      type="search"
+      type="text"
       :placeholder="t('common.nav.search')"
       :disabled="disabled"
       class="w-full bg-transparent text-sm text-gray-800 outline-none placeholder:text-gray-400 disabled:cursor-not-allowed disabled:opacity-60"
     />
 
     <button
+      v-if="value"
+      type="button"
+      :disabled="disabled"
+      class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-gray-700 transition hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-60"
+      aria-label="Clear"
+      @click="clearSearch"
+    >
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="1.8"
+        class="h-5 w-5"
+      >
+        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" />
+      </svg>
+    </button>
+
+    <button
+      v-else
       type="submit"
       :disabled="disabled"
       class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-gray-700 transition hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-60"

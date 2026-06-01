@@ -4,6 +4,7 @@ import { useDocumentsStore } from '@/stores/documents.store'
 import { useMajorsStore } from '@/stores/majors.store'
 import { useSubjectsStore } from '@/stores/subjects.store'
 import { useI18n } from 'vue-i18n'
+import SelectDropdown from '@/components/SelectDropdown.vue'
 
 const docs = useDocumentsStore()
 const majors = useMajorsStore()
@@ -37,15 +38,8 @@ const errors = reactive({
 })
 
 watch(
-  () => [form.major_id, form.year_level],
-  async ([majorId, yearLevel]) => {
-    form.subject_id = ''
-    if (majorId && yearLevel) {
-      await subjects.fetchByMajorAndYear(majorId, Number(yearLevel))
-    } else if (majorId) {
-      await subjects.fetchByMajorAndYear(majorId, 0) // 0 = all years
-    }
-  },
+  () => form.major_id,
+  () => { form.year_level = '' },
 )
 
 watch(
@@ -70,6 +64,25 @@ function formatDocTypeLabel(type: string): string {
 
 const docTypeOptions = computed(() =>
   docs.docTypes.map((type) => ({ value: type, label: formatDocTypeLabel(type) })),
+)
+
+const majorOptions = computed(() =>
+  majors.majors.map((m) => ({ value: m.id, label: m.acronym })),
+)
+
+const subjectOptions = computed(() =>
+  subjects.subjects.map((s) => ({ value: s.id, label: s.name })),
+)
+
+const isFoundation = computed(() => {
+  const major = majors.majors.find((m) => m.id === form.major_id)
+  return major?.acronym?.toLowerCase() === 'foundation'
+})
+
+const yearLevelOptions = computed(() =>
+  isFoundation.value
+    ? [{ value: '1', label: 'Year 1' }, { value: '2', label: 'Year 2' }]
+    : [{ value: '3', label: 'Year 3' }, { value: '4', label: 'Year 4' }, { value: '5', label: 'Year 5' }],
 )
 
 // Initialise
@@ -255,7 +268,7 @@ async function submit() {
           v-model="form.title"
           type="text"
           placeholder="e.g. Midterm Notes Chapter 1-5"
-          class="w-full border border-[#D9D9D9] rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+          class="w-full border border-[#D9D9D9] rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
         />
         <p v-if="errors.title" class="text-red-500 text-sm mt-1">{{ errors.title }}</p>
       </div>
@@ -266,27 +279,12 @@ async function submit() {
           <label class="text-sm font-medium text-gray-700 block mb-1">{{
             t('common.documentUploadModal.typeLabel')
           }}</label>
-          <div class="relative">
-            <select
-              v-model="form.doc_type"
-              class="w-full appearance-none border border-[#D9D9D9] rounded-lg px-3 py-2 pr-9 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
-            >
-              <option value="">Select type</option>
-              <option v-for="opt in docTypeOptions" :key="opt.value" :value="opt.value">
-                {{ opt.label }}
-              </option>
-            </select>
-            <svg
-              class="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400"
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 20 20"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-            >
-              <path d="M6 8l4 4 4-4" />
-            </svg>
-          </div>
+          <SelectDropdown
+            v-model="form.doc_type"
+            placeholder="Select type"
+            :options="docTypeOptions"
+            @change="errors.doc_type = form.doc_type ? '' : 'Please select a type'"
+          />
           <p v-if="errors.doc_type" class="text-red-500 text-sm mt-1">{{ errors.doc_type }}</p>
         </div>
 
@@ -300,7 +298,7 @@ async function submit() {
             placeholder="e.g. 2024-2025"
             maxlength="9"
             @blur="errors.academic_year = validateAcademicYear(form.academic_year)"
-            class="w-full border border-[#D9D9D9] rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            class="w-full border border-[#D9D9D9] rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
             :class="errors.academic_year ? 'border-red-400' : ''"
           />
           <p v-if="errors.academic_year" class="text-red-500 text-sm mt-1">
@@ -312,27 +310,12 @@ async function submit() {
           <label class="text-sm font-medium text-gray-700 block mb-1">{{
             t('common.documentUploadModal.majorLabel')
           }}</label>
-          <div class="relative">
-            <select
-              v-model="form.major_id"
-              class="w-full appearance-none border border-[#D9D9D9] rounded-lg px-3 py-2 pr-9 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white disabled:bg-gray-100 disabled:text-gray-500"
-            >
-              <option value="">Select major</option>
-              <option v-for="m in majors.majors" :key="m.id" :value="m.id">
-                {{ m.acronym }}
-              </option>
-            </select>
-            <svg
-              class="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400"
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 20 20"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-            >
-              <path d="M6 8l4 4 4-4" />
-            </svg>
-          </div>
+          <SelectDropdown
+            v-model="form.major_id"
+            placeholder="Select major"
+            :options="majorOptions"
+            @change="errors.major_id = form.major_id ? '' : 'Please select a major'"
+          />
           <p v-if="errors.major_id" class="text-red-500 text-sm mt-1">{{ errors.major_id }}</p>
         </div>
 
@@ -340,59 +323,28 @@ async function submit() {
           <label class="text-sm font-medium text-gray-700 block mb-1">
             {{ t('common.documentUploadModal.yearLevelLabel') }}
           </label>
-          <div class="relative">
-            <select
-              v-model="form.year_level"
-              class="w-full appearance-none border border-[#D9D9D9] rounded-lg px-3 py-2 pr-9 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
-            >
-              <option value="">Select year</option>
-              <option value="1">Year 1</option>
-              <option value="2">Year 2</option>
-              <option value="3">Year 3</option>
-              <option value="4">Year 4</option>
-              <option value="5">Year 5</option>
-            </select>
-            <svg
-              class="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400"
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 20 20"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-            >
-              <path d="M6 8l4 4 4-4" />
-            </svg>
-          </div>
+          <SelectDropdown
+            v-model="form.year_level"
+            placeholder="Select year"
+            :options="yearLevelOptions"
+            @change="errors.year_level = form.year_level ? '' : 'Please select a year level'"
+          />
           <p v-if="errors.year_level" class="text-red-500 text-sm mt-1">{{ errors.year_level }}</p>
         </div>
       </div>
 
       <!-- Subject -->
-      <div v-if="form.major_id">
+      <div v-if="form.major_id && form.year_level">
         <label class="text-sm font-medium text-gray-700 block mb-1">{{
           t('common.documentUploadModal.subjectLabel')
         }}</label>
-        <div class="relative">
-          <select
-            v-model="form.subject_id"
-            class="w-full appearance-none border border-[#D9D9D9] rounded-lg px-3 py-2 pr-9 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white disabled:bg-gray-100 disabled:text-gray-500"
-          >
-            <option value="">Select subject</option>
-            <option v-for="s in subjects.subjects" :key="s.id" :value="s.id">
-              {{ s.name }}
-            </option>
-          </select>
-          <svg
-            class="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400"
-            xmlns="http://www.w3.org/2000/svg"
-            viewBox="0 0 20 20"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-          >
-            <path d="M6 8l4 4 4-4" />
-          </svg>
-        </div>
+        <SelectDropdown
+          v-if="subjectOptions.length"
+          v-model="form.subject_id"
+          placeholder="Select subject"
+          :options="subjectOptions"
+        />
+        <p v-else class="text-sm text-gray-400">No subjects available</p>
       </div>
 
       <!-- Tags -->
@@ -406,12 +358,12 @@ async function submit() {
             @keydown.enter.prevent="addTag"
             type="text"
             placeholder="e.g. midterm"
-            class="flex-1 border border-[#D9D9D9] rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            class="flex-1 border border-[#D9D9D9] rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
           <button
             type="button"
             @click="addTag"
-            class="px-3 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg text-sm font-medium transition-colors"
+            class="px-3 py-2 bg-gray-100 hover:bg-gray-200 rounded-xl text-sm font-medium transition-colors"
           >
             Add
           </button>

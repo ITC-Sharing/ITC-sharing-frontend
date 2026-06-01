@@ -1,4 +1,8 @@
 <script setup lang="ts">
+import { useI18n } from 'vue-i18n'
+
+const { t } = useI18n({ useScope: 'global' })
+
 defineProps<{
   message?: string
 }>()
@@ -20,6 +24,6 @@ defineProps<{
       />
     </svg>
 
-    <p class="font-medium text-gray-500">{{ message || 'Loading...' }}</p>
+    <p class="font-medium text-gray-500">{{ message || t('common.common.loading') }}</p>
   </div>
 </template>

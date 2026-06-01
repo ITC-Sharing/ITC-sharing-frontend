@@ -17,11 +17,16 @@ const props = defineProps({
 function goToWhichYear() {
   router.push(`/department/${props.slug}/year/${props.year}`)
 }
+
+function handleCardClick() {
+  if (window.innerWidth < 640) goToWhichYear()
+}
 </script>
 
 <template>
   <div
-    class="w-90 rounded-md border border-[#D9D9D9] bg-white px-6 py-3 shadow-[0_1px_4px_rgba(0,0,0,0.08)]"
+    class="w-90 rounded-md border border-[#D9D9D9] bg-white px-6 py-3 shadow-[0_1px_4px_rgba(0,0,0,0.08)] sm:cursor-default cursor-pointer active:scale-95 transition-transform sm:active:scale-100"
+    @click="handleCardClick"
   >
     <div class="flex flex-col items-center text-center">
       <img :src="img" :alt="title" class="h-30 rounded-md" />
@@ -34,8 +39,8 @@ function goToWhichYear() {
 
       <button
         type="button"
-        @click="goToWhichYear"
-        class="mt-4 inline-flex items-center justify-center rounded-md bg-[#008CB9] px-4 py-2 text-sm font-medium leading-none text-white transition-colors hover:bg-[#00749b] focus:outline-none focus:ring-4 focus:ring-[#D1E9FF] cursor-pointer"
+        @click.stop="goToWhichYear"
+        class="mt-4 hidden sm:inline-flex items-center justify-center rounded-md bg-[#008CB9] px-4 py-2 text-sm font-medium leading-none text-white transition-colors hover:bg-[#00749b] focus:outline-none focus:ring-4 focus:ring-[#D1E9FF] cursor-pointer"
       >
         {{ t('common.departmentPage.enter') }}
       </button>

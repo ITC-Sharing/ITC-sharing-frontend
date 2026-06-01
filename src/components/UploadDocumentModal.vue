@@ -5,6 +5,7 @@ import { useDocumentsStore } from '@/stores/documents.store'
 import { useMajorsStore } from '@/stores/majors.store'
 import { useSubjectsStore } from '@/stores/subjects.store'
 import { useI18n } from 'vue-i18n'
+import SelectDropdown from '@/components/SelectDropdown.vue'
 
 const auth = useAuthStore()
 const docs = useDocumentsStore()
@@ -102,6 +103,14 @@ function formatDocTypeLabel(type: string): string {
 
 const docTypeOptions = computed(() =>
   docs.docTypes.map((type) => ({ value: type, label: formatDocTypeLabel(type) })),
+)
+
+const majorOptions = computed(() =>
+  majors.majors.map((m) => ({ value: m.id, label: m.acronym })),
+)
+
+const subjectOptions = computed(() =>
+  subjects.subjects.map((s) => ({ value: s.id, label: s.name })),
 )
 
 // Initialise
@@ -204,276 +213,216 @@ async function submit() {
 <template>
   <!-- Backdrop -->
   <div
-    class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4"
+    class="fixed inset-0 z-50 flex items-center justify-center bg-black/45 px-4 py-6 backdrop-blur-sm"
     @click.self="emit('close')"
   >
-    <div class="w-full max-w-lg bg-white rounded-2xl shadow-xl p-6 flex flex-col gap-5">
+    <div class="flex max-h-[90vh] w-full max-w-sm flex-col overflow-hidden rounded-3xl bg-white shadow-2xl ring-1 ring-black/10 md:max-w-md">
       <!-- Header -->
-      <div class="flex items-center justify-between">
-        <h2 class="text-xl font-bold text-black">
+      <div class="border-b border-black/5 px-5 py-4">
+        <p class="text-center text-xl font-bold text-black">
           {{ t('common.documentUploadModal.docUpload') }}
-        </h2>
-        <button @click="emit('close')" class="text-gray-400 hover:text-gray-600 transition-colors">
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            class="h-6 w-6"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
+        </p>
+      </div>
+
+      <!-- Scrollable form body -->
+      <div class="min-h-0 flex-1 space-y-3 overflow-y-auto px-5 py-4">
+
+        <!-- Server error -->
+        <p v-if="docs.error" class="rounded-xl bg-red-50 px-3 py-2 text-sm text-red-600">
+          {{ docs.error }}
+        </p>
+
+        <!-- File drop zone -->
+        <div class="space-y-1">
+          <label
+            class="flex min-h-24 cursor-pointer flex-col items-center justify-center rounded-2xl border-2 border-dashed px-5 py-4 text-center transition"
+            :class="isDragActive ? 'border-[#0057BD] bg-[#F3F8FF]' : 'border-[#D3D3D3] bg-[#FAFAFA] hover:border-[#0057BD] hover:bg-[#F3F8FF]'"
+            @click.prevent="fileInput?.click()"
+            @dragover="handleDragOver"
+            @dragleave="handleDragLeave"
+            @drop="handleDrop"
           >
-            <path
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              stroke-width="2"
-              d="M6 18L18 6M6 6l12 12"
+            <input
+              ref="fileInput"
+              type="file"
+              class="hidden"
+              accept=".pdf,.doc,.docx,.ppt,.pptx,.jpg,.jpeg,.png"
+              multiple
+              @change="onFileChange"
             />
-          </svg>
-        </button>
-      </div>
-
-      <!-- Server error -->
-      <div
-        v-if="docs.error"
-        class="p-3 bg-red-50 border border-red-200 rounded-lg text-red-600 text-sm"
-      >
-        {{ docs.error }}
-      </div>
-
-      <!-- File drop zone -->
-      <div
-        class="border-2 border-dashed rounded-xl p-6 text-center cursor-pointer transition-colors"
-        :class="
-          isDragActive
-            ? 'border-[#0057BD] bg-blue-50/30'
-            : 'border-[#D9D9D9] hover:border-[#0057BD]'
-        "
-        @click="fileInput?.click()"
-        @dragover="handleDragOver"
-        @dragleave="handleDragLeave"
-        @drop="handleDrop"
-      >
-        <input
-          ref="fileInput"
-          type="file"
-          class="hidden"
-          accept=".pdf,.doc,.docx,.ppt,.pptx,.jpg,.jpeg,.png"
-          multiple
-          @change="onFileChange"
-        />
-        <div v-if="selectedFiles.length" class="text-sm text-gray-700 font-medium">
-          <p class="mb-2">{{ t('common.documentUploadModal.filesSelected', { count: selectedFiles.length }) }}</p>
-          <ul class="max-h-24 space-y-1 overflow-y-auto text-xs text-gray-500">
-            <li v-for="file in selectedFiles" :key="file.name + file.size">
-              {{ file.name }} ({{ (file.size / 1024).toFixed(0) }} KB)
-            </li>
-          </ul>
-        </div>
-        <div v-else class="text-gray-400 text-sm">
-          <p class="font-medium text-gray-600 mb-1">
-            {{ t('common.documentUploadModal.selectFile') }}
-          </p>
-          <p>{{ t('common.documentUploadModal.fileTypes') }}</p>
-        </div>
-      </div>
-      <p v-if="errors.file" class="text-red-500 text-sm -mt-3">{{ errors.file }}</p>
-
-      <!-- Title -->
-      <div>
-        <label class="text-sm font-medium text-gray-700 block mb-1">{{
-          t('common.documentUploadModal.title')
-        }}</label>
-        <input
-          v-model="form.title"
-          type="text"
-          :placeholder="t('common.documentUploadModal.titlePlaceholder')"
-          class="w-full border border-[#D9D9D9] rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-        />
-        <p v-if="errors.title" class="text-red-500 text-sm mt-1">{{ errors.title }}</p>
-      </div>
-
-      <!-- Type + Year + Academic Year + Major row -->
-      <div class="grid grid-cols-2 gap-3">
-        <div>
-          <label class="text-sm font-medium text-gray-700 block mb-1">{{
-            t('common.documentUploadModal.typeLabel')
-          }}</label>
-          <div class="relative">
-            <select
-              v-model="form.doc_type"
-              class="w-full appearance-none border border-[#D9D9D9] rounded-lg px-3 py-2 pr-9 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
-            >
-              <option value="">{{ t('common.documentUploadModal.selectTypePlaceholder') }}</option>
-              <option v-for="opt in docTypeOptions" :key="opt.value" :value="opt.value">
-                {{ opt.label }}
-              </option>
-            </select>
-            <svg
-              class="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400"
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 20 20"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-            >
-              <path d="M6 8l4 4 4-4" />
-            </svg>
-          </div>
-          <p v-if="errors.doc_type" class="text-red-500 text-sm mt-1">{{ errors.doc_type }}</p>
+            <div v-if="selectedFiles.length" class="text-sm font-medium text-gray-700">
+              <p class="mb-2">{{ t('common.documentUploadModal.filesSelected', { count: selectedFiles.length }) }}</p>
+              <ul class="max-h-20 space-y-1 overflow-y-auto text-xs text-gray-500">
+                <li v-for="file in selectedFiles" :key="file.name + file.size">
+                  {{ file.name }} ({{ (file.size / 1024).toFixed(0) }} KB)
+                </li>
+              </ul>
+            </div>
+            <template v-else>
+              <div class="mb-2 flex h-12 w-12 items-center justify-center rounded-full bg-[#E8EEF8] text-[#8A8A8A]">
+                <svg viewBox="0 0 24 24" class="h-7 w-7" fill="none" stroke="currentColor" stroke-width="1.7">
+                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" stroke-linecap="round" stroke-linejoin="round" />
+                  <polyline points="14 2 14 8 20 8" stroke-linecap="round" stroke-linejoin="round" />
+                  <line x1="12" y1="18" x2="12" y2="12" stroke-linecap="round" />
+                  <line x1="9" y1="15" x2="15" y2="15" stroke-linecap="round" />
+                </svg>
+              </div>
+              <p class="text-sm font-medium text-gray-500">{{ t('common.documentUploadModal.selectFile') }}</p>
+              <p class="mt-1 text-xs text-gray-400">{{ t('common.documentUploadModal.fileTypes') }}</p>
+            </template>
+          </label>
+          <p v-if="errors.file" class="text-sm text-red-600">{{ errors.file }}</p>
         </div>
 
-        <div>
-          <label class="text-sm font-medium text-gray-700 block mb-1">
-            {{ t('common.documentUploadModal.academicYearLabel') }}
+        <!-- Title -->
+        <div class="space-y-2">
+          <label class="text-sm font-medium text-black">
+            {{ t('common.documentUploadModal.title') }} <span class="text-red-500">*</span>
           </label>
           <input
+            v-model="form.title"
             type="text"
-            v-model="form.academic_year"
-            :placeholder="t('common.documentUploadModal.academicYearPlaceholder')"
-            maxlength="9"
-            @blur="errors.academic_year = validateAcademicYear(form.academic_year)"
-            class="w-full border border-[#D9D9D9] rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-            :class="errors.academic_year ? 'border-red-400' : ''"
+            :placeholder="t('common.documentUploadModal.titlePlaceholder')"
+            class="w-full rounded-xl border border-[#D9D9D9] bg-white px-4 py-2.5 text-sm outline-none transition focus:border-[#0057BD]"
+            :class="errors.title ? 'border-red-400' : ''"
+            @blur="errors.title = selectedFiles.length <= 1 && !form.title ? t('common.documentUploadModal.errorTitleRequired') : ''"
+            @input="errors.title = form.title ? '' : errors.title"
           />
-          <p v-if="errors.academic_year" class="text-red-500 text-sm mt-1">
-            {{ errors.academic_year }}
-          </p>
+          <p v-if="errors.title" class="text-sm text-red-600">{{ errors.title }}</p>
         </div>
 
-        <div>
-          <label class="text-sm font-medium text-gray-700 block mb-1">{{
-            t('common.documentUploadModal.majorLabel')
-          }}</label>
-          <div class="relative">
-            <select
-              v-model="form.major_id"
-              :disabled="lockMajorAndSubject"
-              class="w-full appearance-none border border-[#D9D9D9] rounded-lg px-3 py-2 pr-9 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white disabled:bg-gray-100 disabled:text-gray-500"
-            >
-              <option value="">{{ t('common.documentUploadModal.selectMajorPlaceholder') }}</option>
-              <option v-for="m in majors.majors" :key="m.id" :value="m.id">
-                {{ m.acronym }}
-              </option>
-            </select>
-            <svg
-              class="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400"
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 20 20"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-            >
-              <path d="M6 8l4 4 4-4" />
-            </svg>
+        <!-- Type + Academic Year -->
+        <div class="grid grid-cols-2 gap-3">
+          <div class="space-y-2">
+            <label class="text-sm font-medium text-black">
+              {{ t('common.documentUploadModal.typeLabel') }} <span class="text-red-500">*</span>
+            </label>
+            <SelectDropdown
+              v-model="form.doc_type"
+              :placeholder="t('common.documentUploadModal.selectTypePlaceholder')"
+              :options="docTypeOptions"
+              @change="errors.doc_type = form.doc_type ? '' : t('common.documentUploadModal.errorSelectType')"
+            />
+            <p v-if="errors.doc_type" class="text-sm text-red-600">{{ errors.doc_type }}</p>
           </div>
-          <p v-if="errors.major_id" class="text-red-500 text-sm mt-1">{{ errors.major_id }}</p>
+
+          <div class="space-y-2">
+            <label class="text-sm font-medium text-black">
+              {{ t('common.documentUploadModal.academicYearLabel') }} <span class="text-red-500">*</span>
+            </label>
+            <input
+              type="text"
+              v-model="form.academic_year"
+              :placeholder="t('common.documentUploadModal.academicYearPlaceholder')"
+              maxlength="9"
+              @blur="errors.academic_year = validateAcademicYear(form.academic_year)"
+              class="w-full rounded-xl border border-[#D9D9D9] bg-white px-4 py-2.5 text-sm outline-none transition focus:border-[#0057BD]"
+              :class="errors.academic_year ? 'border-red-400' : ''"
+            />
+            <p v-if="errors.academic_year" class="text-sm text-red-600">{{ errors.academic_year }}</p>
+          </div>
+
+          <div class="space-y-2">
+            <label class="text-sm font-medium text-black">
+              {{ t('common.documentUploadModal.majorLabel') }} <span class="text-red-500">*</span>
+            </label>
+            <SelectDropdown
+              v-model="form.major_id"
+              :placeholder="t('common.documentUploadModal.selectMajorPlaceholder')"
+              :options="majorOptions"
+              :disabled="lockMajorAndSubject"
+            />
+            <p v-if="errors.major_id" class="text-sm text-red-600">{{ errors.major_id }}</p>
+          </div>
+
+          <div class="space-y-2">
+            <label class="text-sm font-medium text-black">
+              {{ t('common.documentUploadModal.yearLevelLabel') }} <span class="text-red-500">*</span>
+            </label>
+            <input
+              type="text"
+              v-model="form.year_level"
+              :disabled="lockYearLevel"
+              :placeholder="t('common.documentUploadModal.yearLevelPlaceholder')"
+              class="w-full rounded-xl border border-[#D9D9D9] bg-[#F5F5F5] px-4 py-2.5 text-sm text-gray-600 outline-none"
+            />
+            <p v-if="errors.year_level" class="text-sm text-red-600">{{ errors.year_level }}</p>
+          </div>
         </div>
 
-        <div>
-          <label class="text-sm font-medium text-gray-700 block mb-1">{{
-            t('common.documentUploadModal.yearLevelLabel')
-          }}</label>
-          <input
-            type="text"
-            v-model="form.year_level"
-            :disabled="lockYearLevel"
-            :placeholder="t('common.documentUploadModal.yearLevelPlaceholder')"
-            class="w-full border border-[#D9D9D9] rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100 disabled:text-gray-500"
-          />
-          <p v-if="errors.year_level" class="text-red-500 text-sm mt-1">{{ errors.year_level }}</p>
-        </div>
-      </div>
-
-
-      <!-- Subject -->
-      <div v-if="form.major_id">
-        <label class="text-sm font-medium text-gray-700 block mb-1">{{
-          t('common.documentUploadModal.subjectLabel')
-        }}</label>
-        <div class="relative">
-          <select
+        <!-- Subject -->
+        <div v-if="form.major_id" class="space-y-2">
+          <label class="text-sm font-medium text-black">{{ t('common.documentUploadModal.subjectLabel') }}</label>
+          <SelectDropdown
             v-model="form.subject_id"
+            :placeholder="t('common.documentUploadModal.selectSubjectPlaceholder')"
+            :options="subjectOptions"
             :disabled="lockMajorAndSubject"
-            class="w-full appearance-none border border-[#D9D9D9] rounded-lg px-3 py-2 pr-9 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white disabled:bg-gray-100 disabled:text-gray-500"
-          >
-            <option value="">{{ t('common.documentUploadModal.selectSubjectPlaceholder') }}</option>
-            <option v-for="s in subjects.subjects" :key="s.id" :value="s.id">
-              {{ s.name }}
-            </option>
-          </select>
-          <svg
-            class="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400"
-            xmlns="http://www.w3.org/2000/svg"
-            viewBox="0 0 20 20"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-          >
-            <path d="M6 8l4 4 4-4" />
-          </svg>
-        </div>
-      </div>
-
-      <!-- Tags -->
-      <div>
-        <label class="text-sm font-medium text-gray-700 block mb-1">
-          {{ t('common.documentUploadModal.tagsLabel') }}
-          <span class="text-gray-400 font-normal">{{ t('common.documentUploadModal.tagsOptional') }}</span>
-        </label>
-        <div class="flex gap-2">
-          <input
-            v-model="tagInput"
-            @keydown.enter.prevent="addTag"
-            type="text"
-            :placeholder="t('common.documentUploadModal.tagPlaceholder')"
-            class="flex-1 border border-[#D9D9D9] rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
+        </div>
+
+        <!-- Tags -->
+        <div class="space-y-2">
+          <label class="text-sm font-medium text-black">
+            {{ t('common.documentUploadModal.tagsLabel') }}
+            <span class="font-normal text-gray-400">{{ t('common.documentUploadModal.tagsOptional') }}</span>
+          </label>
+          <div class="flex gap-2">
+            <input
+              v-model="tagInput"
+              @keydown.enter.prevent="addTag"
+              type="text"
+              :placeholder="t('common.documentUploadModal.tagPlaceholder')"
+              class="flex-1 rounded-xl border border-[#D9D9D9] bg-white px-4 py-2.5 text-sm outline-none transition focus:border-[#0057BD]"
+            />
+            <button
+              type="button"
+              @click="addTag"
+              class="rounded-xl border border-[#D0D0D0] px-4 py-2.5 text-sm font-medium text-black transition hover:bg-[#F4F4F4]"
+            >
+              {{ t('common.documentUploadModal.addTag') }}
+            </button>
+          </div>
+          <div v-if="form.tags.length" class="flex flex-wrap gap-1">
+            <span
+              v-for="tag in form.tags"
+              :key="tag"
+              class="flex items-center gap-1 rounded-full bg-blue-50 px-2 py-1 text-xs text-blue-600"
+            >
+              #{{ tag }}
+              <button @click="removeTag(tag)" class="hover:text-red-500">✕</button>
+            </span>
+          </div>
+        </div>
+
+        <!-- Actions -->
+        <div class="flex items-center justify-end gap-2 pt-1">
           <button
             type="button"
-            @click="addTag"
-            class="px-3 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg text-sm font-medium transition-colors"
+            :disabled="docs.loading"
+            @click="emit('close')"
+            class="rounded-xl border border-[#D0D0D0] px-4 py-2.5 text-sm font-medium text-black transition hover:bg-[#F4F4F4] disabled:cursor-not-allowed disabled:opacity-60"
           >
-            {{ t('common.documentUploadModal.addTag') }}
+            {{ t('common.documentUploadModal.cancelButton') }}
+          </button>
+          <button
+            type="button"
+            @click="submit"
+            :disabled="docs.loading"
+            class="rounded-xl bg-[#0057BD] px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-[#0948A0] disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            <span v-if="docs.loading" class="flex items-center gap-2">
+              <svg class="h-4 w-4 animate-spin" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" />
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
+              </svg>
+              {{ t('common.documentUploadModal.uploading') }}
+            </span>
+            <span v-else>{{ t('common.documentUploadModal.uploadButton') }}</span>
           </button>
         </div>
-        <div v-if="form.tags.length" class="flex flex-wrap gap-1 mt-2">
-          <span
-            v-for="tag in form.tags"
-            :key="tag"
-            class="flex items-center gap-1 text-xs px-2 py-1 bg-blue-50 text-blue-600 rounded-full"
-          >
-            #{{ tag }}
-            <button @click="removeTag(tag)" class="hover:text-red-500">✕</button>
-          </span>
-        </div>
-      </div>
 
-      <!-- Submit -->
-      <button
-        @click="submit"
-        :disabled="docs.loading"
-        class="w-full bg-[#0057BD] hover:bg-[#0948A0] disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold py-3 rounded-xl transition-colors"
-      >
-        <span v-if="docs.loading" class="flex items-center justify-center gap-2">
-          <svg
-            class="animate-spin h-4 w-4"
-            xmlns="http://www.w3.org/2000/svg"
-            fill="none"
-            viewBox="0 0 24 24"
-          >
-            <circle
-              class="opacity-25"
-              cx="12"
-              cy="12"
-              r="10"
-              stroke="currentColor"
-              stroke-width="4"
-            />
-            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
-          </svg>
-          {{ t('common.documentUploadModal.uploading') }}
-        </span>
-        <span v-else>{{ t('common.documentUploadModal.uploadButton') }}</span>
-      </button>
+      </div>
     </div>
   </div>
 </template>

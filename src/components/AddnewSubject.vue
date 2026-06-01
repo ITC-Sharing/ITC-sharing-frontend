@@ -11,7 +11,7 @@ const { t } = useI18n({ useScope: 'global' })
 <template>
   <button
     type="button"
-    class="cursor-pointer flex items-center gap-2 rounded-xl bg-[#008CB9] px-4 py-3 text-sm text-white transition-colors hover:bg-[#0057BD] whitespace-nowrap"
+    class="cursor-pointer flex items-center gap-2 rounded-xl bg-[#008CB9] px-4 py-3 text-sm text-white transition-colors hover:bg-[#00749b] whitespace-nowrap"
     @click="$emit('open')"
   >
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512" class="h-4 w-4 fill-white shrink-0">

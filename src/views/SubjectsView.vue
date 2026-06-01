@@ -161,28 +161,28 @@ onMounted(async () => {
       </Transition>
 
       <!-- Header -->
-      <div
-        class="flex md:justify-between md:flex-row flex-col justify-center mb-6 gap-3 md:gap-0"
-      >
+      <div class="flex md:justify-between md:flex-row flex-col justify-center mb-6 gap-3 md:gap-0">
         <h1 class="text-3xl font-bold text-black">
           I{{ yearLevel }} - {{ currentMajor?.acronym }}
         </h1>
         <div class="flex gap-3 md:flex-row flex-col">
-          <SearchButton v-model="searchQuery" placeholder="ស្វែងរក" />
+          <SearchButton v-model="searchQuery" :placeholder="t('common.subjectPage.searchPlaceholder')" />
 
           <!-- desktop -->
           <div class="hidden md:flex items-center gap-3">
-            <FilterButton
-              v-model="selectedFilter"
-              :options="filterOptions"
-              :placeholder="t('common.filterButton.sortBy')"
-              class="w-72"
-            />
+            <div class="w-40">
+              <FilterButton
+                v-model="selectedFilter"
+                :options="filterOptions"
+                :placeholder="t('common.filterButton.sortBy')"
+              />
+            </div>
+
             <AddnewSubject @open="openCreateModal" />
           </div>
 
           <!-- mobile -->
-          <div class="flex justify-between items-center gap-2 md:hidden">
+          <div class="flex justify-between items-center gap-2 md:hidden mt-2">
             <div class="w-40">
               <FilterButton
                 v-model="selectedFilter"
@@ -204,7 +204,7 @@ onMounted(async () => {
 
       <!-- Error -->
       <div v-else-if="subjectsStore.error" class="text-center py-20 text-red-500">
-        {{ subjectsStore.error }}
+        {{ t('common.subjectPage.loadError') }}
       </div>
 
       <div v-else class="space-y-6">

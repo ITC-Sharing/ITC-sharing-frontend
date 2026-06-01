@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { computed, onBeforeUnmount, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
+import SelectDropdown from '@/components/SelectDropdown.vue'
 
 const { t } = useI18n({ useScope: 'global' })
 
@@ -46,7 +47,6 @@ const nameError = ref('')
 const slugNameError = ref('')
 const nameTouched = ref(false)
 const slugTouched = ref(false)
-const semesterOpen = ref(false)
 const modalRef = ref<HTMLElement | null>(null)
 
 const departmentOptions = computed(() => props.departments)
@@ -54,10 +54,6 @@ const semesterOptions = computed(() => [
   { label: `${t('common.subjectCreateModal.semesterLabel')} 1`, value: '1' },
   { label: `${t('common.subjectCreateModal.semesterLabel')} 2`, value: '2' },
 ])
-
-const selectedSemesterLabel = computed(
-  () => semesterOptions.value.find((option) => option.value === semester.value)?.label ?? '',
-)
 
 function resetForm() {
   subjectName.value = ''
@@ -70,8 +66,6 @@ function resetForm() {
   nameTouched.value = false
   slugNameError.value = ''
   slugTouched.value = false
-  semesterOpen.value = false
-
   if (imagePreview.value) {
     URL.revokeObjectURL(imagePreview.value)
   }
@@ -101,21 +95,7 @@ watch(
 )
 
 function closeModal() {
-  semesterOpen.value = false
   emit('close')
-}
-
-function toggleSemesterMenu() {
-  semesterOpen.value = !semesterOpen.value
-}
-
-function closeSemesterMenu() {
-  semesterOpen.value = false
-}
-
-function handleSemesterSelect(value: string) {
-  semester.value = value
-  closeSemesterMenu()
 }
 
 function setSelectedFile(file: File | null) {
@@ -214,13 +194,6 @@ function handleDrop(event: DragEvent) {
   setSelectedFile(file)
 }
 
-function handleClickOutside(event: MouseEvent) {
-  if (!modalRef.value) return
-  if (!modalRef.value.contains(event.target as Node)) {
-    closeSemesterMenu()
-  }
-}
-
 function handleSubmit() {
   formError.value = ''
   nameTouched.value = true
@@ -253,15 +226,9 @@ function handleSubmit() {
 }
 
 onBeforeUnmount(() => {
-  document.removeEventListener('click', handleClickOutside)
-
   if (imagePreview.value) {
     URL.revokeObjectURL(imagePreview.value)
   }
-})
-
-onMounted(() => {
-  document.addEventListener('click', handleClickOutside)
 })
 </script>
 
@@ -301,7 +268,7 @@ onMounted(() => {
               @blur="handleNameBlur"
               @input="handleNameInput"
               :placeholder="t('common.subjectCreateModal.nameLabel')"
-              class="w-full rounded-xl border border-[#D9D9D9] bg-white px-4 py-2.5 text-sm outline-none transition sm:text-base focus:border-[#0057BD]"
+              class="w-full rounded-xl border border-[#D9D9D9] bg-white px-4 py-2 text-sm outline-none transition sm:text-base focus:border-[#0057BD]"
             />
             <p v-if="nameError" class="text-sm text-red-600">
               {{ nameError }}
@@ -320,7 +287,7 @@ onMounted(() => {
               @blur="handleSlugBlur"
               @input="handleSlugInput"
               :placeholder="t('common.subjectCreateModal.slugLabel')"
-              class="w-full rounded-xl border border-[#D9D9D9] bg-white px-4 py-2.5 text-sm outline-none transition sm:text-base focus:border-[#0057BD]"
+              class="w-full rounded-xl border border-[#D9D9D9] bg-white px-4 py-2 text-sm outline-none transition sm:text-base focus:border-[#0057BD]"
             />
             <p v-if="slugNameError" class="text-sm text-red-600">
               {{ slugNameError }}
@@ -343,7 +310,7 @@ onMounted(() => {
             <select
               v-model="departmentId"
               disabled
-              class="w-full appearance-none rounded-xl border border-[#D9D9D9] bg-[#F5F5F5] px-4 py-2.5 text-sm text-gray-600 outline-none sm:text-base"
+              class="w-full appearance-none rounded-xl border border-[#D9D9D9] bg-[#F5F5F5] px-4 py-2 text-sm text-gray-600 outline-none sm:text-base"
             >
               <option disabled value="">Select department</option>
               <option
@@ -365,7 +332,7 @@ onMounted(() => {
               <select
                 v-model="academicYear"
                 disabled
-                class="w-full appearance-none rounded-xl border border-[#D9D9D9] bg-[#F5F5F5] px-4 py-2.5 text-sm text-gray-600 outline-none sm:text-base"
+                class="w-full appearance-none rounded-xl border border-[#D9D9D9] bg-[#F5F5F5] px-4 py-2 text-sm text-gray-600 outline-none sm:text-base"
               >
                 <option :value="academicYear">
                   {{ t('common.subjectCreateModal.year') }} {{ academicYear }}
@@ -378,43 +345,10 @@ onMounted(() => {
                 >{{ t('common.subjectCreateModal.semesterLabel') }}
                 <span class="text-red-500">*</span></label
               >
-              <div class="relative">
-                <button
-                  type="button"
-                  class="flex w-full items-center justify-between rounded-xl border border-[#D9D9D9] bg-white px-4 py-2.5 text-left text-sm outline-none transition focus:border-[#0057BD] sm:text-base"
-                  :class="semesterOpen ? 'border-[#0057BD] shadow-sm' : ''"
-                  @click.stop="toggleSemesterMenu"
-                >
-                  <span class="truncate">{{ selectedSemesterLabel }}</span>
-
-                  <svg
-                    class="ml-3 h-4 w-4 shrink-0 text-gray-500 transition-transform duration-200"
-                    :class="semesterOpen ? 'rotate-180' : ''"
-                    viewBox="0 0 20 20"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="1.8"
-                  >
-                    <path d="m5 7.5 5 5 5-5" stroke-linecap="round" stroke-linejoin="round" />
-                  </svg>
-                </button>
-
-                <div
-                  v-if="semesterOpen"
-                  class="absolute left-0 right-0 z-30 mt-2 overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-lg"
-                >
-                  <button
-                    v-for="option in semesterOptions"
-                    :key="option.value"
-                    type="button"
-                    class="flex w-full items-center gap-3 px-4 py-3 text-left text-sm text-gray-700 transition hover:bg-[#dedede] hover:text-gray-700 sm:text-base"
-                    :class="semester === option.value ? 'bg-[#F5F5F5] text-gray-700' : ''"
-                    @click.stop="handleSemesterSelect(option.value)"
-                  >
-                    <span>{{ option.label }}</span>
-                  </button>
-                </div>
-              </div>
+              <SelectDropdown
+                v-model="semester"
+                :options="semesterOptions"
+              />
             </div>
           </div>
 
@@ -486,7 +420,7 @@ onMounted(() => {
             <button
               type="submit"
               :disabled="props.submitting"
-              class="rounded-xl bg-[#13A10E] px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-[#10910C] disabled:cursor-not-allowed disabled:opacity-60"
+              class="rounded-xl bg-[#008CB9] px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-[#00749b] disabled:cursor-not-allowed disabled:opacity-60"
             >
               {{
                 props.submitting
