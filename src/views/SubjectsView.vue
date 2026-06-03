@@ -166,15 +166,16 @@ onMounted(async () => {
           I{{ yearLevel }} - {{ currentMajor?.acronym }}
         </h1>
         <div class="flex gap-3 md:flex-row flex-col">
-          <SearchButton v-model="searchQuery" :placeholder="t('common.subjectPage.searchPlaceholder')" />
+          <SearchButton v-model="searchQuery" placeholder="ស្វែងរក" />
 
           <!-- desktop -->
           <div class="hidden md:flex items-center gap-3">
-            <div class="w-40">
+            <div class="w-36">
               <FilterButton
                 v-model="selectedFilter"
                 :options="filterOptions"
                 :placeholder="t('common.filterButton.sortBy')"
+                class="w-72"
               />
             </div>
 
@@ -182,7 +183,7 @@ onMounted(async () => {
           </div>
 
           <!-- mobile -->
-          <div class="flex justify-between items-center gap-2 md:hidden mt-2">
+          <div class="flex justify-between items-center gap-2 md:hidden">
             <div class="w-40">
               <FilterButton
                 v-model="selectedFilter"
@@ -195,35 +196,36 @@ onMounted(async () => {
         </div>
       </div>
 
-      <div class="mb-3 flex flex-col gap-3 md:flex-row md:items-center"></div>
-
-      <!-- Loading -->
-      <div v-if="subjectsStore.loading" class="flex justify-center py-20">
-        <LoadingSpinner />
-      </div>
-
-      <!-- Error -->
-      <div v-else-if="subjectsStore.error" class="text-center py-20 text-red-500">
-        {{ t('common.subjectPage.loadError') }}
-      </div>
-
-      <div v-else class="space-y-6">
-        <div class="flex items-center justify-center">
-          <div class="grid grid-cols-1 gap-6 md:grid-cols-4">
-            <SubjectCard
-              v-for="subject in displayedSubjects"
-              :key="subject.id"
-              :title="subject.name"
-              :img="subject.subject_url || '/src/assets/images/no-image.png'"
-              :subjectId="subject.id"
-              :slug="slug"
-              :year="yearLevel"
-            />
-          </div>
+      <!-- Scrollable cards area -->
+      <div class="overflow-y-auto max-h-[calc(100vh-260px)]">
+        <!-- Loading -->
+        <div v-if="subjectsStore.loading" class="flex justify-center py-20">
+          <LoadingSpinner />
         </div>
 
-        <div v-if="displayedSubjects.length === 0" class="text-center text-gray-400">
-          {{ t('common.subjectPage.noSubjects') }}
+        <!-- Error -->
+        <div v-else-if="subjectsStore.error" class="text-center py-20 text-red-500">
+          {{ subjectsStore.error }}
+        </div>
+
+        <div v-else class="space-y-6">
+          <div class="flex items-center justify-center">
+            <div class="grid grid-cols-1 gap-6 md:grid-cols-4">
+              <SubjectCard
+                v-for="subject in displayedSubjects"
+                :key="subject.id"
+                :title="subject.name"
+                :img="subject.subject_url || '/src/assets/images/no-image.png'"
+                :subjectId="subject.id"
+                :slug="slug"
+                :year="yearLevel"
+              />
+            </div>
+          </div>
+
+          <div v-if="displayedSubjects.length === 0" class="text-center text-gray-400">
+            {{ t('common.subjectPage.noSubjects') }}
+          </div>
         </div>
       </div>
     </div>

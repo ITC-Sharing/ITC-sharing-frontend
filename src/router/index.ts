@@ -37,12 +37,6 @@ const routes = [
         meta: { requiresAuth: true },
       },
       {
-        path: 'admin',
-        name: 'admin',
-        component: () => import('@/views/AdminDashboardView.vue'),
-        meta: { requiresAdmin: true },
-      },
-      {
         path: 'dep/:slug',
         name: 'department',
         component: () => import('@/views/DepartmentView.vue'),
@@ -64,6 +58,20 @@ const routes = [
         meta: { requiresAuth: true },
       },
     ],
+  },
+
+  // ── Admin (no layout — has its own sidebar) ───────────────────────────────
+  {
+    path: '/admin/dashboard',
+    name: 'admin',
+    component: () => import('@/views/AdminDashboardView.vue'),
+    meta: { requiresAdmin: true },
+  },
+  {
+    path: '/admin/review/:groupId',
+    name: 'admin-review',
+    component: () => import('@/views/AdminDocumentReviewView.vue'),
+    meta: { requiresAdmin: true },
   },
 
   // ── Auth layout ───────────────────────────────────────────────────────────

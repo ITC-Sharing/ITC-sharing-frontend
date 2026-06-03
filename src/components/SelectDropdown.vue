@@ -68,7 +68,7 @@ onBeforeUnmount(() => document.removeEventListener('click', onClickOutside))
     <button
       type="button"
       class="flex w-full items-center justify-between rounded-xl border border-[#D9D9D9] bg-white px-4 py-2.5 text-left text-sm outline-none transition disabled:cursor-not-allowed disabled:bg-[#F5F5F5] disabled:text-gray-600 disabled:opacity-100"
-      :class="isOpen ? 'border-[#0057BD] shadow-sm' : 'hover:border-gray-300'"
+      :class="isOpen ? 'border-[#0057BD] shadow-sm' : 'hover:border-[#008CB9]'"
       :disabled="disabled"
       @click.stop="toggle"
     >
@@ -96,7 +96,7 @@ onBeforeUnmount(() => document.removeEventListener('click', onClickOutside))
         v-for="option in options"
         :key="option.value"
         type="button"
-        class="flex w-full items-center px-4 py-3 text-left text-sm text-gray-700 transition hover:bg-[#dedede]"
+        class="flex w-full items-center px-4 py-3 text-left text-sm text-gray-700 transition hover:bg-[#EAF6FB] hover:text-[#008CB9]"
         :class="option.value === modelValue ? 'bg-[#F5F5F5]' : ''"
         @click.stop="select(option.value)"
       >

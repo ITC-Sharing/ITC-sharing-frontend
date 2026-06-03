@@ -50,13 +50,20 @@ const filteredDocs = computed(() => {
   return result
 })
 
+type FileEntry = { download_count?: number; view_count?: number; file_size_kb?: number }
+type UploadEntry = { documents?: FileEntry[] }
+
+function sumFiles(key: keyof FileEntry) {
+  return myDocs.value.reduce((sum: number, d: UploadEntry) => {
+    return sum + (d.documents ?? []).reduce((s: number, f: FileEntry) => s + (f[key] ?? 0), 0)
+  }, 0)
+}
+
 const stats = computed(() => ({
   total: myDocs.value.length,
-  downloads: myDocs.value.reduce((sum: number, d: any) => sum + (d.download_count ?? 0), 0),
-  views: myDocs.value.reduce((sum: number, d: any) => sum + (d.view_count ?? 0), 0),
-  size: formatTotalSize(
-    myDocs.value.reduce((sum: number, d: any) => sum + (d.file_size_kb ?? 0), 0),
-  ),
+  downloads: sumFiles('download_count'),
+  views: sumFiles('view_count'),
+  size: formatTotalSize(sumFiles('file_size_kb')),
 }))
 
 function formatTotalSize(kb: number) {
@@ -94,11 +101,32 @@ async function handleDelete(id: string, title: string) {
 }
 
 async function onUploaded() {
-  await loadMyDocs()
+  await Promise.all([loadMyDocs(), loadMyPendingRejectedDocs()])
 }
 
 async function loadMyDocs() {
   await docs.fetchAll({ uploader_id: auth.user?.id })
+}
+
+// ── My pending / rejected docs ─────────────────────────────────────────────────
+type PendingRejectedDoc = {
+  id: string
+  title: string
+  doc_type: string
+  file_size_kb: number
+  status: 'pending' | 'rejected'
+  rejection_reason: string | null
+  rejected_at: string | null
+  uploaded_at: string
+  subjects: { id: string; name: string } | null
+  majors: { id: string; acronym: string } | null
+}
+
+const myPendingRejectedDocs = ref<PendingRejectedDoc[]>([])
+
+async function loadMyPendingRejectedDocs() {
+  const { data } = await api.get('/documents/mine')
+  myPendingRejectedDocs.value = data
 }
 
 // ── My Subjects ────────────────────────────────────────────────────────────────
@@ -166,6 +194,7 @@ async function deleteSubject(subject: any) {
 onMounted(() => {
   loadMyDocs()
   loadMySubjects()
+  loadMyPendingRejectedDocs()
 })
 </script>
 
@@ -236,6 +265,27 @@ onMounted(() => {
         <div class="bg-white rounded-2xl border border-gray-100 px-5 py-4 flex flex-col gap-1">
           <p class="text-xs text-gray-400 font-medium uppercase tracking-wide">Total Size</p>
           <p class="text-3xl font-bold text-gray-900">{{ stats.size }}</p>
+        </div>
+      </div>
+
+      <!-- ── Pending / Rejected uploads ───────────────────────────────────── -->
+      <div v-if="myPendingRejectedDocs.length" class="flex flex-col gap-2">
+        <p class="text-xs font-semibold text-gray-400 uppercase tracking-wide">Pending & Rejected Uploads</p>
+        <div class="bg-white rounded-2xl border border-gray-100 overflow-hidden">
+          <div
+            v-for="(doc, i) in myPendingRejectedDocs"
+            :key="doc.id"
+            :class="['px-5 py-3 flex items-start gap-3', i !== myPendingRejectedDocs.length - 1 ? 'border-b border-gray-100' : '']"
+          >
+            <span :class="`mt-0.5 shrink-0 text-xs font-semibold px-2 py-0.5 rounded-full ${doc.status === 'pending' ? 'bg-yellow-100 text-yellow-700' : 'bg-red-100 text-red-600'}`">
+              {{ doc.status }}
+            </span>
+            <div class="flex-1 min-w-0">
+              <p class="text-sm font-medium text-gray-900 truncate">{{ doc.title }}</p>
+              <p class="text-xs text-gray-400">{{ doc.majors?.acronym }} &bull; {{ doc.subjects?.name ?? '—' }} &bull; {{ formatDate(doc.uploaded_at) }}</p>
+              <p v-if="doc.rejection_reason" class="text-xs text-red-500 mt-1">Reason: {{ doc.rejection_reason }}</p>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -553,6 +603,7 @@ onMounted(() => {
               </div>
               <div class="col-span-2 flex items-center justify-end gap-2">
                 <button
+                  v-if="subject.status === 'pending'"
                   @click="openEdit(subject)"
                   class="p-1.5 text-gray-400 hover:text-[#0057BD] hover:bg-blue-50 rounded-lg transition-colors"
                   title="Edit"
@@ -576,6 +627,18 @@ onMounted(() => {
                   </svg>
                 </button>
               </div>
+            </div>
+
+            <!-- Rejection reason banner -->
+            <div v-if="subject.status === 'rejected'" class="px-6 py-2.5 bg-red-50 border-t border-red-100 flex items-start gap-2">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-red-400 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <p class="text-xs text-red-600">
+                <span class="font-semibold">Rejected</span>
+                <template v-if="subject.rejection_reason"> — {{ subject.rejection_reason }}</template>
+                <template v-else> — No reason provided.</template>
+              </p>
             </div>
 
             <!-- Inline edit form -->

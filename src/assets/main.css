@@ -1,13 +1,13 @@
 @import 'tailwindcss';
 
 @font-face {
-  font-family: 'Roboto';
-  src: url('../assets/fonts/Roboto-VariableFont_wdth,wght.ttf') format('truetype');
+  font-family: 'Nunito';
+  src: url('../assets/fonts/Nunito-VariableFont_wght.ttf') format('truetype');
 }
 
 @font-face {
-  font-family: 'Roboto';
-  src: url('../assets/fonts/Roboto-Italic-VariableFont_wdth,wght.ttf') format('truetype');
+  font-family: 'Nunito';
+  src: url('../assets/fonts/Nunito-Italic-VariableFont_wght.ttf') format('truetype');
   font-style: italic;
 }
 
@@ -23,7 +23,7 @@
 }
 
 body {
-  font-family: 'Roboto', 'KantumruyPro', sans-serif;
+  font-family: 'Nunito', 'KantumruyPro', sans-serif;
   background: #F5F7F9;
 }
 

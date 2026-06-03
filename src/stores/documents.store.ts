@@ -4,6 +4,7 @@ import api from '@/lib/axios'
 
 export const useDocumentsStore = defineStore('documents', () => {
   const documents = ref<any[]>([])
+  const currentUpload = ref<any | null>(null)
   const saved = ref<any[]>([])
   const docTypes = ref<string[]>([])
   const loading = ref(false)
@@ -24,7 +25,6 @@ export const useDocumentsStore = defineStore('documents', () => {
     doc_type?: string
     search?: string
     title?: string
-    group_id?: string
     uploader_id?: string
   }) {
     loading.value = true
@@ -34,6 +34,20 @@ export const useDocumentsStore = defineStore('documents', () => {
       documents.value = data
     } catch (e: any) {
       error.value = e.response?.data?.message ?? 'Failed to load documents'
+    } finally {
+      loading.value = false
+    }
+  }
+
+  // Fetch a single upload with all its files
+  async function fetchOne(uploadId: string) {
+    loading.value = true
+    error.value = null
+    try {
+      const { data } = await api.get(`/documents/${uploadId}`)
+      currentUpload.value = data
+    } catch (e: any) {
+      error.value = e.response?.data?.message ?? 'Failed to load document'
     } finally {
       loading.value = false
     }
@@ -55,8 +69,9 @@ export const useDocumentsStore = defineStore('documents', () => {
     }
   }
 
-  async function trackDownload(id: string) {
-    await api.patch(`/documents/${id}/download`)
+  // Track download on a specific file (document row id, not upload id)
+  async function trackDownload(fileId: string) {
+    await api.patch(`/documents/${fileId}/download`)
   }
 
   async function fetchSaved() {
@@ -64,27 +79,29 @@ export const useDocumentsStore = defineStore('documents', () => {
     saved.value = data
   }
 
-  async function saveDocument(id: string) {
-    await api.post(`/documents/${id}/save`)
+  async function saveDocument(uploadId: string) {
+    await api.post(`/documents/${uploadId}/save`)
   }
 
-  async function unsaveDocument(id: string) {
-    await api.delete(`/documents/${id}/save`)
+  async function unsaveDocument(uploadId: string) {
+    await api.delete(`/documents/${uploadId}/save`)
   }
 
-  async function deleteDocument(id: string) {
-    await api.delete(`/documents/${id}`)
-    documents.value = documents.value.filter((d: any) => d.id !== id)
+  async function deleteDocument(uploadId: string) {
+    await api.delete(`/documents/${uploadId}`)
+    documents.value = documents.value.filter((d: any) => d.id !== uploadId)
   }
 
   return {
     documents,
+    currentUpload,
     saved,
     docTypes,
     loading,
     error,
     fetchDocTypes,
     fetchAll,
+    fetchOne,
     upload,
     trackDownload,
     fetchSaved,

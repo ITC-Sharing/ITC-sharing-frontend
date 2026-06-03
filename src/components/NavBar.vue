@@ -164,14 +164,6 @@
                 Dashboard
               </button>
               <button
-                v-if="authStore.user?.role === 'admin'"
-                type="button"
-                @click="() => { router.push({ name: 'admin' }); closeAccountMenu() }"
-                class="block w-full text-left px-4 py-2 text-sm text-[#0057BD] hover:bg-blue-50"
-              >
-                Admin Panel
-              </button>
-              <button
                 type="button"
                 class="block w-full text-left px-4 py-2 text-sm text-gray-400 cursor-not-allowed"
                 disabled

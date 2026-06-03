@@ -15,7 +15,6 @@ const { t } = useI18n({ useScope: 'global' })
 
 const emit = defineEmits<{ (e: 'close'): void; (e: 'uploaded'): void }>()
 
-const fileInput = ref<HTMLInputElement | null>(null)
 const selectedFiles = ref<File[]>([])
 const isDragActive = ref(false)
 const tagInput = ref('')
@@ -237,13 +236,11 @@ async function submit() {
           <label
             class="flex min-h-24 cursor-pointer flex-col items-center justify-center rounded-2xl border-2 border-dashed px-5 py-4 text-center transition"
             :class="isDragActive ? 'border-[#0057BD] bg-[#F3F8FF]' : 'border-[#D3D3D3] bg-[#FAFAFA] hover:border-[#0057BD] hover:bg-[#F3F8FF]'"
-            @click.prevent="fileInput?.click()"
             @dragover="handleDragOver"
             @dragleave="handleDragLeave"
             @drop="handleDrop"
           >
             <input
-              ref="fileInput"
               type="file"
               class="hidden"
               accept=".pdf,.doc,.docx,.ppt,.pptx,.jpg,.jpeg,.png"
@@ -409,7 +406,7 @@ async function submit() {
             type="button"
             @click="submit"
             :disabled="docs.loading"
-            class="rounded-xl bg-[#0057BD] px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-[#0948A0] disabled:cursor-not-allowed disabled:opacity-60"
+            class="rounded-xl bg-[#008CB9] px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-[#006B9C] disabled:cursor-not-allowed disabled:opacity-60"
           >
             <span v-if="docs.loading" class="flex items-center gap-2">
               <svg class="h-4 w-4 animate-spin" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">

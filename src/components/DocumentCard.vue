@@ -12,20 +12,15 @@ const router = useRouter()
 
 const props = defineProps<{
   doc: {
-    id: string
-    group_id: string 
+    id: string                   // upload id
     title: string
     doc_type: string
-    file_url: string
-    original_name?: string | null
-    academic_year: string 
-    file_size_kb: number
-    download_count: number
-    view_count: number
+    academic_year?: string | null
     uploaded_at: string
     users: { id: string; first_name: string; last_name: string }
-    subjects: { id: string; slug: string } 
-    document_tags: { tag: string }[]
+    subjects?: { id: string; slug: string; name?: string } | null
+    document_tags?: { tag: string }[]
+    documents?: { id: string; file_url: string; file_size_kb: number; download_count: number; view_count: number; original_name?: string | null }[]
   }
   fileCount?: number
   isSaved?: boolean
@@ -51,8 +46,14 @@ const dateText = computed(() =>
   }),
 )
 
+const totalKb = computed(() =>
+  (props.doc.documents ?? []).reduce((s, f) => s + (f.file_size_kb ?? 0), 0),
+)
+const totalDownloads = computed(() =>
+  (props.doc.documents ?? []).reduce((s, f) => s + (f.download_count ?? 0), 0),
+)
 const sizeText = computed(() => {
-  const kb = props.doc.file_size_kb
+  const kb = totalKb.value
   return kb < 1024 ? `${kb} KB` : `${(kb / 1024).toFixed(1)} MB`
 })
 
@@ -85,7 +86,7 @@ const tagClassMap = computed(() => {
   const seed = hashString(props.doc.id ?? '')
   return tags.value.reduce<Record<string, string>>((acc, tag, index) => {
     const bucket = (seed + index) % tagClasses.length
-    acc[tag] = tagClasses[bucket] ?? tagClasses[0]
+    acc[tag] = tagClasses[bucket % tagClasses.length]!
     return acc
   }, {})
 })
@@ -111,7 +112,7 @@ function goToDetails() {
   router.push({
     name: 'document-details',
     query: {
-      group_id: props.doc.group_id || undefined,
+      upload_id: props.doc.id,
       subject_id: subjectId || undefined,
     },
   })
@@ -157,7 +158,8 @@ function goToDetails() {
     <h2 class="mt-3 text-2xl font-semibold leading-tight text-black">{{ doc.title }}</h2>
 
     <!-- Subject -->
-    <p v-if="doc.subjects" class="text-sm text-gray-400 mt-1">{{ doc.subjects.slug }} &nbsp;•&nbsp; {{ t('common.DocumentCard.academicYear') }} &nbsp;•&nbsp; {{ doc.academic_year }}</p>
+    <p v-if="doc.subjects" class="text-sm text-gray-400 mt-1">{{ t('common.subjectCreateModal.nameLabel') }} <span class="uppercase">{{ doc.subjects.slug }}</span></p>
+    <p v-if="doc.subjects" class="text-sm text-gray-400 mt-1">{{ t('common.DocumentCard.academicYear') }} &nbsp;•&nbsp; {{ doc.academic_year }}</p>
 
 
     <!-- Tags -->
@@ -174,7 +176,7 @@ function goToDetails() {
 
     <!-- File meta -->
     <p class="mt-5 text-sm leading-none text-[#9E9E9E]">
-      {{ doc.download_count }} downloads &nbsp;•&nbsp; {{ sizeText }}
+      {{ totalDownloads }} downloads &nbsp;•&nbsp; {{ sizeText }}
       <span v-if="fileCount" class="ml-1">&nbsp;•&nbsp; {{ fileCount }} files</span>
     </p>
 

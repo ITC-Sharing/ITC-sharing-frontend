@@ -59,7 +59,11 @@ const submitForm = async (e: Event) => {
 
   try {
     await authStore.login(form.email, form.password)
-    router.push('/')   // ← redirect after login, change to your home route
+    if (authStore.user?.role === 'admin') {
+      router.push({ name: 'admin' })
+    } else {
+      router.push('/')
+    }
   } catch {
     // authStore.error is already set, shown in the banner below
   }

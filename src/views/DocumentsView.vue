@@ -43,30 +43,18 @@ const currentMajor = computed(() =>
 
 const currentSubject = computed(() => subjectsStore.subjects.find((s: any) => s.id === subjectId))
 
-const groupedDocs = computed(() => {
-  const map = new Map<string, { doc: any; count: number; docs: any[] }>()
-  for (const doc of docs.documents as any[]) {
-    const key = doc.group_id ?? doc.id
-    const existing = map.get(key)
-    if (!existing) {
-      map.set(key, { doc, count: 1, docs: [doc] })
-      continue
-    }
-    existing.count += 1
-    existing.docs.push(doc)
-    if (new Date(doc.uploaded_at).getTime() > new Date(existing.doc.uploaded_at).getTime()) {
-      existing.doc = doc
-    }
-  }
-  return Array.from(map.values())
-})
+// Backend already returns one upload per group with embedded documents[]
+const groupedDocs = computed(() =>
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  (docs.documents as any[]).map((upload) => ({
+    doc: upload,
+    count: (upload.documents?.length ?? 1) as number,
+  })),
+)
 
-// Filter grouped docs by type client-side
 const filteredDocs = computed(() => {
   if (!selectedType.value) return groupedDocs.value
-  return groupedDocs.value.filter((entry) =>
-    entry.docs.some((d) => d.doc_type === selectedType.value),
-  )
+  return groupedDocs.value.filter((entry) => entry.doc.doc_type === selectedType.value)
 })
 
 const docTypes = computed(() => [
@@ -155,46 +143,49 @@ async function onUploaded() {
         </div>
       </div>
 
-      <!-- Loading -->
-      <div v-if="docs.loading" class="flex justify-center py-20">
-        <LoadingSpinner />
-      </div>
+      <!-- Scrollable documents area -->
+      <div class="overflow-y-auto max-h-[calc(100vh-290px)]">
+        <!-- Loading -->
+        <div v-if="docs.loading" class="flex justify-center py-20">
+          <LoadingSpinner />
+        </div>
 
-      <!-- Empty -->
-      <div
-        v-else-if="filteredDocs.length === 0"
-        class="flex flex-col items-center py-24 gap-3 text-center"
-      >
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          class="h-14 w-14 text-gray-200"
-          fill="none"
-          viewBox="0 0 24 24"
-          stroke="currentColor"
+        <!-- Empty -->
+        <div
+          v-else-if="filteredDocs.length === 0"
+          class="flex flex-col items-center py-24 gap-3 text-center"
         >
-          <path
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            stroke-width="1.5"
-            d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-          />
-        </svg>
-        <p class="text-gray-400 font-medium">{{ t('common.documentsPage.noDocuments') }}</p>
-        <button @click="showUpload = true" class="text-[#0057BD] text-sm underline">
-          {{ t('common.documentsPage.uploadFirst') }}
-        </button>
-      </div>
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            class="h-14 w-14 text-gray-200"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="1.5"
+              d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+            />
+          </svg>
+          <p class="text-gray-400 font-medium">{{ t('common.documentsPage.noDocuments') }}</p>
+          <button @click="showUpload = true" class="text-[#0057BD] text-sm underline">
+            {{ t('common.documentsPage.uploadFirst') }}
+          </button>
+        </div>
 
-      <!-- Document grid -->
-      <div v-else class="flex justify-center md:justify-start items-center">
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
-          <DocumentCard
-            v-for="entry in filteredDocs"
-            :key="entry.doc.id"
-            :doc="entry.doc"
-            :file-count="entry.count"
-            @deleted="docs.fetchAll({ subject_id: subjectId })"
-          />
+        <!-- Document grid -->
+        <div v-else class="flex justify-center md:justify-start items-center">
+          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
+            <DocumentCard
+              v-for="entry in filteredDocs"
+              :key="entry.doc.id"
+              :doc="entry.doc"
+              :file-count="entry.count"
+              @deleted="docs.fetchAll({ subject_id: subjectId })"
+            />
+          </div>
         </div>
       </div>
     </div>
