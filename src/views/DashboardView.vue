@@ -9,10 +9,6 @@ import api from '@/lib/axios'
 const auth = useAuthStore()
 const docs = useDocumentsStore()
 
-// ── Top-level tab ──────────────────────────────────────────────────────────────
-type MainTab = 'documents' | 'subjects'
-const mainTab = ref<MainTab>('documents')
-
 const showUpload = ref(false)
 const selectedType = ref('')
 const searchQuery = ref('')
@@ -20,17 +16,23 @@ const deletingId = ref<string | null>(null)
 
 const docTypes = [
   { label: 'All', value: '', color: 'bg-gray-100 text-gray-600' },
-  { label: 'Notes', value: 'notes', color: 'bg-blue-100 text-blue-700' },
-  { label: 'Assignment', value: 'assignment', color: 'bg-yellow-100 text-yellow-700' },
-  { label: 'Past Exam', value: 'past_exam', color: 'bg-red-100 text-red-700' },
-  { label: 'Lab', value: 'lab', color: 'bg-green-100 text-green-700' },
+  { label: 'Note', value: 'Note', color: 'bg-blue-100 text-blue-700' },
+  { label: 'TD', value: 'TD', color: 'bg-yellow-100 text-yellow-700' },
+  { label: 'Examination paper', value: 'Examination paper', color: 'bg-red-100 text-red-700' },
+  { label: 'TP', value: 'TP', color: 'bg-green-100 text-green-700' },
+  { label: 'Project', value: 'Project', color: 'bg-purple-100 text-purple-700' },
+  { label: 'Lesson', value: 'Lesson', color: 'bg-orange-100 text-orange-700' },
+  { label: 'Other', value: 'Other', color: 'bg-gray-100 text-gray-700' },
 ]
 
 const typeColorMap: Record<string, string> = {
-  notes: 'bg-blue-100 text-blue-700',
-  assignment: 'bg-yellow-100 text-yellow-700',
-  past_exam: 'bg-red-100 text-red-700',
-  lab: 'bg-green-100 text-green-700',
+  Note: 'bg-blue-100 text-blue-700',
+  TD: 'bg-yellow-100 text-yellow-700',
+  'Examination paper': 'bg-red-100 text-red-700',
+  TP: 'bg-green-100 text-green-700',
+  Project: 'bg-purple-100 text-purple-700',
+  Lesson: 'bg-orange-100 text-orange-700',
+  Other: 'bg-gray-100 text-gray-700',
 }
 
 const myDocs = computed(() => docs.documents)
@@ -129,71 +131,8 @@ async function loadMyPendingRejectedDocs() {
   myPendingRejectedDocs.value = data
 }
 
-// ── My Subjects ────────────────────────────────────────────────────────────────
-const mySubjects = ref<any[]>([])
-const subjectsLoading = ref(false)
-const editingSubject = ref<any | null>(null)
-const editName = ref('')
-const editSemester = ref('')
-const savingSubject = ref(false)
-const deletingSubjectId = ref<string | null>(null)
-
-const statusStyle: Record<string, string> = {
-  active: 'bg-green-100 text-green-700',
-  pending: 'bg-yellow-100 text-yellow-700',
-  rejected: 'bg-red-100 text-red-700',
-}
-
-async function loadMySubjects() {
-  subjectsLoading.value = true
-  try {
-    const { data } = await api.get('/subjects/mine')
-    mySubjects.value = data
-  } finally {
-    subjectsLoading.value = false
-  }
-}
-
-function openEdit(subject: any) {
-  editingSubject.value = subject
-  editName.value = subject.name
-  editSemester.value = String(subject.semester ?? '')
-}
-
-function closeEdit() {
-  editingSubject.value = null
-}
-
-async function saveEdit() {
-  if (!editingSubject.value) return
-  savingSubject.value = true
-  try {
-    const payload: any = {}
-    if (editName.value.trim()) payload.name = editName.value.trim()
-    if (editSemester.value) payload.semester = Number(editSemester.value)
-    const { data } = await api.patch(`/subjects/${editingSubject.value.id}`, payload)
-    const idx = mySubjects.value.findIndex((s) => s.id === editingSubject.value.id)
-    if (idx !== -1) mySubjects.value[idx] = { ...mySubjects.value[idx], ...data }
-    closeEdit()
-  } finally {
-    savingSubject.value = false
-  }
-}
-
-async function deleteSubject(subject: any) {
-  if (!confirm(`Delete "${subject.name}"? This cannot be undone.`)) return
-  deletingSubjectId.value = subject.id
-  try {
-    await api.delete(`/subjects/${subject.id}`)
-    mySubjects.value = mySubjects.value.filter((s) => s.id !== subject.id)
-  } finally {
-    deletingSubjectId.value = null
-  }
-}
-
 onMounted(() => {
   loadMyDocs()
-  loadMySubjects()
   loadMyPendingRejectedDocs()
 })
 </script>
@@ -206,7 +145,9 @@ onMounted(() => {
         <div>
           <p class="text-sm text-gray-400 font-medium uppercase tracking-widest mb-1">Dashboard</p>
           <h1 class="text-3xl font-bold text-gray-900 leading-tight">My Activity</h1>
-          <p class="text-gray-400 text-sm mt-1">Manage everything you've shared with the community</p>
+          <p class="text-gray-400 text-sm mt-1">
+            Manage everything you've shared with the community
+          </p>
         </div>
         <button
           @click="showUpload = true"
@@ -230,24 +171,6 @@ onMounted(() => {
         </button>
       </div>
 
-      <!-- ── Main tab switcher ─────────────────────────────────────────── -->
-      <div class="flex gap-1 bg-white border border-gray-100 rounded-xl p-1 w-fit">
-        <button
-          @click="mainTab = 'documents'"
-          :class="['px-4 py-2 rounded-lg text-sm font-medium transition-all', mainTab === 'documents' ? 'bg-[#0057BD] text-white shadow-sm' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50']"
-        >My Documents</button>
-        <button
-          @click="mainTab = 'subjects'"
-          :class="['px-4 py-2 rounded-lg text-sm font-medium transition-all', mainTab === 'subjects' ? 'bg-[#0057BD] text-white shadow-sm' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50']"
-        >
-          My Subjects
-          <span v-if="mySubjects.filter(s => s.status === 'pending').length" class="ml-1 text-xs bg-yellow-400 text-white rounded-full px-1.5 py-0.5">
-            {{ mySubjects.filter(s => s.status === 'pending').length }}
-          </span>
-        </button>
-      </div>
-
-      <template v-if="mainTab === 'documents'">
       <!-- ── Stats row ───────────────────────────────────────────────────── -->
       <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
         <div class="bg-white rounded-2xl border border-gray-100 px-5 py-4 flex flex-col gap-1">
@@ -270,20 +193,32 @@ onMounted(() => {
 
       <!-- ── Pending / Rejected uploads ───────────────────────────────────── -->
       <div v-if="myPendingRejectedDocs.length" class="flex flex-col gap-2">
-        <p class="text-xs font-semibold text-gray-400 uppercase tracking-wide">Pending & Rejected Uploads</p>
+        <p class="text-xs font-semibold text-gray-400 uppercase tracking-wide">
+          Pending & Rejected Uploads
+        </p>
         <div class="bg-white rounded-2xl border border-gray-100 overflow-hidden">
           <div
             v-for="(doc, i) in myPendingRejectedDocs"
             :key="doc.id"
-            :class="['px-5 py-3 flex items-start gap-3', i !== myPendingRejectedDocs.length - 1 ? 'border-b border-gray-100' : '']"
+            :class="[
+              'px-5 py-3 flex items-start gap-3',
+              i !== myPendingRejectedDocs.length - 1 ? 'border-b border-gray-100' : '',
+            ]"
           >
-            <span :class="`mt-0.5 shrink-0 text-xs font-semibold px-2 py-0.5 rounded-full ${doc.status === 'pending' ? 'bg-yellow-100 text-yellow-700' : 'bg-red-100 text-red-600'}`">
+            <span
+              :class="`mt-0.5 shrink-0 text-xs font-semibold px-2 py-0.5 rounded-full ${doc.status === 'pending' ? 'bg-yellow-100 text-yellow-700' : 'bg-red-100 text-red-600'}`"
+            >
               {{ doc.status }}
             </span>
             <div class="flex-1 min-w-0">
               <p class="text-sm font-medium text-gray-900 truncate">{{ doc.title }}</p>
-              <p class="text-xs text-gray-400">{{ doc.majors?.acronym }} &bull; {{ doc.subjects?.name ?? '—' }} &bull; {{ formatDate(doc.uploaded_at) }}</p>
-              <p v-if="doc.rejection_reason" class="text-xs text-red-500 mt-1">Reason: {{ doc.rejection_reason }}</p>
+              <p class="text-xs text-gray-400">
+                {{ doc.majors?.acronym }} &bull; {{ doc.subjects?.name ?? '—' }} &bull;
+                {{ formatDate(doc.uploaded_at) }}
+              </p>
+              <p v-if="doc.rejection_reason" class="text-xs text-red-500 mt-1">
+                Reason: {{ doc.rejection_reason }}
+              </p>
             </div>
           </div>
         </div>
@@ -452,7 +387,7 @@ onMounted(() => {
             <span
               :class="`text-xs font-medium px-2.5 py-1 rounded-full ${typeColorMap[doc.doc_type] ?? 'bg-gray-100 text-gray-500'}`"
             >
-              {{ doc.doc_type?.replace('_', ' ') }}
+              {{ doc.doc_type }}
             </span>
           </div>
 
@@ -551,124 +486,6 @@ onMounted(() => {
           </div>
         </div>
       </div>
-      </template>
-      <!-- ══════════════════════════════════════════════════════════════════ -->
-      <!-- SUBJECTS TAB                                                        -->
-      <!-- ══════════════════════════════════════════════════════════════════ -->
-      <template v-else-if="mainTab === 'subjects'">
-        <div v-if="subjectsLoading" class="flex justify-center py-24">
-          <LoadingSpinner />
-        </div>
-
-        <div v-else-if="mySubjects.length === 0" class="flex flex-col items-center py-24 gap-3 text-center">
-          <div class="w-16 h-16 rounded-2xl bg-gray-100 flex items-center justify-center">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-            </svg>
-          </div>
-          <p class="text-gray-500 font-medium">No subjects submitted yet</p>
-          <p class="text-gray-400 text-sm">Subjects you create will appear here</p>
-        </div>
-
-        <div v-else class="bg-white rounded-2xl border border-gray-100 overflow-hidden">
-          <!-- Header -->
-          <div class="grid grid-cols-12 gap-4 px-6 py-3 border-b border-gray-100 bg-gray-50">
-            <p class="col-span-4 text-xs font-semibold text-gray-400 uppercase tracking-wide">Subject</p>
-            <p class="col-span-2 text-xs font-semibold text-gray-400 uppercase tracking-wide">Major</p>
-            <p class="col-span-1 text-xs font-semibold text-gray-400 uppercase tracking-wide">Year</p>
-            <p class="col-span-1 text-xs font-semibold text-gray-400 uppercase tracking-wide">Sem</p>
-            <p class="col-span-2 text-xs font-semibold text-gray-400 uppercase tracking-wide">Status</p>
-            <p class="col-span-2 text-xs font-semibold text-gray-400 uppercase tracking-wide text-right">Actions</p>
-          </div>
-
-          <div
-            v-for="(subject, i) in mySubjects"
-            :key="subject.id"
-            :class="['transition-colors', i !== mySubjects.length - 1 ? 'border-b border-gray-100' : '']"
-          >
-            <!-- Row -->
-            <div class="grid grid-cols-12 gap-4 px-6 py-4 items-center hover:bg-gray-50">
-              <div class="col-span-4 flex items-center gap-3 min-w-0">
-                <img v-if="subject.subject_url" :src="subject.subject_url" class="h-9 w-9 rounded-xl object-cover shrink-0" />
-                <div v-else class="h-9 w-9 rounded-xl bg-gray-100 shrink-0" />
-                <p class="text-sm font-medium text-gray-900 truncate">{{ subject.name }}</p>
-              </div>
-              <p class="col-span-2 text-sm text-gray-500">{{ subject.majors?.acronym ?? '—' }}</p>
-              <p class="col-span-1 text-sm text-gray-500">I{{ subject.year_level }}</p>
-              <p class="col-span-1 text-sm text-gray-500">{{ subject.semester ?? '—' }}</p>
-              <div class="col-span-2">
-                <span :class="`text-xs font-semibold px-2.5 py-1 rounded-full capitalize ${statusStyle[subject.status] ?? 'bg-gray-100 text-gray-500'}`">
-                  {{ subject.status }}
-                </span>
-              </div>
-              <div class="col-span-2 flex items-center justify-end gap-2">
-                <button
-                  v-if="subject.status === 'pending'"
-                  @click="openEdit(subject)"
-                  class="p-1.5 text-gray-400 hover:text-[#0057BD] hover:bg-blue-50 rounded-lg transition-colors"
-                  title="Edit"
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
-                  </svg>
-                </button>
-                <button
-                  @click="deleteSubject(subject)"
-                  :disabled="deletingSubjectId === subject.id"
-                  class="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-40"
-                  title="Delete"
-                >
-                  <svg v-if="deletingSubjectId === subject.id" class="animate-spin h-4 w-4 text-red-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
-                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/>
-                  </svg>
-                  <svg v-else xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M9 7h6m-7 0a1 1 0 01-1-1V5a1 1 0 011-1h6a1 1 0 011 1v1a1 1 0 01-1 1H9z"/>
-                  </svg>
-                </button>
-              </div>
-            </div>
-
-            <!-- Rejection reason banner -->
-            <div v-if="subject.status === 'rejected'" class="px-6 py-2.5 bg-red-50 border-t border-red-100 flex items-start gap-2">
-              <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-red-400 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-              <p class="text-xs text-red-600">
-                <span class="font-semibold">Rejected</span>
-                <template v-if="subject.rejection_reason"> — {{ subject.rejection_reason }}</template>
-                <template v-else> — No reason provided.</template>
-              </p>
-            </div>
-
-            <!-- Inline edit form -->
-            <div v-if="editingSubject?.id === subject.id" class="px-6 pb-4 bg-blue-50/40 border-t border-blue-100">
-              <div class="flex items-end gap-3 pt-3 flex-wrap">
-                <div class="flex flex-col gap-1 flex-1 min-w-40">
-                  <label class="text-xs font-medium text-gray-500">Name</label>
-                  <input v-model="editName" class="px-3 py-2 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0057BD] bg-white" />
-                </div>
-                <div class="flex flex-col gap-1 w-32">
-                  <label class="text-xs font-medium text-gray-500">Semester</label>
-                  <select v-model="editSemester" class="px-3 py-2 text-sm border border-gray-200 rounded-xl focus:outline-none bg-white">
-                    <option value="1">Semester 1</option>
-                    <option value="2">Semester 2</option>
-                  </select>
-                </div>
-                <div class="flex gap-2">
-                  <button @click="saveEdit" :disabled="savingSubject" class="px-4 py-2 text-sm font-semibold bg-[#0057BD] hover:bg-[#0948A0] text-white rounded-xl transition-colors disabled:opacity-50">
-                    {{ savingSubject ? 'Saving…' : 'Save' }}
-                  </button>
-                  <button @click="closeEdit" class="px-4 py-2 text-sm font-medium border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors">
-                    Cancel
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </template>
-
     </div>
   </div>
 

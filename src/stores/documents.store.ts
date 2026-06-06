@@ -5,6 +5,7 @@ import api from '@/lib/axios'
 export const useDocumentsStore = defineStore('documents', () => {
   const documents = ref<any[]>([])
   const currentUpload = ref<any | null>(null)
+  const myUploads = ref<any[]>([])
   const saved = ref<any[]>([])
   const docTypes = ref<string[]>([])
   const loading = ref(false)
@@ -74,6 +75,19 @@ export const useDocumentsStore = defineStore('documents', () => {
     await api.patch(`/documents/${fileId}/download`)
   }
 
+  async function fetchMine() {
+    loading.value = true
+    error.value = null
+    try {
+      const { data } = await api.get('/documents/mine')
+      myUploads.value = data
+    } catch (e: any) {
+      error.value = e.response?.data?.message ?? 'Failed to load your uploads'
+    } finally {
+      loading.value = false
+    }
+  }
+
   async function fetchSaved() {
     const { data } = await api.get('/documents/saved')
     saved.value = data
@@ -95,6 +109,7 @@ export const useDocumentsStore = defineStore('documents', () => {
   return {
     documents,
     currentUpload,
+    myUploads,
     saved,
     docTypes,
     loading,
@@ -102,6 +117,7 @@ export const useDocumentsStore = defineStore('documents', () => {
     fetchDocTypes,
     fetchAll,
     fetchOne,
+    fetchMine,
     upload,
     trackDownload,
     fetchSaved,

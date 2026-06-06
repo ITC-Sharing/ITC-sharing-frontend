@@ -4,6 +4,7 @@ import api from '@/lib/axios'
 
 export const useSubjectsStore = defineStore('subjects', () => {
   const subjects = ref<any[]>([])
+  const mySubjects = ref<any[]>([])
   const countsByYear = ref<Record<number, number>>({})
   const loading = ref(false)
   const creating = ref(false)
@@ -41,6 +42,19 @@ export const useSubjectsStore = defineStore('subjects', () => {
     } catch (e: any) {
       error.value = e.response?.data?.message ?? 'Failed to load subject counts'
       countsByYear.value = {}
+    } finally {
+      loading.value = false
+    }
+  }
+
+  async function fetchMine() {
+    loading.value = true
+    error.value = null
+    try {
+      const { data } = await api.get('/subjects/mine')
+      mySubjects.value = data
+    } catch (e: any) {
+      error.value = e.response?.data?.message ?? 'Failed to load your subjects'
     } finally {
       loading.value = false
     }
@@ -84,12 +98,14 @@ export const useSubjectsStore = defineStore('subjects', () => {
 
   return {
     subjects,
+    mySubjects,
     loading,
     creating,
     error,
     createError,
     fetchByMajorAndYear,
     fetchCountsByMajor,
+    fetchMine,
     createSubject,
     countsByYear,
   }

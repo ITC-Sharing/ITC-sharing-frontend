@@ -1,8 +1,12 @@
 <script setup lang="ts">
-import { computed, onMounted } from 'vue'
+import { computed, onMounted, onBeforeUnmount, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import { useDocumentsStore } from '@/stores/documents.store'
 import LoadingSpinner from '@/components/LoadingSpinner.vue'
+import FileRow from '@/components/FileRow.vue'
+
+const { t } = useI18n({ useScope: 'global' })
 
 const route = useRoute()
 const router = useRouter()
@@ -12,8 +16,49 @@ const uploadId = computed(() => String(route.query.upload_id ?? ''))
 const canLoad = computed(() => !!uploadId.value)
 
 const upload = computed(() => docs.currentUpload)
-const files = computed(() => upload.value?.documents ?? [])
 const pageTitle = computed(() => upload.value?.title || 'Document Details')
+
+type SortKey = 'name' | 'size'
+const sortKey = ref<SortKey>('name')
+const sortDir = ref<'asc' | 'desc'>('asc')
+const sortOpen = ref(false)
+const sortRef = ref<HTMLElement | null>(null)
+
+const sortOptions = computed(() => [
+  { key: 'name' as SortKey, dir: 'asc' as const, label: t('common.documentDetailsPage.sortAtoZ') },
+  { key: 'name' as SortKey, dir: 'desc' as const, label: t('common.documentDetailsPage.sortZtoA') },
+  { key: 'size' as SortKey, dir: 'asc' as const, label: t('common.documentDetailsPage.sortBySize') },
+])
+
+function applySort(key: SortKey, dir: 'asc' | 'desc') {
+  sortKey.value = key
+  sortDir.value = dir
+  sortOpen.value = false
+}
+
+function isActiveSort(key: SortKey, dir: 'asc' | 'desc') {
+  return sortKey.value === key && sortDir.value === dir
+}
+
+function handleSortOutside(e: MouseEvent) {
+  if (sortRef.value && !sortRef.value.contains(e.target as Node)) sortOpen.value = false
+}
+
+const files = computed(() => {
+  const raw = [...(upload.value?.documents ?? [])]
+  raw.sort((a, b) => {
+    let cmp = 0
+    if (sortKey.value === 'name') {
+      const an = (a.original_name ?? '').toLowerCase()
+      const bn = (b.original_name ?? '').toLowerCase()
+      cmp = an.localeCompare(bn)
+    } else {
+      cmp = (a.file_size_kb ?? 0) - (b.file_size_kb ?? 0)
+    }
+    return sortDir.value === 'asc' ? cmp : -cmp
+  })
+  return raw
+})
 
 type UploadFile = {
   id: string
@@ -21,43 +66,6 @@ type UploadFile = {
   file_size_kb: number
   original_name?: string | null
   download_count?: number
-}
-
-
-function getFileIcon(name: string | null | undefined): { bg: string; label: string } {
-  const ext = (name ?? '').split('.').pop()?.toLowerCase() ?? ''
-  if (ext === 'pdf') return { bg: 'bg-red-500', label: 'PDF' }
-  if (['doc', 'docx'].includes(ext)) return { bg: 'bg-blue-500', label: 'DOC' }
-  if (['xls', 'xlsx'].includes(ext)) return { bg: 'bg-green-500', label: 'XLS' }
-  if (['ppt', 'pptx'].includes(ext)) return { bg: 'bg-orange-500', label: 'PPT' }
-  if (['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(ext))
-    return { bg: 'bg-purple-500', label: 'IMG' }
-  if (['zip', 'rar', '7z'].includes(ext)) return { bg: 'bg-yellow-500', label: 'ZIP' }
-  return { bg: 'bg-gray-400', label: 'FILE' }
-}
-
-function formatSize(kb: number): string {
-  if (!kb) return '—'
-  if (kb < 1024) return `${kb} KB`
-  return `${(kb / 1024).toFixed(1)} MB`
-}
-
-function formatDate(iso: string | null | undefined): string {
-  if (!iso) return '—'
-  const date = new Date(iso)
-  const now = new Date()
-  const diffMs = now.getTime() - date.getTime()
-  const diffSec = Math.floor(diffMs / 1000)
-  const diffMin = Math.floor(diffSec / 60)
-  const diffHour = Math.floor(diffMin / 60)
-  const diffDay = Math.floor(diffHour / 24)
-
-  if (diffSec < 60) return 'just now'
-  if (diffMin < 60) return `${diffMin} min ago`
-  if (diffHour < 24) return `${diffHour} hour${diffHour > 1 ? 's' : ''} ago`
-  if (diffDay <= 3) return `${diffDay} day${diffDay > 1 ? 's' : ''} ago`
-
-  return date.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })
 }
 
 function getDownloadUrl(file: UploadFile) {
@@ -102,35 +110,43 @@ async function downloadAll() {
 onMounted(async () => {
   if (!canLoad.value) return
   await docs.fetchOne(uploadId.value)
+  document.addEventListener('click', handleSortOutside)
+})
+
+onBeforeUnmount(() => {
+  document.removeEventListener('click', handleSortOutside)
 })
 </script>
 
 <template>
-  <div class="mx-auto w-full max-w-4xl px-6 py-8">
-    <!-- Breadcrumb / Back -->
-    <div class="flex items-center gap-2 text-sm text-gray-400 mb-6">
+  <div class="w-full px-6 py-8">
+    <!-- Breadcrumb / Back — aligned with navbar logo -->
+    <div class="mx-auto w-full max-w-7xl mb-6 ml-8">
       <button
-        class="flex items-center gap-1 hover:text-gray-700 transition-colors"
+        class="flex items-center gap-1 text-sm text-gray-400 hover:text-gray-700 transition-colors cursor-pointer"
         @click="router.back()"
       >
         <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" />
         </svg>
-        Back
+        {{ t('common.documentDetailsPage.back') }}
       </button>
     </div>
+
+    <!-- Rest of content -->
+    <div class="mx-auto w-full max-w-6xl">
 
     <!-- Header -->
     <div class="flex items-start justify-between gap-4 flex-wrap mb-8">
       <div>
-        <h1 class="text-2xl font-bold text-gray-900">{{ pageTitle }}</h1>
+        <h1 class="text-2xl font-bold text-gray-900 capitalize">{{ pageTitle }}</h1>
         <p class="mt-1 text-sm text-gray-400">
-          {{ files.length }} file{{ files.length !== 1 ? 's' : '' }}
+          {{ t('common.documentDetailsPage.filesCount', files.length) }} &nbsp;•&nbsp; {{ upload.users.first_name }} {{ upload.users.last_name }}
         </p>
       </div>
       <button
         type="button"
-        class="flex items-center gap-2 rounded-xl bg-[#1F69F5] px-4 py-2 text-sm font-semibold text-white hover:bg-[#1B58D1] disabled:opacity-40 transition-colors"
+        class="flex items-center gap-2 rounded-xl bg-[#008CB9] px-4 py-2.5 text-md text-white hover:bg-[#006F9C] disabled:opacity-40 transition-colors cursor-pointer"
         :disabled="!files.length"
         @click="downloadAll"
       >
@@ -141,7 +157,7 @@ onMounted(async () => {
             d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5 5 5-5M12 4v11"
           />
         </svg>
-        Download All
+        {{ t('common.documentDetailsPage.downloadAll') }}
       </button>
     </div>
 
@@ -151,70 +167,78 @@ onMounted(async () => {
     </div>
 
     <!-- Error states -->
-    <div v-else-if="!canLoad" class="text-sm text-gray-500 py-8">Missing upload ID.</div>
-    <div v-else-if="!files.length" class="text-sm text-gray-500 py-8">No files found.</div>
+    <div v-else-if="!canLoad" class="text-sm text-gray-500 py-8">{{ t('common.documentDetailsPage.missingId') }}</div>
+    <div v-else-if="!files.length" class="text-sm text-gray-500 py-8">{{ t('common.documentDetailsPage.noFiles') }}</div>
 
     <!-- File table -->
-    <div v-else class="rounded-2xl border border-gray-200 bg-white overflow-hidden">
+    <div v-else class="rounded-2xl border border-gray-200 bg-white">
       <!-- Table header -->
       <div
-        class="grid grid-cols-[1fr_140px_100px_48px] items-center border-b border-gray-100 px-4 py-3 text-xs font-medium text-gray-400 uppercase tracking-wide"
+        class="hidden md:grid gap-3 grid-cols-[1fr_140px_100px_48px] items-center border-b border-gray-100 px-4 py-3 text-md font-medium text-black tracking-wide"
       >
-        <span>Name</span>
-        <span>Post date</span>
-        <span>File size</span>
-        <span></span>
-      </div>
+        <span>{{ t('common.documentDetailsPage.colName') }}</span>
+        <span class="text-center">{{ t('common.documentDetailsPage.colPostDate') }}</span>
+        <span class="text-center">{{ t('common.documentDetailsPage.colFileSize') }}</span>
 
-      <!-- File rows — click row to preview, download icon on right -->
-      <div
-        v-for="(file, idx) in files"
-        :key="file.id"
-        class="grid grid-cols-[1fr_140px_100px_48px] items-center px-4 py-3 hover:bg-gray-50 transition-colors cursor-pointer"
-        :class="idx !== files.length - 1 ? 'border-b border-gray-100' : ''"
-        @click="previewFile(file)"
-      >
-        <!-- Name + icon -->
-        <div class="flex items-center gap-3 min-w-0">
-          <div
-            class="shrink-0 w-8 h-8 rounded-lg flex items-center justify-center text-white text-[10px] font-bold"
-            :class="getFileIcon(file.original_name).bg"
-          >
-            {{ getFileIcon(file.original_name).label }}
-          </div>
-          <span class="truncate text-sm font-medium text-gray-800">
-            {{ file.original_name?.trim() || upload?.title || 'Untitled' }}
-          </span>
-        </div>
-
-        <!-- Date -->
-        <span class="text-sm text-gray-500">{{ formatDate(upload?.uploaded_at) }}</span>
-
-        <!-- Size -->
-        <span class="text-sm text-gray-500">{{ formatSize(file.file_size_kb ?? 0) }}</span>
-
-        <!-- Download icon -->
-        <div class="flex justify-center" @click.stop>
+        <!-- Sort button — aligned with download icon -->
+        <div ref="sortRef" class="relative flex justify-center">
           <button
-            class="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 text-gray-400 hover:text-[#1F69F5] transition-colors"
-            @click="downloadFile(file)"
+            @click.stop="sortOpen = !sortOpen"
+            class="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-md font-medium text-black transition-colors select-none cursor-pointer"
           >
-            <svg
-              class="w-4 h-4"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              viewBox="0 0 24 24"
-            >
+            {{ t('common.documentDetailsPage.sort') }}
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640" class="w-4 h-4">
               <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5 5 5-5M12 4v11"
+                fill="rgb(0, 0, 0)"
+                d="M297.4 438.6C309.9 451.1 330.2 451.1 342.7 438.6L502.7 278.6C515.2 266.1 515.2 245.8 502.7 233.3C490.2 220.8 469.9 220.8 457.4 233.3L320 370.7L182.6 233.4C170.1 220.9 149.8 220.9 137.3 233.4C124.8 245.9 124.8 266.2 137.3 278.7L297.3 438.7z"
               />
             </svg>
           </button>
+
+          <!-- Dropdown -->
+          <div
+            v-if="sortOpen"
+            class="absolute right-0 top-full mt-1 w-44 bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden py-1"
+          >
+            <p class="px-4 pt-2 pb-1 text-xs font-semibold text-gray-400 uppercase tracking-wide">
+              {{ t('common.documentDetailsPage.sort') }}
+            </p>
+            <button
+              v-for="opt in sortOptions"
+              :key="`${opt.key}-${opt.dir}`"
+              @click="applySort(opt.key, opt.dir)"
+              class="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+              :class="isActiveSort(opt.key, opt.dir) ? 'bg-gray-100 font-medium' : ''"
+            >
+              <svg
+                v-if="isActiveSort(opt.key, opt.dir)"
+                class="w-4 h-4 text-gray-700 shrink-0"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2.5"
+                viewBox="0 0 24 24"
+              >
+                <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
+              </svg>
+              <span v-else class="w-4 shrink-0" />
+              {{ opt.label }}
+            </button>
+          </div>
         </div>
       </div>
+
+      <!-- File rows -->
+      <FileRow
+        v-for="(file, idx) in files"
+        :key="file.id"
+        :file="file"
+        :uploaded-at="upload?.uploaded_at"
+        :fallback-name="upload?.title"
+        :is-last="idx === files.length - 1"
+        @preview="previewFile"
+        @download="downloadFile"
+      />
     </div>
+    </div> <!-- max-w-6xl -->
   </div>
 </template>

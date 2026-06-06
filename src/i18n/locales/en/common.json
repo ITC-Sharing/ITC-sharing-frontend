@@ -72,6 +72,20 @@
     "docTypePastExam": "Past Exam",
     "docTypeLab": "Lab"
   },
+  "documentDetailsPage": {
+    "back": "Back",
+    "downloadAll": "Download All",
+    "missingId": "Missing upload ID.",
+    "noFiles": "No files found.",
+    "filesCount": "{count} file | {count} files",
+    "colName": "Name",
+    "colPostDate": "Post date",
+    "colFileSize": "File size",
+    "sort": "Sort",
+    "sortAtoZ": "A to Z",
+    "sortZtoA": "Z to A",
+    "sortBySize": "File size"
+  },
   "documentUploadModal": {
     "docUpload": "Upload Document",
     "selectFile": "Drag and drop, or click to choose a file",
@@ -104,6 +118,7 @@
     "errorAcademicYearRequired": "Please enter an academic year",
     "errorAcademicYearFormat": "Format must be YYYY-YYYY (e.g. 2024-2025)",
     "errorAcademicYearEnd": "End year must be exactly {year}",
+    "errorAcademicYearFuture": "Academic year cannot be in the future (current year is {year})",
     "cancelButton": "Cancel"
   }
 }

@@ -68,71 +68,7 @@
             </div>
           </div>
           <!-- ── Notification bell ──────────────────────────────────────── -->
-          <div v-if="authStore.isAuthenticated" ref="notifRef" class="relative">
-            <button
-              type="button"
-              @click.stop="toggleNotif"
-              class="relative flex items-center justify-center w-9 h-9 rounded-xl hover:bg-gray-100 transition-colors"
-              aria-label="Notifications"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6 6 0 10-12 0v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
-              </svg>
-              <span
-                v-if="notifStore.unreadCount > 0"
-                class="absolute -top-0.5 -right-0.5 h-4 min-w-4 px-1 rounded-full bg-red-500 text-white text-[10px] font-bold flex items-center justify-center"
-              >{{ notifStore.unreadCount > 9 ? '9+' : notifStore.unreadCount }}</span>
-            </button>
-
-            <!-- Dropdown -->
-            <div
-              v-if="notifOpen"
-              class="absolute right-0 mt-2 w-80 bg-white border border-gray-200 rounded-2xl shadow-xl overflow-hidden z-50"
-            >
-              <!-- Header -->
-              <div class="flex items-center justify-between px-4 py-3 border-b border-gray-100">
-                <p class="text-sm font-semibold text-gray-900">Notifications</p>
-                <button
-                  v-if="notifStore.unreadCount > 0"
-                  @click="handleMarkAllRead"
-                  class="text-xs text-[#0057BD] hover:underline"
-                >Mark all read</button>
-              </div>
-
-              <!-- List -->
-              <div class="max-h-80 overflow-y-auto divide-y divide-gray-50">
-                <div v-if="notifStore.loading" class="flex justify-center py-8">
-                  <svg class="animate-spin h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
-                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/>
-                  </svg>
-                </div>
-
-                <div
-                  v-else-if="notifStore.notifications.length === 0"
-                  class="py-10 text-center text-sm text-gray-400"
-                >No notifications yet.</div>
-
-                <button
-                  v-else
-                  v-for="n in notifStore.notifications"
-                  :key="n.id"
-                  @click="handleMarkRead(n.id)"
-                  :class="[
-                    'w-full text-left flex items-start gap-3 px-4 py-3 transition-colors hover:bg-gray-50',
-                    !n.is_read ? 'bg-blue-50/60' : '',
-                  ]"
-                >
-                  <span class="text-base mt-0.5 shrink-0">{{ notifIcon(n.type) }}</span>
-                  <div class="flex-1 min-w-0">
-                    <p class="text-sm text-gray-800 leading-snug">{{ n.message }}</p>
-                    <p class="text-xs text-gray-400 mt-0.5">{{ timeAgo(n.created_at) }}</p>
-                  </div>
-                  <span v-if="!n.is_read" class="mt-1.5 h-2 w-2 rounded-full bg-[#0057BD] shrink-0" />
-                </button>
-              </div>
-            </div>
-          </div>
+          <NotificationBell v-if="authStore.isAuthenticated" />
 
           <!-- ── Account menu ───────────────────────────────────────────── -->
           <div v-if="authStore.isAuthenticated" ref="accountMenuRef" class="relative">
@@ -215,14 +151,13 @@
 <script setup lang="ts">
 import { onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import ButtonPrimary from '@/components/ButtonPrimary.vue'
+import NotificationBell from '@/components/NotificationBell.vue'
 import { useAuthStore } from '@/stores/auth.store'
-import { useNotificationsStore } from '@/stores/notifications.store'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 
 const { locale, t } = useI18n({ useScope: 'global' })
 const authStore = useAuthStore()
-const notifStore = useNotificationsStore()
 const router = useRouter()
 
 // ✅ better init
@@ -257,48 +192,10 @@ const closeAccountMenu = () => {
   isAccountMenuOpen.value = false
 }
 
-// ── Notifications ──────────────────────────────────────────────────────────────
-const notifOpen = ref(false)
-const notifRef = ref<HTMLElement | null>(null)
-
-function toggleNotif() {
-  notifOpen.value = !notifOpen.value
-  if (notifOpen.value) notifStore.fetch()
-}
-
-function closeNotif() {
-  notifOpen.value = false
-}
-
-async function handleMarkRead(id: string) {
-  await notifStore.markRead(id)
-}
-
-async function handleMarkAllRead() {
-  await notifStore.markAllRead()
-}
-
-function notifIcon(type: string) {
-  if (type.includes('approved')) return '✅'
-  if (type.includes('rejected')) return '❌'
-  return '🔔'
-}
-
-function timeAgo(dateStr: string) {
-  const diff = Math.floor((Date.now() - new Date(dateStr).getTime()) / 1000)
-  if (diff < 60) return 'just now'
-  if (diff < 3600) return `${Math.floor(diff / 60)}m ago`
-  if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`
-  return `${Math.floor(diff / 86400)}d ago`
-}
-
-// ── Click-outside (covers both menus) ─────────────────────────────────────────
+// ── Click-outside ─────────────────────────────────────────────────────────────
 const handleClickOutside = (event: MouseEvent) => {
   if (accountMenuRef.value && !accountMenuRef.value.contains(event.target as Node)) {
     closeAccountMenu()
-  }
-  if (notifRef.value && !notifRef.value.contains(event.target as Node)) {
-    closeNotif()
   }
 }
 
@@ -308,48 +205,11 @@ const handleLogout = async () => {
   await router.push('/')
 }
 
-let pollTimer: ReturnType<typeof setInterval> | null = null
-
-function startPolling() {
-  if (pollTimer) return
-  pollTimer = setInterval(() => {
-    if (authStore.isAuthenticated) notifStore.fetch()
-  }, 15_000)
-}
-
-function stopPolling() {
-  if (pollTimer) {
-    clearInterval(pollTimer)
-    pollTimer = null
-  }
-}
-
-function handleVisibilityChange() {
-  if (document.visibilityState === 'visible' && authStore.isAuthenticated) {
-    notifStore.fetch()
-  }
-}
-
 onMounted(() => {
   document.addEventListener('click', handleClickOutside)
-  document.addEventListener('visibilitychange', handleVisibilityChange)
-  if (authStore.isAuthenticated) {
-    notifStore.fetch()
-    startPolling()
-  }
 })
 
 onBeforeUnmount(() => {
   document.removeEventListener('click', handleClickOutside)
-  document.removeEventListener('visibilitychange', handleVisibilityChange)
-  stopPolling()
 })
-
-watch(
-  () => authStore.isAuthenticated,
-  (authed) => {
-    if (authed) { notifStore.fetch(); startPolling() }
-    else stopPolling()
-  },
-)
 </script>

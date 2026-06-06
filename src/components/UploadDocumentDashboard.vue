@@ -54,16 +54,8 @@ watch(
   },
 )
 
-// Format a raw doc_type value into a human-readable label
-function formatDocTypeLabel(type: string): string {
-  return type
-    .split('_')
-    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-    .join(' ')
-}
-
 const docTypeOptions = computed(() =>
-  docs.docTypes.map((type) => ({ value: type, label: formatDocTypeLabel(type) })),
+  docs.docTypes.map((type) => ({ value: type, label: type })),
 )
 
 const majorOptions = computed(() =>
@@ -238,7 +230,7 @@ async function submit() {
           ref="fileInput"
           type="file"
           class="hidden"
-          accept=".pdf,.doc,.docx,.ppt,.pptx,.jpg,.jpeg,.png"
+          accept=".pdf,.doc,.docx,.ppt,.pptx,.jpg,.jpeg,.png,.zip,.rar"
           multiple
           @change="onFileChange"
         />

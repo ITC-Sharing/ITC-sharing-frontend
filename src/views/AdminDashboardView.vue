@@ -71,17 +71,23 @@ let docSearchTimer: ReturnType<typeof setTimeout>
 
 const docTypes = [
   { label: 'All', value: '' },
-  { label: 'Notes', value: 'notes' },
-  { label: 'Assignment', value: 'assignment' },
-  { label: 'Past Exam', value: 'past_exam' },
-  { label: 'Lab', value: 'lab' },
+  { label: 'Note', value: 'Note' },
+  { label: 'TD', value: 'TD' },
+  { label: 'Examination paper', value: 'Examination paper' },
+  { label: 'TP', value: 'TP' },
+  { label: 'Project', value: 'Project' },
+  { label: 'Lesson', value: 'Lesson' },
+  { label: 'Other', value: 'Other' },
 ]
 
 const typeColorMap: Record<string, string> = {
-  notes: 'bg-blue-100 text-blue-700',
-  assignment: 'bg-yellow-100 text-yellow-700',
-  past_exam: 'bg-red-100 text-red-700',
-  lab: 'bg-green-100 text-green-700',
+  Note: 'bg-blue-100 text-blue-700',
+  TD: 'bg-yellow-100 text-yellow-700',
+  'Examination paper': 'bg-red-100 text-red-700',
+  TP: 'bg-green-100 text-green-700',
+  Project: 'bg-purple-100 text-purple-700',
+  Lesson: 'bg-orange-100 text-orange-700',
+  Other: 'bg-gray-100 text-gray-700',
 }
 
 watch(docSearch, () => {
@@ -759,7 +765,7 @@ onMounted(async () => {
                     <span
                       :class="`text-xs font-medium px-2 py-0.5 rounded-full ${typeColorMap[doc.doc_type] ?? 'bg-gray-100 text-gray-500'}`"
                     >
-                      {{ doc.doc_type?.replace('_', ' ') }}
+                      {{ doc.doc_type }}
                     </span>
                   </div>
                   <p class="col-span-3 text-xs text-gray-500 truncate">
@@ -1095,7 +1101,7 @@ onMounted(async () => {
                     <p class="text-xs text-gray-400 mt-0.5">
                       <span
                         :class="`font-medium px-1.5 py-0.5 rounded-full mr-1 ${typeColorMap[doc.doc_type] ?? 'bg-gray-100 text-gray-500'}`"
-                        >{{ doc.doc_type?.replace('_', ' ') }}</span
+                        >{{ doc.doc_type }}</span
                       >
                       {{ doc.subjects?.name ?? '—' }} &bull; {{ doc.majors?.acronym }} &bull;
                       {{ doc.users?.first_name }} {{ doc.users?.last_name }} &bull;
@@ -1543,7 +1549,7 @@ onMounted(async () => {
                 </p>
                 <div class="col-span-2">
                   <span :class="`text-xs font-medium px-2 py-0.5 rounded-full ${typeColorMap[doc.doc_type] ?? 'bg-gray-100 text-gray-500'}`">
-                    {{ doc.doc_type?.replace('_', ' ') }}
+                    {{ doc.doc_type }}
                   </span>
                 </div>
                 <p class="col-span-1 text-xs text-gray-500">{{ formatSize(totalSize(doc.documents)) }}</p>

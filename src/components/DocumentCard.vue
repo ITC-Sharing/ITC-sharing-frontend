@@ -12,18 +12,24 @@ const router = useRouter()
 
 const props = defineProps<{
   doc: {
-    id: string                   // upload id
+    id: string // upload id
     title: string
     doc_type: string
     academic_year?: string | null
     uploaded_at: string
     users: { id: string; first_name: string; last_name: string }
-    subjects?: { id: string; slug: string; name?: string } | null
+    subjects?: { id: string; slug: string } | null
     document_tags?: { tag: string }[]
-    documents?: { id: string; file_url: string; file_size_kb: number; download_count: number; view_count: number; original_name?: string | null }[]
+    documents?: {
+      id: string
+      file_url: string
+      file_size_kb: number
+      download_count: number
+      view_count: number
+      original_name?: string | null
+    }[]
   }
   fileCount?: number
-  isSaved?: boolean
 }>()
 
 const emit = defineEmits<{ (e: 'deleted', id: string): void }>()
@@ -49,9 +55,7 @@ const dateText = computed(() =>
 const totalKb = computed(() =>
   (props.doc.documents ?? []).reduce((s, f) => s + (f.file_size_kb ?? 0), 0),
 )
-const totalDownloads = computed(() =>
-  (props.doc.documents ?? []).reduce((s, f) => s + (f.download_count ?? 0), 0),
-)
+
 const sizeText = computed(() => {
   const kb = totalKb.value
   return kb < 1024 ? `${kb} KB` : `${(kb / 1024).toFixed(1)} MB`
@@ -59,37 +63,7 @@ const sizeText = computed(() => {
 
 const tags = computed(() => props.doc.document_tags?.map((t) => t.tag) ?? [])
 
-// Map doc_type → image (keep your existing asset paths)
-const docTypeImg: Record<string, string> = {
-  notes: '/src/assets/images/note.png',
-  assignment: '/src/assets/images/assignment.jpg',
-  past_exam: '/src/assets/images/exam.jpg',
-  lab: '/src/assets/images/lab.jpg',
-}
-const img = computed(() => docTypeImg[props.doc.doc_type] ?? '/src/assets/images/assignment.jpg')
 
-const tagClasses = [
-  'border-[#1AA8E5] bg-[#B8EDFF] text-[#0082B8]',
-  'border-[#D4B100] bg-[#FFF4A6] text-[#C39D00]',
-  'border-[#3FBE4E] bg-[#AEF7B9] text-[#1F9A2D]',
-]
-
-function hashString(value: string) {
-  let hash = 0
-  for (let i = 0; i < value.length; i += 1) {
-    hash = (hash * 31 + value.charCodeAt(i)) | 0
-  }
-  return Math.abs(hash)
-}
-
-const tagClassMap = computed(() => {
-  const seed = hashString(props.doc.id ?? '')
-  return tags.value.reduce<Record<string, string>>((acc, tag, index) => {
-    const bucket = (seed + index) % tagClasses.length
-    acc[tag] = tagClasses[bucket % tagClasses.length]!
-    return acc
-  }, {})
-})
 
 // ── Actions ─────────────────────────────────────────────────────────────────
 
@@ -121,7 +95,7 @@ function goToDetails() {
 
 <template>
   <article
-    class="w-full max-w-70 rounded-lg border bg-white border-[#B9B9B9] px-5 py-7 relative cursor-pointer hover:border-[#008CB9] transition-colors"
+    class="w-full max-w-80 md:max-w-150 rounded-lg border bg-white border-[#B9B9B9] px-5 py-7 relative cursor-pointer hover:border-[#008CB9] transition-colors"
     @click="goToDetails"
   >
     <!-- Delete button (owner only) -->
@@ -148,8 +122,11 @@ function goToDetails() {
     </button>
 
     <!-- Thumbnail -->
-    <div class="flex items-center justify-center pb-3">
-      <img :src="img" alt="Document Icon" class="h-30 w-40 object-contain" />
+    <div class="flex flex-col items-center justify-center pb-3 gap-1">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640" class="h-30 w-40">
+        <path fill="#1D92BC" d="M128 512L512 512C547.3 512 576 483.3 576 448L576 208C576 172.7 547.3 144 512 144L362.7 144C355.8 144 349 141.8 343.5 137.6L305.1 108.8C294 100.5 280.5 96 266.7 96L128 96C92.7 96 64 124.7 64 160L64 448C64 483.3 92.7 512 128 512z"/>
+      </svg>
+      <span class="text-md font-semibold text-[#008CB9] capitalize">{{ doc.doc_type }}</span>
     </div>
 
     <div class="h-px bg-[#C7C7C7]"></div>
@@ -158,17 +135,18 @@ function goToDetails() {
     <h2 class="mt-3 text-2xl font-semibold leading-tight text-black">{{ doc.title }}</h2>
 
     <!-- Subject -->
-    <p v-if="doc.subjects" class="text-sm text-gray-400 mt-1">{{ t('common.subjectCreateModal.nameLabel') }} <span class="uppercase">{{ doc.subjects.slug }}</span></p>
-    <p v-if="doc.subjects" class="text-sm text-gray-400 mt-1">{{ t('common.DocumentCard.academicYear') }} &nbsp;•&nbsp; {{ doc.academic_year }}</p>
-
+    <p v-if="doc.subjects" class="text-sm text-gray-400 mt-1">
+      {{ t('common.subjectCreateModal.nameLabel') }}
+      <span class="uppercase">{{ doc.subjects.slug }}</span> &nbsp;•&nbsp;
+      {{ t('common.DocumentCard.academicYear') }} &nbsp;•&nbsp; {{ doc.academic_year }}
+    </p>
 
     <!-- Tags -->
     <div class="mt-4 flex flex-wrap gap-1">
       <span
-        v-for="(tag, index) in tags"
-        :key="`${tag}-${index}`"
-        class="inline-flex items-center rounded-full px-4 py-1 text-xs leading-none"
-        :class="tagClassMap[tag] ?? tagClasses[index % tagClasses.length]"
+        v-for="tag in tags"
+        :key="tag"
+        class="inline-flex items-center rounded-full px-4 py-1 text-xs leading-none border-[#1AA8E5] bg-[#B8EDFF] text-[#0082B8]"
       >
         {{ tag }}
       </span>
@@ -176,8 +154,7 @@ function goToDetails() {
 
     <!-- File meta -->
     <p class="mt-5 text-sm leading-none text-[#9E9E9E]">
-      {{ totalDownloads }} downloads &nbsp;•&nbsp; {{ sizeText }}
-      <span v-if="fileCount" class="ml-1">&nbsp;•&nbsp; {{ fileCount }} files</span>
+      <template v-if="fileCount">{{ fileCount }} files &nbsp;•&nbsp; </template>{{ sizeText }}
     </p>
 
     <!-- Author + date -->

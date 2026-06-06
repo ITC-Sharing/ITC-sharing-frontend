@@ -72,6 +72,20 @@
     "docTypePastExam": "ប្រឡងចាស់",
     "docTypeLab": "ពិសោធន៍"
   },
+  "documentDetailsPage": {
+    "back": "ត្រឡប់",
+    "downloadAll": "ទាញយកទាំងអស់",
+    "missingId": "គ្មានលេខសម្គាល់ការបញ្ចូល",
+    "noFiles": "រកមិនឃើញឯកសារ",
+    "filesCount": "{count} ឯកសារ",
+    "colName": "ឈ្មោះ",
+    "colPostDate": "កាលបរិច្ឆេទ",
+    "colFileSize": "ទំហំ",
+    "sort": "តម្រៀប",
+    "sortAtoZ": "A ដល់ Z",
+    "sortZtoA": "Z ដល់ A",
+    "sortBySize": "ទំហំឯកសារ"
+  },
   "documentUploadModal": {
     "docUpload": "បញ្ចូលឯកសារ",
     "selectFile": "ទាញ និងដាក់ ឬ ចុចដើម្បីជ្រើសរើសឯកសារ",
@@ -104,6 +118,7 @@
     "errorAcademicYearRequired": "សូមបញ្ចូលឆ្នាំសិក្សា",
     "errorAcademicYearFormat": "ទម្រង់ត្រូវតែជា YYYY-YYYY (ឧ. 2024-2025)",
     "errorAcademicYearEnd": "ឆ្នាំបញ្ចប់ត្រូវតែជា {year}",
+    "errorAcademicYearFuture": "ឆ្នាំសិក្សាមិនអាចនៅក្នុងអនាគតបានទេ (ឆ្នាំបច្ចុប្បន្នគឺ {year})",
     "cancelButton": "បោះបង់"
   }
 }

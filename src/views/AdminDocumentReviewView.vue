@@ -88,10 +88,13 @@ function formatDate(dateStr: string) {
 }
 
 const typeColor: Record<string, string> = {
-  notes: 'bg-blue-100 text-blue-700',
-  assignment: 'bg-yellow-100 text-yellow-700',
-  past_exam: 'bg-red-100 text-red-700',
-  lab: 'bg-green-100 text-green-700',
+  Note: 'bg-blue-100 text-blue-700',
+  TD: 'bg-yellow-100 text-yellow-700',
+  'Examination paper': 'bg-red-100 text-red-700',
+  TP: 'bg-green-100 text-green-700',
+  Project: 'bg-purple-100 text-purple-700',
+  Lesson: 'bg-orange-100 text-orange-700',
+  Other: 'bg-gray-100 text-gray-700',
 }
 
 const statusStyle: Record<string, string> = {
@@ -172,7 +175,7 @@ onMounted(load)
             <p class="text-sm font-medium text-gray-900 truncate">{{ doc.title }}</p>
             <p class="text-xs text-gray-400 mt-0.5">
               <span :class="`font-medium px-1.5 py-0.5 rounded-full mr-1 ${typeColor[doc.doc_type] ?? 'bg-gray-100 text-gray-500'}`">
-                {{ doc.doc_type?.replace('_', ' ') }}
+                {{ doc.doc_type }}
               </span>
               {{ doc.original_name }} &bull; {{ formatSize(doc.file_size_kb) }}
             </p>

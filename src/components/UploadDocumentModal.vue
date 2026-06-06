@@ -92,16 +92,8 @@ watch(
   { immediate: true },
 )
 
-// Format a raw doc_type value into a human-readable label
-function formatDocTypeLabel(type: string): string {
-  return type
-    .split('_')
-    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-    .join(' ')
-}
-
 const docTypeOptions = computed(() =>
-  docs.docTypes.map((type) => ({ value: type, label: formatDocTypeLabel(type) })),
+  docs.docTypes.map((type) => ({ value: type, label: type })),
 )
 
 const majorOptions = computed(() =>
@@ -178,9 +170,11 @@ function validateAcademicYear(value: string): string {
   if (!value) return t('common.documentUploadModal.errorAcademicYearRequired')
   const match = value.match(/^(\d{4})-(\d{4})$/)
   if (!match) return t('common.documentUploadModal.errorAcademicYearFormat')
-  const start = parseInt(match[1])
-  const end = parseInt(match[2])
+  const start = parseInt(match[1]!)
+  const end = parseInt(match[2]!)
   if (end !== start + 1) return t('common.documentUploadModal.errorAcademicYearEnd', { year: start + 1 })
+  const currentYear = new Date().getFullYear()
+  if (start > currentYear) return t('common.documentUploadModal.errorAcademicYearFuture', { year: currentYear })
   return ''
 }
 
@@ -243,7 +237,7 @@ async function submit() {
             <input
               type="file"
               class="hidden"
-              accept=".pdf,.doc,.docx,.ppt,.pptx,.jpg,.jpeg,.png"
+              accept=".pdf,.doc,.docx,.ppt,.pptx,.jpg,.jpeg,.png,.zip,.rar"
               multiple
               @change="onFileChange"
             />

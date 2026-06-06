@@ -25,6 +25,12 @@ const routes = [
         meta: { requiresAuth: true },
       },
       {
+        path: 'notifications/detail',
+        name: 'notification-detail',
+        component: () => import('@/views/NotificationDetailView.vue'),
+        meta: { requiresAuth: true },
+      },
+      {
         path: 'books',
         name: 'books',
         component: () => import('@/views/BookView.vue'),

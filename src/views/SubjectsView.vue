@@ -196,8 +196,8 @@ onMounted(async () => {
         </div>
       </div>
 
-      <!-- Scrollable cards area -->
-      <div class="overflow-y-auto max-h-[calc(100vh-260px)]">
+      <!-- Cards area -->
+      <div>
         <!-- Loading -->
         <div v-if="subjectsStore.loading" class="flex justify-center py-20">
           <LoadingSpinner />
