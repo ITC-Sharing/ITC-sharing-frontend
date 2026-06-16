@@ -1,16 +1,19 @@
 <script setup lang="ts">
-import { computed, onMounted } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useNotificationsStore } from '@/stores/notifications.store'
 import { useDocumentsStore } from '@/stores/documents.store'
 import { useSubjectsStore } from '@/stores/subjects.store'
+import { useBooksStore } from '@/stores/books.store'
 import LoadingSpinner from '@/components/LoadingSpinner.vue'
+import noImage from '@/assets/images/no-image.png'
 
 const route = useRoute()
 const router = useRouter()
 const notifStore = useNotificationsStore()
 const docs = useDocumentsStore()
 const subjectsStore = useSubjectsStore()
+const booksStore = useBooksStore()
 
 const notifId = computed(() => String(route.query.notif_id ?? ''))
 const refId   = computed(() => String(route.query.ref_id   ?? ''))
@@ -22,7 +25,76 @@ const isRejected   = computed(() => notification.value?.type?.includes('rejected
 const upload  = computed(() => docs.myUploads.find((u) => u.id === refId.value) ?? null)
 const subject = computed(() => subjectsStore.mySubjects.find((s) => s.id === refId.value) ?? null)
 
-const loading = computed(() => docs.loading || subjectsStore.loading)
+// ── Book request detail ─────────────────────────────────────────────────────
+interface BookRequestDetail {
+  id: string
+  role: 'donor' | 'requester'
+  status: 'pending' | 'accepted' | 'declined'
+  message: string | null
+  contact: string | null
+  requested_at: string
+  resolved_at: string | null
+  book: { id: string; title: string; cover_image_url: string | null }
+  requester: { id: string; first_name: string; last_name: string; avatar_url: string | null }
+  donor: { id: string; first_name: string; last_name: string; avatar_url: string | null }
+}
+
+const bookRequest = ref<BookRequestDetail | null>(null)
+const bookReqLoading = ref(false)
+const bookReqMissing = ref(false)
+const reqAction = ref<string | null>(null)
+
+function reqStatusBadge(status: string) {
+  if (status === 'accepted') return 'bg-green-100 text-green-700'
+  if (status === 'declined') return 'bg-red-100 text-red-600'
+  return 'bg-yellow-100 text-yellow-700'
+}
+
+function reqInitials(first?: string, last?: string) {
+  return ((first?.[0] ?? '') + (last?.[0] ?? '')).toUpperCase()
+}
+
+async function loadBookRequest() {
+  bookReqMissing.value = false
+  if (!refId.value) {
+    bookReqMissing.value = true
+    return
+  }
+  bookReqLoading.value = true
+  try {
+    bookRequest.value = await booksStore.fetchRequestDetail(refId.value)
+  } catch {
+    // Request no longer exists (deleted book or stale notification)
+    bookRequest.value = null
+    bookReqMissing.value = true
+  } finally {
+    bookReqLoading.value = false
+  }
+}
+
+async function onAccept() {
+  if (!bookRequest.value) return
+  reqAction.value = 'accept'
+  try {
+    await booksStore.acceptRequest(bookRequest.value.book.id, bookRequest.value.id)
+    await loadBookRequest()
+  } finally {
+    reqAction.value = null
+  }
+}
+
+async function onDecline() {
+  if (!bookRequest.value) return
+  reqAction.value = 'decline'
+  try {
+    await booksStore.declineRequest(bookRequest.value.book.id, bookRequest.value.id)
+    await loadBookRequest()
+  } finally {
+    reqAction.value = null
+  }
+}
+
+const loading = computed(() => docs.loading || subjectsStore.loading || bookReqLoading.value)
 
 function formatDate(iso: string | null | undefined): string {
   if (!iso) return '—'
@@ -60,6 +132,7 @@ onMounted(async () => {
   }
   if (refType.value === 'document') await docs.fetchMine()
   if (refType.value === 'subject')  await subjectsStore.fetchMine()
+  if (refType.value === 'book_request') await loadBookRequest()
 })
 </script>
 
@@ -196,6 +269,117 @@ onMounted(async () => {
           </div>
         </div>
       </div>
+    </template>
+
+    <!-- ── Book request no longer available ───────────────────────────────── -->
+    <div
+      v-else-if="refType === 'book_request' && bookReqMissing"
+      class="rounded-2xl border border-gray-200 bg-white px-5 py-10 text-center"
+    >
+      <p class="text-sm font-semibold text-gray-600">This request is no longer available</p>
+      <p class="mt-1 text-xs text-gray-400">The book may have been removed or the request withdrawn.</p>
+    </div>
+
+    <!-- ── Book request ───────────────────────────────────────────────────── -->
+    <template v-else-if="refType === 'book_request' && bookRequest">
+      <!-- Book card -->
+      <button
+        class="w-full flex items-center gap-4 rounded-2xl border border-gray-200 bg-white p-4 hover:shadow-md transition-shadow text-left"
+        @click="router.push({ name: 'book-detail', params: { id: bookRequest.book.id } })"
+      >
+        <img :src="bookRequest.book.cover_image_url || noImage" class="h-20 w-14 rounded-lg object-cover shrink-0" />
+        <div class="flex-1 min-w-0">
+          <p class="text-xs text-gray-400">Book request</p>
+          <p class="text-lg font-bold text-gray-900 leading-tight">{{ bookRequest.book.title }}</p>
+          <span :class="`mt-1 inline-block text-xs font-semibold px-2 py-0.5 rounded-full ${reqStatusBadge(bookRequest.status)}`">
+            {{ bookRequest.status }}
+          </span>
+        </div>
+        <span class="text-xs text-[#008CB9] shrink-0">View book →</span>
+      </button>
+
+      <!-- Details -->
+      <div class="mt-4 rounded-2xl border border-gray-200 bg-white overflow-hidden">
+        <div class="px-5 py-4 border-b border-gray-100">
+          <p class="text-xs font-medium text-gray-400 uppercase tracking-wide">
+            {{ bookRequest.role === 'donor' ? 'Request from' : 'Your request' }}
+          </p>
+        </div>
+        <div class="divide-y divide-gray-50">
+          <!-- The other party -->
+          <div class="flex items-center gap-3 px-5 py-3">
+            <div class="h-9 w-9 rounded-full overflow-hidden bg-[#008CB9] flex items-center justify-center shrink-0">
+              <template v-if="bookRequest.role === 'donor'">
+                <img v-if="bookRequest.requester.avatar_url" :src="bookRequest.requester.avatar_url" class="h-full w-full object-cover" />
+                <span v-else class="text-[11px] font-bold text-white">{{ reqInitials(bookRequest.requester.first_name, bookRequest.requester.last_name) }}</span>
+              </template>
+              <template v-else>
+                <img v-if="bookRequest.donor.avatar_url" :src="bookRequest.donor.avatar_url" class="h-full w-full object-cover" />
+                <span v-else class="text-[11px] font-bold text-white">{{ reqInitials(bookRequest.donor.first_name, bookRequest.donor.last_name) }}</span>
+              </template>
+            </div>
+            <span class="text-sm font-medium text-gray-800">
+              <template v-if="bookRequest.role === 'donor'">
+                {{ bookRequest.requester.first_name }} {{ bookRequest.requester.last_name }}
+              </template>
+              <template v-else>
+                {{ bookRequest.donor.first_name }} {{ bookRequest.donor.last_name }}
+              </template>
+            </span>
+          </div>
+
+          <!-- Message -->
+          <div v-if="bookRequest.message" class="grid grid-cols-3 px-5 py-3">
+            <span class="text-sm text-gray-400">Message</span>
+            <span class="col-span-2 text-sm text-gray-800">"{{ bookRequest.message }}"</span>
+          </div>
+
+          <!-- Revealed contact (after accept) -->
+          <div v-if="bookRequest.contact" class="grid grid-cols-3 px-5 py-3">
+            <span class="text-sm text-gray-400">{{ bookRequest.role === 'donor' ? 'Requester contact' : 'Donor contact' }}</span>
+            <span class="col-span-2 text-sm font-semibold text-[#008CB9]">{{ bookRequest.contact }}</span>
+          </div>
+
+          <div class="grid grid-cols-3 px-5 py-3">
+            <span class="text-sm text-gray-400">Requested</span>
+            <span class="col-span-2 text-sm font-medium text-gray-800">{{ formatDate(bookRequest.requested_at) }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Status messages -->
+      <div v-if="bookRequest.status === 'accepted'" class="mt-4 rounded-2xl border border-green-200 bg-green-50 px-5 py-4">
+        <p class="text-sm font-semibold text-green-700">Request accepted ✓</p>
+        <p class="mt-1 text-sm text-gray-600">
+          {{ bookRequest.role === 'donor'
+            ? 'Reach out to the requester using their contact above to arrange the handoff.'
+            : 'Contact the donor using the details above to arrange picking up the book.' }}
+        </p>
+      </div>
+      <div v-else-if="bookRequest.status === 'declined'" class="mt-4 rounded-2xl border border-red-200 bg-red-50 px-5 py-4">
+        <p class="text-sm font-semibold text-red-600">Request declined</p>
+      </div>
+
+      <!-- Donor actions on a pending request -->
+      <div v-if="bookRequest.role === 'donor' && bookRequest.status === 'pending'" class="mt-4 flex gap-3">
+        <button
+          :disabled="reqAction !== null"
+          @click="onDecline"
+          class="flex-1 rounded-xl border border-gray-300 py-2.5 text-sm font-semibold text-gray-700 hover:bg-gray-50 disabled:opacity-60 transition-colors"
+        >
+          {{ reqAction === 'decline' ? '…' : 'Decline' }}
+        </button>
+        <button
+          :disabled="reqAction !== null"
+          @click="onAccept"
+          class="flex-1 rounded-xl bg-[#008CB9] py-2.5 text-sm font-semibold text-white hover:bg-[#006B9C] disabled:opacity-60 transition-colors"
+        >
+          {{ reqAction === 'accept' ? '…' : 'Accept' }}
+        </button>
+      </div>
+      <p v-else-if="bookRequest.role === 'requester' && bookRequest.status === 'pending'" class="mt-4 text-center text-sm text-gray-400">
+        Waiting for the donor to respond…
+      </p>
     </template>
 
     <!-- Fallback -->

@@ -37,6 +37,12 @@ const routes = [
         meta: { requiresAuth: true },
       },
       {
+        path: 'books/:id',
+        name: 'book-detail',
+        component: () => import('@/views/BookDetailView.vue'),
+        meta: { requiresAuth: true },
+      },
+      {
         path: 'dashboard',
         name: 'dashboard',
         component: () => import('@/views/DashboardView.vue'),
@@ -120,7 +126,7 @@ router.beforeEach(async (to) => {
     return { name: 'login' }
   }
 
-  if (to.meta.requiresAdmin && auth.user?.role !== 'admin') {
+  if (to.meta.requiresAdmin && auth.user?.role?.toLowerCase() !== 'admin') {
     return { name: 'home' }
   }
 

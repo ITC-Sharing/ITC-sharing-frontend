@@ -59,7 +59,7 @@ const submitForm = async (e: Event) => {
 
   try {
     await authStore.login(form.email, form.password)
-    if (authStore.user?.role === 'admin') {
+    if (authStore.user?.role?.toLowerCase() === 'admin') {
       router.push({ name: 'admin' })
     } else {
       router.push('/')

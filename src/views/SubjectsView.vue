@@ -10,7 +10,7 @@ import FilterButton from '@/components/FilterButton.vue'
 import AddnewSubject from '@/components/AddnewSubject.vue'
 import SubjectCreateModal from '@/components/SubjectCreateModal.vue'
 import LoadingSpinner from '@/components/LoadingSpinner.vue'
-import Breadcrumb from '@/components/BreadCrumb.vue'
+import Breadcrumb from '@/components/Breadcrumb.vue'
 
 const route = useRoute()
 const { t } = useI18n({ useScope: 'global' })

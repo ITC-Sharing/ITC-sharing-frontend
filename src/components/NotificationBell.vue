@@ -24,6 +24,24 @@ async function handleNotifClick(n: Notification) {
   if (!n.is_read) await notifStore.markRead(n.id)
   closeNotif()
 
+  if (n.ref_type === 'book_request') {
+    // Donor's incoming-request notification → Dashboard (accept/reject there)
+    if (n.type === 'book_request') {
+      router.push({ name: 'dashboard' })
+      return
+    }
+    // Requester's accepted/declined notification → detail page (status + contact)
+    router.push({
+      name: 'notification-detail',
+      query: {
+        notif_id: n.id,
+        ...(n.ref_id ? { ref_id: n.ref_id } : {}),
+        ref_type: n.ref_type,
+      },
+    })
+    return
+  }
+
   const approved = n.type.includes('approved')
 
   if (!approved) {

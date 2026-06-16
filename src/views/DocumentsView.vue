@@ -9,7 +9,7 @@ import { useAuthStore } from '@/stores/auth.store'
 import DocumentCard from '@/components/DocumentCard.vue'
 import UploadDocumentModal from '@/components/UploadDocumentModal.vue'
 import LoadingSpinner from '@/components/LoadingSpinner.vue'
-import Breadcrumb from '@/components/BreadCrumb.vue'
+import Breadcrumb from '@/components/Breadcrumb.vue'
 import FilterButton from '@/components/FilterButton.vue'
 import ViewToggle from '@/components/ViewToggle.vue'
 
@@ -102,7 +102,7 @@ async function onUploaded() {
 
 <template>
   <div>
-    <div class="mx-auto w-full max-w-7xl px-6 py-6 flex flex-col gap-6">
+    <div class="mx-auto w-full max-w-7xl px-6 flex flex-col gap-6">
       <!-- Breadcrumb -->
       <Breadcrumb
         :items="[

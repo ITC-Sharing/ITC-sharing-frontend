@@ -121,7 +121,7 @@ onBeforeUnmount(() => {
 <template>
   <div class="w-full px-6 py-8">
     <!-- Breadcrumb / Back — aligned with navbar logo -->
-    <div class="mx-auto w-full max-w-7xl mb-6 ml-8">
+    <div class="mx-auto w-full max-w-7xl px-6 mb-6 cursor-pointer">
       <button
         class="flex items-center gap-1 text-sm text-gray-400 hover:text-gray-700 transition-colors cursor-pointer"
         @click="router.back()"
@@ -141,7 +141,7 @@ onBeforeUnmount(() => {
       <div>
         <h1 class="text-2xl font-bold text-gray-900 capitalize">{{ pageTitle }}</h1>
         <p class="mt-1 text-sm text-gray-400">
-          {{ t('common.documentDetailsPage.filesCount', files.length) }} &nbsp;•&nbsp; {{ upload.users.first_name }} {{ upload.users.last_name }}
+          {{ t('common.documentDetailsPage.filesCount', files.length) }} &nbsp;•&nbsp; {{ upload?.users?.first_name }} {{ upload?.users?.last_name }}
         </p>
       </div>
       <button

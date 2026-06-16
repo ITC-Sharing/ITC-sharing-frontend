@@ -16,7 +16,9 @@ export const useNotificationsStore = defineStore('notifications', () => {
   const notifications = ref<Notification[]>([])
   const loading = ref(false)
 
-  const unreadCount = computed(() => notifications.value.filter((n) => !n.is_read).length)
+  const unreadCount = computed(() =>
+    notifications.value.filter((n) => !n.is_read).length,
+  )
 
   async function fetch() {
     loading.value = true

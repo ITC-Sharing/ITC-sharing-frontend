@@ -153,6 +153,7 @@ import { onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import ButtonPrimary from '@/components/ButtonPrimary.vue'
 import NotificationBell from '@/components/NotificationBell.vue'
 import { useAuthStore } from '@/stores/auth.store'
+import { subscribeToPush } from '@/utils/push'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 
@@ -207,6 +208,9 @@ const handleLogout = async () => {
 
 onMounted(() => {
   document.addEventListener('click', handleClickOutside)
+  if (authStore.isAuthenticated) {
+    subscribeToPush()
+  }
 })
 
 onBeforeUnmount(() => {

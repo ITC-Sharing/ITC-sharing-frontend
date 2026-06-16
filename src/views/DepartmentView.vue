@@ -2,7 +2,7 @@
 import { computed, onMounted, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import YearCard from '@/components/YearCard.vue'
-import Breadcrumb from '@/components/BreadCrumb.vue'
+import Breadcrumb from '@/components/Breadcrumb.vue'
 import { useMajorsStore } from '@/stores/majors.store'
 import { useSubjectsStore } from '@/stores/subjects.store'
 
@@ -70,7 +70,7 @@ watch(() => props.slug, loadCounts)
 </script>
 
 <template>
-  <div class="mx-auto w-full max-w-6xl px-4 mb-4">
+  <div class="mx-auto w-full max-w-7xl px-6 mb-6 cursor-pointer">
     <Breadcrumb
       :items="[
         { label: t('common.nav.home'), to: { name: 'home' } },
