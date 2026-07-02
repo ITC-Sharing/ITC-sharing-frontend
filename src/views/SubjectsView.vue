@@ -4,13 +4,14 @@ import { useRoute } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { useSubjectsStore } from '@/stores/subjects.store'
 import { useMajorsStore } from '@/stores/majors.store'
+import { cefrLevel } from '@/utils/format'
 import SubjectCard from '@/components/SubjectCard.vue'
 import SearchButton from '@/components/SearchButton.vue'
 import FilterButton from '@/components/FilterButton.vue'
 import AddnewSubject from '@/components/AddnewSubject.vue'
 import SubjectCreateModal from '@/components/SubjectCreateModal.vue'
 import LoadingSpinner from '@/components/LoadingSpinner.vue'
-import Breadcrumb from '@/components/BreadCrumb.vue'
+import Breadcrumb from '@/components/Breadcrumb.vue'
 
 const route = useRoute()
 const { t } = useI18n({ useScope: 'global' })
@@ -27,21 +28,10 @@ const selectedFilter = ref<FilterValue>('name')
 const showAddSubjectModal = ref(false)
 const submitSuccess = ref(false)
 
-const slugToAcronym: Record<string, string> = {
-  gic: 'GIC',
-  ams: 'AMS',
-  gim: 'GIM',
-  gtr: 'GTR',
-  gca: 'GCA',
-  gar: 'GAR',
-  gru: 'GRU',
-  gti: 'GTI',
-  gee: 'GEE',
-  foundation: 'Foundation',
-}
-
+// Match by lowercased acronym so every major works (incl. English/French) —
+// no hardcoded slug map to keep in sync.
 const currentMajor = computed(() =>
-  (majorsStore.majors as Major[]).find((m) => m.acronym === slugToAcronym[slug]),
+  (majorsStore.majors as Major[]).find((m) => m.acronym?.toLowerCase() === slug),
 )
 
 const majorOptions = computed(() =>
@@ -121,10 +111,10 @@ onMounted(async () => {
           :items="[
             { label: t('common.nav.home'), to: { name: 'home' } },
             {
-              label: slugToAcronym[slug] ?? slug.toUpperCase(),
+              label: currentMajor?.acronym ?? slug.toUpperCase(),
               to: { name: 'department', params: { slug } },
             },
-            { label: t('common.documentsPage.year', { year: yearLevel }) },
+            { label: cefrLevel(slug, yearLevel) ?? t('common.documentsPage.year', { year: yearLevel }) },
           ]"
         />
       </div>

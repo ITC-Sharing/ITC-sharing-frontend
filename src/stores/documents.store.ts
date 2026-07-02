@@ -4,9 +4,9 @@ import api from '@/lib/axios'
 
 export const useDocumentsStore = defineStore('documents', () => {
   const documents = ref<any[]>([])
+  const total = ref(0)
   const currentUpload = ref<any | null>(null)
   const myUploads = ref<any[]>([])
-  const saved = ref<any[]>([])
   const docTypes = ref<string[]>([])
   const loading = ref(false)
   const error = ref<string | null>(null)
@@ -27,12 +27,16 @@ export const useDocumentsStore = defineStore('documents', () => {
     search?: string
     title?: string
     uploader_id?: string
+    year_level?: number
+    page?: number
+    limit?: number
   }) {
     loading.value = true
     error.value = null
     try {
       const { data } = await api.get('/documents', { params: filters })
-      documents.value = data
+      documents.value = data.items
+      total.value = data.total
     } catch (e: any) {
       error.value = e.response?.data?.message ?? 'Failed to load documents'
     } finally {
@@ -88,17 +92,42 @@ export const useDocumentsStore = defineStore('documents', () => {
     }
   }
 
-  async function fetchSaved() {
-    const { data } = await api.get('/documents/saved')
-    saved.value = data
+  async function updateDocument(
+    uploadId: string,
+    payload: {
+      title?: string
+      doc_type?: string
+      year_level?: number
+      academic_year?: string
+      major_id?: string
+      subject_id?: string | null
+      tags?: string[]
+    },
+  ) {
+    loading.value = true
+    error.value = null
+    try {
+      const { data } = await api.patch(`/documents/${uploadId}`, payload)
+      return data
+    } catch (e: any) {
+      error.value = e.response?.data?.message ?? 'Update failed'
+      throw e
+    } finally {
+      loading.value = false
+    }
   }
 
-  async function saveDocument(uploadId: string) {
-    await api.post(`/documents/${uploadId}/save`)
+  async function addFiles(uploadId: string, files: File[]) {
+    const formData = new FormData()
+    files.forEach((f) => formData.append('files', f))
+    const { data } = await api.post(`/documents/${uploadId}/files`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    })
+    return data
   }
 
-  async function unsaveDocument(uploadId: string) {
-    await api.delete(`/documents/${uploadId}/save`)
+  async function removeFile(fileId: string) {
+    await api.delete(`/documents/files/${fileId}`)
   }
 
   async function deleteDocument(uploadId: string) {
@@ -108,9 +137,9 @@ export const useDocumentsStore = defineStore('documents', () => {
 
   return {
     documents,
+    total,
     currentUpload,
     myUploads,
-    saved,
     docTypes,
     loading,
     error,
@@ -120,9 +149,9 @@ export const useDocumentsStore = defineStore('documents', () => {
     fetchMine,
     upload,
     trackDownload,
-    fetchSaved,
-    saveDocument,
-    unsaveDocument,
+    updateDocument,
+    addFiles,
+    removeFile,
     deleteDocument,
   }
 })

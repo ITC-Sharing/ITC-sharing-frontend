@@ -1,0 +1,94 @@
+{
+  "sidebar": {
+    "nav": {
+      "activity": "ផ្ទាំងគ្រប់គ្រង",
+      "documents": "ឯកសាររបស់ខ្ញុំ",
+      "books": "សៀវភៅ"
+    },
+    "filters": {
+      "yourBook": "សៀវភៅរបស់ខ្ញុំ",
+      "request": "ការស្នើសុំសៀវភៅ",
+      "donated": "សៀវភៅបានបរិច្ចាគ",
+      "received": "សៀវភៅទទួលបាន",
+      "requesting": "កំពុងស្នើសុំ"
+    }
+  },
+  "mobileTitle": {
+    "dashboard": "សកម្មភាពរបស់ខ្ញុំ",
+    "dashboard-documents": "ឯកសាររបស់ខ្ញុំ",
+    "dashboard-books": "សៀវភៅ"
+  },
+  "activity": {
+    "statFiles": "ឯកសារ",
+    "statTotalSize": "ទំហំសរុប",
+    "statBooksDonated": "សៀវភៅបានបរិច្ចាគ",
+    "statBooksReceived": "សៀវភៅទទួលបាន",
+    "recentUploads": "ការបញ្ចូលថ្មីៗ",
+    "viewAll": "មើលទាំងអស់",
+    "noUploads": "មិនទាន់មានការបញ្ចូលនៅឡើយទេ"
+  },
+  "documents": {
+    "searchPlaceholder": "ស្វែងរកឯកសារ...",
+    "upload": "បញ្ចូល",
+    "filterAll": "ទាំងអស់",
+    "noMatch": "មិនមានឯកសារត្រូវនឹងតម្រងរបស់អ្នកទេ",
+    "noneUploaded": "អ្នកមិនទាន់បានបញ្ចូលអ្វីនៅឡើយទេ",
+    "tryChangingFilter": "សាកល្បងផ្លាស់ប្ដូរការស្វែងរក ឬតម្រង",
+    "shareNotes": "ចែករំលែកកំណត់ត្រារបស់អ្នកជាមួយមិត្តរួមថ្នាក់",
+    "uploadFirst": "បញ្ចូលឯកសារទីមួយរបស់អ្នក",
+    "delete": "លុប",
+    "deleteConfirm": "លុប \"{title}\"? សកម្មភាពនេះមិនអាចត្រឡប់វិញបានទេ។"
+  },
+  "books": {
+    "title": "សៀវភៅ",
+    "listABook": "ដាក់សៀវភៅមួយ",
+    "noPendingRequests": "មិនមានការស្នើសុំកំពុងរង់ចាំទេ",
+    "requestsHint": "ការស្នើសុំលើសៀវភៅដែលអ្នកដាក់ នឹងបង្ហាញនៅទីនេះ។",
+    "noDonatedYet": "អ្នកមិនទាន់បានបរិច្ចាគសៀវភៅណាមួយនៅឡើយទេ",
+    "donatedHint": "សៀវភៅដែលអ្នកបរិច្ចាគនឹងបង្ហាញនៅទីនេះ។",
+    "noReceivedYet": "អ្នកមិនទាន់ទទួលបានសៀវភៅណាមួយនៅឡើយទេ",
+    "receivedHint": "សៀវភៅដែលម្ចាស់ឯកភាពតាមការស្នើសុំរបស់អ្នក នឹងបង្ហាញនៅទីនេះ។",
+    "noListedYet": "អ្នកមិនទាន់បានដាក់សៀវភៅណាមួយនៅឡើយទេ",
+    "listedHint": "សៀវភៅដែលអ្នកដាក់សម្រាប់ការបរិច្ចាគនឹងបង្ហាញនៅទីនេះ។",
+    "noRequestingYet": "មិនមានសៀវភៅណាមួយដែលអ្នកកំពុងស្នើសុំទេ",
+    "requestingHint": "សៀវភៅដែលអ្នកស្នើសុំនឹងបង្ហាញនៅទីនេះ ខណៈរង់ចាំចម្លើយតប។",
+    "bookOwner": "ម្ចាស់សៀវភៅ",
+    "givenTo": "បានឱ្យ",
+    "contact": "ទំនាក់ទំនង",
+    "status": "ស្ថានភាព",
+    "waitingForResponse": "កំពុងរង់ចាំចម្លើយតប",
+    "pendingBadge": "កំពុងរង់ចាំ",
+    "acceptedBadge": "បានទទួល",
+    "receivedOn": "ទទួលបាន៖ {date}",
+    "requestedOn": "បានស្នើសុំ៖ {date}",
+    "donatedOn": "បានបរិច្ចាគ៖ {date}",
+    "requestedBy": "ស្នើសុំដោយ {name}",
+    "seeMore": "មើលបន្ថែម",
+    "seeLess": "មើលតិច",
+    "accept": "យល់ព្រម",
+    "reject": "បដិសេធ",
+    "edit": "កែសម្រួល",
+    "delete": "លុប",
+    "donatedStatus": "បានបរិច្ចាគ",
+    "availableStatus": "នៅទំនេរ",
+    "noRequestYet": "នៅទំនេរ — កំពុងរង់ចាំការស្នើសុំ",
+    "cantEditDonated": "សៀវភៅដែលបានបរិច្ចាគមិនអាចកែសម្រួល ឬលុបបានទេ",
+    "deleteBookTitle": "លុបសៀវភៅនេះមែនទេ?",
+    "deleteBookConfirm": "សកម្មភាពនេះមិនអាចត្រឡប់វិញបានទេ។",
+    "cancel": "បោះបង់",
+    "deleting": "កំពុងលុប…",
+    "declineTitle": "បដិសេធការស្នើសុំនេះមែនទេ?",
+    "declineSubtitle": "ប្រាប់អ្នកស្នើសុំពីមូលហេតុ (ស្រេចចិត្ត)។",
+    "declinePlaceholder": "ឧ. បានឱ្យអ្នកផ្សេងរួចហើយ…",
+    "decline": "បដិសេធ",
+    "declining": "កំពុងបដិសេធ…"
+  },
+  "pendingRejected": {
+    "title": "ការបញ្ចូលកំពុងត្រូវពិនិត្យ",
+    "reason": "មូលហេតុ៖ {reason}",
+    "pending": "កំពុងរង់ចាំ",
+    "rejected": "បដិសេធ",
+    "edit": "កែសម្រួល",
+    "remove": "លុប"
+  }
+}

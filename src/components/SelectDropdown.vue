@@ -32,6 +32,8 @@ const emit = defineEmits<{
 
 const isOpen = ref(false)
 const rootRef = ref<HTMLElement | null>(null)
+const menuRef = ref<HTMLElement | null>(null)
+const menuStyle = ref<Record<string, string>>({})
 
 const selectedLabel = computed(() => {
   const selected = props.options.find((o) => o.value === props.modelValue)
@@ -40,13 +42,47 @@ const selectedLabel = computed(() => {
 
 const isPlaceholder = computed(() => !props.options.find((o) => o.value === props.modelValue))
 
-function toggle() {
-  if (props.disabled || props.options.length === 0) return
-  isOpen.value = !isOpen.value
+// Anchor the (teleported) menu to the trigger, flipping up and capping its
+// height so it always stays within the viewport and scrolls internally.
+function updatePosition() {
+  const el = rootRef.value
+  if (!el) return
+  const r = el.getBoundingClientRect()
+  const gap = 8
+  const maxMenu = 240
+  const spaceBelow = window.innerHeight - r.bottom - gap
+  const spaceAbove = r.top - gap
+  const openUp = spaceBelow < Math.min(maxMenu, 160) && spaceAbove > spaceBelow
+  const avail = openUp ? spaceAbove : spaceBelow
+  menuStyle.value = {
+    position: 'fixed',
+    left: `${r.left}px`,
+    width: `${r.width}px`,
+    maxHeight: `${Math.max(120, Math.min(maxMenu, avail))}px`,
+    ...(openUp
+      ? { bottom: `${window.innerHeight - r.top + gap}px` }
+      : { top: `${r.bottom + gap}px` }),
+  }
+}
+
+function open() {
+  isOpen.value = true
+  updatePosition()
+  window.addEventListener('scroll', updatePosition, true)
+  window.addEventListener('resize', updatePosition)
 }
 
 function close() {
+  if (!isOpen.value) return
   isOpen.value = false
+  window.removeEventListener('scroll', updatePosition, true)
+  window.removeEventListener('resize', updatePosition)
+}
+
+function toggle() {
+  if (props.disabled || props.options.length === 0) return
+  if (isOpen.value) close()
+  else open()
 }
 
 function select(value: string) {
@@ -56,11 +92,16 @@ function select(value: string) {
 }
 
 function onClickOutside(e: MouseEvent) {
-  if (rootRef.value && !rootRef.value.contains(e.target as Node)) close()
+  const target = e.target as Node
+  if (rootRef.value?.contains(target) || menuRef.value?.contains(target)) return
+  close()
 }
 
 onMounted(() => document.addEventListener('click', onClickOutside))
-onBeforeUnmount(() => document.removeEventListener('click', onClickOutside))
+onBeforeUnmount(() => {
+  document.removeEventListener('click', onClickOutside)
+  close()
+})
 </script>
 
 <template>
@@ -88,20 +129,24 @@ onBeforeUnmount(() => document.removeEventListener('click', onClickOutside))
       </svg>
     </button>
 
-    <div
-      v-if="isOpen && options.length > 0"
-      class="absolute left-0 right-0 z-30 mt-2 overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-lg"
-    >
-      <button
-        v-for="option in options"
-        :key="option.value"
-        type="button"
-        class="flex w-full items-center px-4 py-3 text-left text-sm text-gray-700 transition hover:bg-[#EAF6FB] hover:text-[#008CB9]"
-        :class="option.value === modelValue ? 'bg-[#F5F5F5]' : ''"
-        @click.stop="select(option.value)"
+    <Teleport to="body">
+      <div
+        v-if="isOpen && options.length > 0"
+        ref="menuRef"
+        :style="menuStyle"
+        class="z-60 overflow-y-auto rounded-2xl border border-gray-200 bg-white shadow-lg"
       >
-        {{ option.label }}
-      </button>
-    </div>
+        <button
+          v-for="option in options"
+          :key="option.value"
+          type="button"
+          class="flex w-full items-center px-4 py-3 text-left text-sm text-gray-700 transition hover:bg-[#EAF6FB] hover:text-[#008CB9]"
+          :class="option.value === modelValue ? 'bg-[#F5F5F5]' : ''"
+          @click.stop="select(option.value)"
+        >
+          {{ option.label }}
+        </button>
+      </div>
+    </Teleport>
   </div>
 </template>

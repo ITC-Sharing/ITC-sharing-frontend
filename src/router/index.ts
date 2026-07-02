@@ -19,9 +19,21 @@ const routes = [
         meta: { requiresAuth: true },
       },
       {
+        path: 'profile',
+        name: 'profile',
+        component: () => import('@/views/ProfileView.vue'),
+        meta: { requiresAuth: true },
+      },
+      {
         path: 'documents/details',
         name: 'document-details',
         component: () => import('@/views/DocumentDetailsView.vue'),
+        meta: { requiresAuth: true },
+      },
+      {
+        path: 'notifications',
+        name: 'notifications',
+        component: () => import('@/views/NotificationsView.vue'),
         meta: { requiresAuth: true },
       },
       {
@@ -37,10 +49,32 @@ const routes = [
         meta: { requiresAuth: true },
       },
       {
+        path: 'books/:id',
+        name: 'book-detail',
+        component: () => import('@/views/BookDetailView.vue'),
+        meta: { requiresAuth: true },
+      },
+      {
         path: 'dashboard',
-        name: 'dashboard',
         component: () => import('@/views/DashboardView.vue'),
         meta: { requiresAuth: true },
+        children: [
+          {
+            path: '',
+            name: 'dashboard',
+            component: () => import('@/views/dashboard/DashboardActivity.vue'),
+          },
+          {
+            path: 'documents',
+            name: 'dashboard-documents',
+            component: () => import('@/views/dashboard/DashboardDocuments.vue'),
+          },
+          {
+            path: 'books',
+            name: 'dashboard-books',
+            component: () => import('@/views/dashboard/DashboardBooks.vue'),
+          },
+        ],
       },
       {
         path: 'dep/:slug',
@@ -59,6 +93,14 @@ const routes = [
       {
         path: 'department/:slug/year/:year/subject/:subjectId',
         name: 'subject-documents',
+        component: () => import('@/views/DocumentsView.vue'),
+        props: true,
+        meta: { requiresAuth: true },
+      },
+      {
+        // English & French have no subjects — documents live directly under a level.
+        path: 'department/:slug/year/:year/documents',
+        name: 'level-documents',
         component: () => import('@/views/DocumentsView.vue'),
         props: true,
         meta: { requiresAuth: true },
@@ -120,7 +162,7 @@ router.beforeEach(async (to) => {
     return { name: 'login' }
   }
 
-  if (to.meta.requiresAdmin && auth.user?.role !== 'admin') {
+  if (to.meta.requiresAdmin && auth.user?.role?.toLowerCase() !== 'admin') {
     return { name: 'home' }
   }
 
