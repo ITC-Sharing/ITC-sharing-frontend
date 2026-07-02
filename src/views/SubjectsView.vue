@@ -114,7 +114,10 @@ onMounted(async () => {
               label: currentMajor?.acronym ?? slug.toUpperCase(),
               to: { name: 'department', params: { slug } },
             },
-            { label: cefrLevel(slug, yearLevel) ?? t('common.documentsPage.year', { year: yearLevel }) },
+            {
+              label:
+                cefrLevel(slug, yearLevel) ?? t('common.documentsPage.year', { year: yearLevel }),
+            },
           ]"
         />
       </div>
@@ -205,7 +208,7 @@ onMounted(async () => {
                 v-for="subject in displayedSubjects"
                 :key="subject.id"
                 :title="subject.name"
-                :img="subject.subject_url || '/src/assets/images/no-image.png'"
+                :img="subject.subject_url"
                 :subjectId="subject.id"
                 :slug="slug"
                 :year="yearLevel"
