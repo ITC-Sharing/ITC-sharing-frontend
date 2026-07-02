@@ -95,7 +95,7 @@ function goToDetails() {
 
 <template>
   <article
-    class="w-full max-w-80 md:max-w-150 rounded-lg border bg-white border-[#B9B9B9] px-5 py-7 relative cursor-pointer hover:border-[#008CB9] transition-colors"
+    class="w-full max-w-64 rounded-lg border bg-white border-[#B9B9B9] px-4 py-5 relative cursor-pointer hover:border-[#008CB9] transition-colors"
     @click="goToDetails"
   >
     <!-- Delete button (owner only) -->
@@ -103,7 +103,7 @@ function goToDetails() {
       v-if="isOwner"
       @click.stop="handleDelete"
       class="absolute top-3 right-3 text-gray-300 hover:text-red-500 transition-colors cursor-pointer"
-      title="Delete"
+      :title="t('common.DocumentCard.deleteConfirm')"
     >
       <svg
         xmlns="http://www.w3.org/2000/svg"
@@ -123,21 +123,23 @@ function goToDetails() {
 
     <!-- Thumbnail -->
     <div class="flex flex-col items-center justify-center pb-3 gap-1">
-      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640" class="h-30 w-40">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640" class="h-25 w-30">
         <path fill="#1D92BC" d="M128 512L512 512C547.3 512 576 483.3 576 448L576 208C576 172.7 547.3 144 512 144L362.7 144C355.8 144 349 141.8 343.5 137.6L305.1 108.8C294 100.5 280.5 96 266.7 96L128 96C92.7 96 64 124.7 64 160L64 448C64 483.3 92.7 512 128 512z"/>
       </svg>
-      <span class="text-md font-semibold text-[#008CB9] capitalize">{{ doc.doc_type }}</span>
+      <span class="text-sm font-semibold text-[#008CB9] capitalize">{{ doc.doc_type }}</span>
     </div>
 
     <div class="h-px bg-[#C7C7C7]"></div>
 
     <!-- Title -->
-    <h2 class="mt-3 text-2xl font-semibold leading-tight text-black">{{ doc.title }}</h2>
+    <h2 class="mt-3 text-lg font-semibold leading-tight text-black">{{ doc.title }}</h2>
 
     <!-- Subject -->
-    <p v-if="doc.subjects" class="text-sm text-gray-400 mt-1">
-      {{ t('common.subjectCreateModal.nameLabel') }}
-      <span class="uppercase">{{ doc.subjects.slug }}</span> &nbsp;•&nbsp;
+    <p v-if="doc.subjects" class="text-[12px] text-gray-400 mt-1">
+      <span class="uppercase">{{ doc.subjects.slug }}</span>
+    </p>
+
+    <p class="text-[12px] text-gray-400">
       {{ t('common.DocumentCard.academicYear') }} &nbsp;•&nbsp; {{ doc.academic_year }}
     </p>
 
@@ -154,12 +156,14 @@ function goToDetails() {
 
     <!-- File meta -->
     <p class="mt-5 text-sm leading-none text-[#9E9E9E]">
-      <template v-if="fileCount">{{ fileCount }} files &nbsp;•&nbsp; </template>{{ sizeText }}
+      <template v-if="fileCount"
+        >{{ t('common.documentDetailsPage.filesCount', fileCount) }} &nbsp;•&nbsp;
+      </template>{{ sizeText }}
     </p>
 
     <!-- Author + date -->
     <p class="mt-3 text-sm font-semibold leading-none text-[#9E9E9E]">
-      by {{ postBy }} &nbsp;•&nbsp; {{ dateText }}
+      {{ t('common.DocumentCard.by') }} {{ postBy }} &nbsp;•&nbsp; {{ dateText }}
     </p>
   </article>
 

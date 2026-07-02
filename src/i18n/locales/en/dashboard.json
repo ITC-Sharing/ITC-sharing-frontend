@@ -1,0 +1,94 @@
+{
+  "sidebar": {
+    "nav": {
+      "activity": "Dashboard",
+      "documents": "My Documents",
+      "books": "Books"
+    },
+    "filters": {
+      "yourBook": "My book",
+      "request": "Book request",
+      "donated": "Donated book",
+      "received": "Received book",
+      "requesting": "Requesting"
+    }
+  },
+  "mobileTitle": {
+    "dashboard": "My Activity",
+    "dashboard-documents": "My Documents",
+    "dashboard-books": "Books"
+  },
+  "activity": {
+    "statFiles": "Files",
+    "statTotalSize": "Total size",
+    "statBooksDonated": "Books donated",
+    "statBooksReceived": "Books received",
+    "recentUploads": "Recent uploads",
+    "viewAll": "View all",
+    "noUploads": "No uploads yet"
+  },
+  "documents": {
+    "searchPlaceholder": "Search documents...",
+    "upload": "Upload",
+    "filterAll": "All",
+    "noMatch": "No documents match your filters",
+    "noneUploaded": "You haven't uploaded anything yet",
+    "tryChangingFilter": "Try changing your search or filter",
+    "shareNotes": "Share your notes with fellow students",
+    "uploadFirst": "Upload your first document",
+    "delete": "Delete",
+    "deleteConfirm": "Delete \"{title}\"? This cannot be undone."
+  },
+  "books": {
+    "title": "Books",
+    "listABook": "List a Book",
+    "noPendingRequests": "No pending requests",
+    "requestsHint": "Requests on your listed books will show up here.",
+    "noDonatedYet": "You haven't donated any books yet",
+    "donatedHint": "Books you give away will appear here.",
+    "noReceivedYet": "You haven't received any books yet",
+    "receivedHint": "Books donors accept your request for will appear here.",
+    "noListedYet": "You haven't listed any books",
+    "listedHint": "Books you list for donation will appear here.",
+    "noRequestingYet": "No books you're currently requesting",
+    "requestingHint": "Books you request will show up here while waiting for a response.",
+    "bookOwner": "Book Owner",
+    "givenTo": "Given to",
+    "contact": "Contact",
+    "status": "Status",
+    "waitingForResponse": "Waiting for response",
+    "pendingBadge": "Pending",
+    "acceptedBadge": "Accepted",
+    "receivedOn": "Received: {date}",
+    "requestedOn": "Requested: {date}",
+    "donatedOn": "Donated: {date}",
+    "requestedBy": "Requested by {name}",
+    "seeMore": "See more",
+    "seeLess": "See less",
+    "accept": "Accept",
+    "reject": "Reject",
+    "edit": "Edit",
+    "delete": "Delete",
+    "donatedStatus": "Donated",
+    "availableStatus": "Available",
+    "noRequestYet": "Available — waiting for requests",
+    "cantEditDonated": "Donated books can't be edited or deleted",
+    "deleteBookTitle": "Delete this book?",
+    "deleteBookConfirm": "This action cannot be undone.",
+    "cancel": "Cancel",
+    "deleting": "Deleting…",
+    "declineTitle": "Decline this request?",
+    "declineSubtitle": "Let the requester know why (optional).",
+    "declinePlaceholder": "e.g. Already gave it to someone else…",
+    "decline": "Decline",
+    "declining": "Declining…"
+  },
+  "pendingRejected": {
+    "title": "Uploads under review",
+    "reason": "Reason: {reason}",
+    "pending": "pending",
+    "rejected": "rejected",
+    "edit": "Edit",
+    "remove": "Remove"
+  }
+}

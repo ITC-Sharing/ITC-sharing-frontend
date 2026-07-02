@@ -6,6 +6,7 @@ import { useDocumentsStore } from '@/stores/documents.store'
 import { useSubjectsStore } from '@/stores/subjects.store'
 import { useMajorsStore } from '@/stores/majors.store'
 import { useAuthStore } from '@/stores/auth.store'
+import { cefrLevel } from '@/utils/format'
 import DocumentCard from '@/components/DocumentCard.vue'
 import UploadDocumentModal from '@/components/UploadDocumentModal.vue'
 import LoadingSpinner from '@/components/LoadingSpinner.vue'
@@ -22,7 +23,8 @@ const auth = useAuthStore()
 
 const slug = route.params.slug as string
 const year = Number(route.params.year)
-const subjectId = route.params.subjectId as string
+// Absent for English/French (no subjects) — docs are listed by major + level.
+const subjectId = (route.params.subjectId as string) || ''
 
 const showUpload = ref(false)
 const selectedType = ref('')
@@ -36,24 +38,12 @@ async function confirmListDelete() {
   if (!deleteEntry.value) return
   await docs.deleteDocument(deleteEntry.value.id)
   deleteEntry.value = null
-  await docs.fetchAll({ subject_id: subjectId })
+  await loadDocs()
 }
 
-const slugToAcronym: Record<string, string> = {
-  gic: 'GIC',
-  ams: 'AMS',
-  gim: 'GIM',
-  gtr: 'GTR',
-  gca: 'GCA',
-  gar: 'GAR',
-  gru: 'GRU',
-  gti: 'GTI',
-  gee: 'GEE',
-  foundation: 'Foundation',
-}
-
+// Match by lowercased acronym so every major works (incl. English/French).
 const currentMajor = computed(() =>
-  majorsStore.majors.find((m: any) => m.acronym === slugToAcronym[slug]),
+  majorsStore.majors.find((m: any) => m.acronym?.toLowerCase() === slug),
 )
 
 const currentSubject = computed(() => subjectsStore.subjects.find((s: any) => s.id === subjectId))
@@ -67,10 +57,43 @@ const groupedDocs = computed(() =>
   })),
 )
 
-const filteredDocs = computed(() => {
-  if (!selectedType.value) return groupedDocs.value
-  return groupedDocs.value.filter((entry) => entry.doc.doc_type === selectedType.value)
+// Page title + level label
+const levelLabel = computed(() => cefrLevel(slug, year) ?? t('common.documentsPage.year', { year }))
+
+const breadcrumbItems = computed(() => {
+  const items: { label: string; to?: object }[] = [
+    { label: t('common.nav.home'), to: { name: 'home' } },
+    {
+      label: currentMajor.value?.acronym ?? slug.toUpperCase(),
+      to: { name: 'department', params: { slug } },
+    },
+  ]
+  if (subjectId) {
+    items.push({ label: levelLabel.value, to: { name: 'subjects', params: { slug, year } } })
+    items.push({ label: currentSubject.value?.name ?? t('common.documentsPage.subject') })
+  } else {
+    items.push({ label: levelLabel.value })
+  }
+  return items
 })
+const pageTitle = computed(
+  () =>
+    currentSubject.value?.name ??
+    `${currentMajor.value?.acronym ?? slug.toUpperCase()} ${levelLabel.value}`,
+)
+
+// Documents are filtered by type in the DB. With a subject we filter by it;
+// otherwise (English/French levels) we filter by major + level.
+function loadDocs() {
+  return docs.fetchAll({
+    ...(subjectId
+      ? { subject_id: subjectId }
+      : { major_id: currentMajor.value?.id, year_level: year }),
+    doc_type: selectedType.value || undefined,
+  })
+}
+
+watch(selectedType, loadDocs)
 
 const docTypes = computed(() => [
   { label: t('common.documentsPage.docTypeAll'), value: '' },
@@ -80,6 +103,7 @@ const docTypes = computed(() => [
   { label: 'TP', value: 'TP' },
   { label: 'Project', value: 'Project' },
   { label: 'Lesson', value: 'Lesson' },
+  { label: 'Thesis', value: 'Thesis' },
   { label: 'Other', value: 'Other' },
 ])
 
@@ -92,11 +116,11 @@ onMounted(async () => {
   }
 
   // Fetch documents filtered by this subject
-  await docs.fetchAll({ subject_id: subjectId })
+  await loadDocs()
 })
 
 async function onUploaded() {
-  await docs.fetchAll({ subject_id: subjectId })
+  await loadDocs()
 }
 </script>
 
@@ -104,26 +128,13 @@ async function onUploaded() {
   <div>
     <div class="mx-auto w-full max-w-7xl px-6 flex flex-col gap-6">
       <!-- Breadcrumb -->
-      <Breadcrumb
-        :items="[
-          { label: t('common.nav.home'), to: { name: 'home' } },
-          {
-            label: slugToAcronym[slug] ?? slug.toUpperCase(),
-            to: { name: 'department', params: { slug } },
-          },
-          {
-            label: t('common.documentsPage.year', { year }),
-            to: { name: 'subjects', params: { slug, year } },
-          },
-          { label: currentSubject?.name ?? t('common.documentsPage.subject') },
-        ]"
-      />
+      <Breadcrumb :items="breadcrumbItems" />
 
       <!-- Header -->
       <div class="flex md:flex-row flex-col items-start md:items-center md:justify-between gap-4">
         <div class="flex flex-col w-full">
           <h1 class="text-3xl font-bold text-black capitalize">
-            {{ currentSubject?.name ?? 'Documents' }}
+            {{ pageTitle }}
           </h1>
           <p class="text-sm text-gray-400 mt-1">
             {{ t('common.documentsPage.documentsCount', groupedDocs.length) }}
@@ -172,7 +183,7 @@ async function onUploaded() {
 
         <!-- Empty -->
         <div
-          v-else-if="filteredDocs.length === 0"
+          v-else-if="groupedDocs.length === 0"
           class="flex flex-col items-center py-24 gap-3 text-center"
         >
           <svg
@@ -199,11 +210,11 @@ async function onUploaded() {
         <div v-else-if="viewMode === 'card'" class="flex justify-center items-center">
           <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 md:w-full">
             <DocumentCard
-              v-for="entry in filteredDocs"
+              v-for="entry in groupedDocs"
               :key="entry.doc.id"
               :doc="entry.doc"
               :file-count="entry.count"
-              @deleted="docs.fetchAll({ subject_id: subjectId })"
+              @deleted="loadDocs()"
             />
           </div>
         </div>
@@ -223,10 +234,10 @@ async function onUploaded() {
 
           <!-- Rows -->
           <div
-            v-for="(entry, idx) in filteredDocs"
+            v-for="(entry, idx) in groupedDocs"
             :key="entry.doc.id"
             class="grid grid-cols-1 md:grid-cols-[2fr_120px_160px_100px_160px_110px_40px] gap-3 items-center px-4 py-3 hover:bg-gray-50 cursor-pointer transition-colors"
-            :class="idx !== filteredDocs.length - 1 ? 'border-b border-gray-100' : ''"
+            :class="idx !== groupedDocs.length - 1 ? 'border-b border-gray-100' : ''"
             @click="$router.push({ name: 'document-details', query: { upload_id: entry.doc.id } })"
           >
             <!-- Name col: icon + title + type -->

@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
+import { io, type Socket } from 'socket.io-client'
 import api from '@/lib/axios'
 
 export interface Notification {
@@ -43,5 +44,37 @@ export const useNotificationsStore = defineStore('notifications', () => {
     notifications.value.forEach((n) => (n.is_read = true))
   }
 
-  return { notifications, loading, unreadCount, fetch, markRead, markAllRead }
+  // ── Real-time (WebSocket) ──────────────────────────────────────────────────
+  let socket: Socket | null = null
+
+  function connectSocket() {
+    if (socket) return
+    socket = io(import.meta.env.VITE_API_URL, {
+      // Called on every (re)connect, so a refreshed access token is always used.
+      auth: (cb) => cb({ token: localStorage.getItem('token') ?? '' }),
+      withCredentials: true,
+    })
+    socket.on('notification', (n: Notification) => {
+      // Avoid duplicates if a fetch raced the socket event.
+      if (!notifications.value.some((existing) => existing.id === n.id)) {
+        notifications.value.unshift(n)
+      }
+    })
+  }
+
+  function disconnectSocket() {
+    socket?.disconnect()
+    socket = null
+  }
+
+  return {
+    notifications,
+    loading,
+    unreadCount,
+    fetch,
+    markRead,
+    markAllRead,
+    connectSocket,
+    disconnectSocket,
+  }
 })

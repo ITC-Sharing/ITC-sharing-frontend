@@ -6,6 +6,7 @@ import { useMajorsStore } from '@/stores/majors.store'
 import { useSubjectsStore } from '@/stores/subjects.store'
 import { useI18n } from 'vue-i18n'
 import SelectDropdown from '@/components/SelectDropdown.vue'
+import { TEXT_NAME_PATTERN, TEXT_TAG_PATTERN, sanitizeTextName, cefrLevel } from '@/utils/format'
 
 const auth = useAuthStore()
 const docs = useDocumentsStore()
@@ -18,6 +19,7 @@ const emit = defineEmits<{ (e: 'close'): void; (e: 'uploaded'): void }>()
 const selectedFiles = ref<File[]>([])
 const isDragActive = ref(false)
 const tagInput = ref('')
+const tagError = ref('')
 const props = defineProps<{
   defaultSubjectId?: string
   defaultMajorId?: string
@@ -100,6 +102,12 @@ const majorOptions = computed(() =>
   majors.majors.map((m) => ({ value: m.id, label: m.acronym })),
 )
 
+// English & French show a CEFR level (A1–B2) instead of "Year N".
+const yearLevelDisplay = computed(() => {
+  const acronym = majors.majors.find((m) => m.id === form.major_id)?.acronym
+  return cefrLevel(acronym, form.year_level) ?? form.year_level
+})
+
 const subjectOptions = computed(() =>
   subjects.subjects.map((s) => ({ value: s.id, label: s.name })),
 )
@@ -116,7 +124,7 @@ function onFileChange(e: Event) {
   errors.file = ''
   const firstFile = files[0]
   if (files.length === 1 && firstFile && !form.title) {
-    form.title = firstFile.name.replace(/\.[^.]+$/, '')
+    form.title = sanitizeTextName(firstFile.name.replace(/\.[^.]+$/, ''))
   }
 }
 
@@ -139,13 +147,24 @@ function handleDrop(event: DragEvent) {
   errors.file = ''
   const firstFile = files[0]
   if (files.length === 1 && firstFile && !form.title) {
-    form.title = firstFile.name.replace(/\.[^.]+$/, '')
+    form.title = sanitizeTextName(firstFile.name.replace(/\.[^.]+$/, ''))
   }
+}
+
+function validateTagInput() {
+  const tag = tagInput.value.trim().toLowerCase()
+  tagError.value =
+    tag && !TEXT_TAG_PATTERN.test(tag)
+      ? t('common.documentUploadModal.errorTagInvalid')
+      : ''
+  return !tagError.value
 }
 
 function addTag() {
   const tag = tagInput.value.trim().toLowerCase()
-  if (tag && !form.tags.includes(tag) && form.tags.length < 3) {
+  if (!tag) return
+  if (!validateTagInput()) return
+  if (!form.tags.includes(tag) && form.tags.length < 3) {
     form.tags.push(tag)
   }
   tagInput.value = ''
@@ -155,9 +174,20 @@ function removeTag(tag: string) {
   form.tags = form.tags.filter((t) => t !== tag)
 }
 
-function validate() {
+function validateTitle() {
   const needsTitle = selectedFiles.value.length <= 1
-  errors.title = needsTitle && !form.title ? t('common.documentUploadModal.errorTitleRequired') : ''
+  const title = form.title.trim()
+  if (needsTitle && !title) {
+    errors.title = t('common.documentUploadModal.errorTitleRequired')
+  } else if (title && !TEXT_NAME_PATTERN.test(title)) {
+    errors.title = t('common.documentUploadModal.errorTitleInvalid')
+  } else {
+    errors.title = ''
+  }
+}
+
+function validate() {
+  validateTitle()
   errors.doc_type = form.doc_type ? '' : t('common.documentUploadModal.errorSelectType')
   errors.year_level = form.year_level ? '' : t('common.documentUploadModal.errorSelectYear')
   errors.academic_year = validateAcademicYear(form.academic_year)
@@ -276,7 +306,7 @@ async function submit() {
             :placeholder="t('common.documentUploadModal.titlePlaceholder')"
             class="w-full rounded-xl border border-[#D9D9D9] bg-white px-4 py-2.5 text-sm outline-none transition focus:border-[#0057BD]"
             :class="errors.title ? 'border-red-400' : ''"
-            @blur="errors.title = selectedFiles.length <= 1 && !form.title ? t('common.documentUploadModal.errorTitleRequired') : ''"
+            @blur="validateTitle"
             @input="errors.title = form.title ? '' : errors.title"
           />
           <p v-if="errors.title" class="text-sm text-red-600">{{ errors.title }}</p>
@@ -332,7 +362,8 @@ async function submit() {
             </label>
             <input
               type="text"
-              v-model="form.year_level"
+              :value="lockYearLevel ? yearLevelDisplay : form.year_level"
+              @input="form.year_level = ($event.target as HTMLInputElement).value"
               :disabled="lockYearLevel"
               :placeholder="t('common.documentUploadModal.yearLevelPlaceholder')"
               class="w-full rounded-xl border border-[#D9D9D9] bg-[#F5F5F5] px-4 py-2.5 text-sm text-gray-600 outline-none"
@@ -362,6 +393,8 @@ async function submit() {
             <input
               v-model="tagInput"
               @keydown.enter.prevent="addTag"
+              @blur="validateTagInput"
+              @input="tagError = ''"
               type="text"
               :placeholder="t('common.documentUploadModal.tagPlaceholder')"
               class="flex-1 rounded-xl border border-[#D9D9D9] bg-white px-4 py-2.5 text-sm outline-none transition focus:border-[#0057BD]"
@@ -374,13 +407,14 @@ async function submit() {
               {{ t('common.documentUploadModal.addTag') }}
             </button>
           </div>
+          <p v-if="tagError" class="text-sm text-red-600">{{ tagError }}</p>
           <div v-if="form.tags.length" class="flex flex-wrap gap-1">
             <span
               v-for="tag in form.tags"
               :key="tag"
               class="flex items-center gap-1 rounded-full bg-blue-50 px-2 py-1 text-xs text-blue-600"
             >
-              #{{ tag }}
+              {{ tag }}
               <button @click="removeTag(tag)" class="hover:text-red-500">✕</button>
             </span>
           </div>

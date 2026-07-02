@@ -77,6 +77,7 @@ const docTypes = [
   { label: 'TP', value: 'TP' },
   { label: 'Project', value: 'Project' },
   { label: 'Lesson', value: 'Lesson' },
+  { label: 'Thesis', value: 'Thesis' },
   { label: 'Other', value: 'Other' },
 ]
 
@@ -87,6 +88,7 @@ const typeColorMap: Record<string, string> = {
   TP: 'bg-green-100 text-green-700',
   Project: 'bg-purple-100 text-purple-700',
   Lesson: 'bg-orange-100 text-orange-700',
+  Thesis: 'bg-teal-100 text-teal-700',
   Other: 'bg-gray-100 text-gray-700',
 }
 

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { reactive, onMounted } from 'vue'
+import { computed, reactive, onMounted, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '../stores/auth.store'
@@ -13,7 +13,8 @@ const majorsStore = useMajorsStore()
 interface Form {
   firstName: string
   lastName: string
-  major_id: string  
+  major_id: string
+  year_level: string
   email: string
   password: string
   confirmPassword: string
@@ -23,6 +24,7 @@ interface Errors {
   firstName: string
   lastName: string
   major_id: string   // ← was "skill"
+  year_level: string
   email: string
   password: string
   confirmPassword: string
@@ -32,6 +34,7 @@ const form = reactive<Form>({
   firstName: '',
   lastName: '',
   major_id: '',
+  year_level: '',
   email: '',
   password: '',
   confirmPassword: '',
@@ -41,10 +44,37 @@ const errors = reactive<Errors>({
   firstName: '',
   lastName: '',
   major_id: '',
+  year_level: '',
   email: '',
   password: '',
   confirmPassword: '',
 })
+
+// English & French aren't offered for self-registration.
+const HIDDEN_MAJORS = ['english', 'french']
+const selectableMajors = computed(() =>
+  majorsStore.majors.filter(
+    (m) => !HIDDEN_MAJORS.includes(String(m.acronym ?? '').toLowerCase()),
+  ),
+)
+
+// Foundation students are years 1–2; department students are years 3–5.
+const isFoundation = computed(() => {
+  const major = majorsStore.majors.find((m) => m.id === form.major_id)
+  return major?.acronym?.toLowerCase() === 'foundation'
+})
+
+const yearOptions = computed(() =>
+  isFoundation.value ? [1, 2] : [3, 4, 5],
+)
+
+// Reset the chosen year when the major changes (valid range differs)
+watch(
+  () => form.major_id,
+  () => {
+    form.year_level = ''
+  },
+)
 
 // Load majors from API when page mounts
 onMounted(() => {
@@ -112,6 +142,14 @@ function validateMajor() {
   }
 }
 
+function validateYear() {
+  if (!form.year_level) {
+    errors.year_level = 'auth.register.enterYear'
+  } else {
+    errors.year_level = ''
+  }
+}
+
 async function submitForm(e: Event) {
   e.preventDefault()
 
@@ -121,6 +159,7 @@ async function submitForm(e: Event) {
   validatePassword()
   validateConfirmPassword()
   validateMajor()
+  validateYear()
 
   const hasError = Object.values(errors).some((error) => error !== '')
   if (hasError) return
@@ -132,6 +171,7 @@ async function submitForm(e: Event) {
       email: form.email,
       password: form.password,
       major_id: form.major_id,
+      year_level: Number(form.year_level),
     })
 
     // Success — go to login
@@ -144,102 +184,120 @@ async function submitForm(e: Event) {
 </script>
 
 <template>
-  <div class="md:w-180 w-80 h-fit bg-white border-2 border-[#D9D9D9] rounded-[20px] px-8 py-6">
-    <h1 class="text-[36px] font-bold flex justify-center items-center mb-3">
+  <div class="md:w-180 w-80 h-fit bg-white border border-gray-200 rounded-2xl shadow-sm px-8 py-8">
+    <h1 class="text-3xl font-bold text-gray-900 text-center">
       {{ t('auth.register.register') }}
     </h1>
 
     <!-- Server error banner -->
-    <div v-if="authStore.error" class="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+    <div v-if="authStore.error" class="mt-5 p-3 bg-red-50 border border-red-200 rounded-xl">
       <p class="text-red-600 text-sm text-center">{{ authStore.error }}</p>
     </div>
 
-    <form @submit="submitForm" class="grid grid-cols-1 md:grid-cols-2 gap-5">
+    <form @submit="submitForm" class="mt-6 grid grid-cols-1 md:grid-cols-2 gap-x-5 gap-y-4">
       <div>
-        <label>{{ t('auth.register.firstName') }}</label>
+        <label class="text-sm font-semibold text-gray-600">{{ t('auth.register.firstName') }}</label>
         <input
           @blur="validateFirstName"
           v-model="form.firstName"
           type="text"
-          class="w-full border-2 border-[#D9D9D9] rounded-[10px] px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          class="mt-1.5 w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#008CB9]"
           :placeholder="$t('auth.register.yourFirstName')"
         />
-        <p class="text-red-500 text-sm">{{ errors.firstName ? t(errors.firstName) : '' }}</p>
+        <p v-if="errors.firstName" class="mt-1 text-sm text-red-500">{{ t(errors.firstName) }}</p>
       </div>
 
       <div>
-        <label>{{ t('auth.register.lastName') }}</label>
+        <label class="text-sm font-semibold text-gray-600">{{ t('auth.register.lastName') }}</label>
         <input
           @blur="validateLastName"
           v-model="form.lastName"
           type="text"
-          class="w-full border-2 border-[#D9D9D9] rounded-[10px] px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          class="mt-1.5 w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#008CB9]"
           :placeholder="$t('auth.register.yourLastName')"
         />
-        <p class="text-red-500 text-sm">{{ errors.lastName ? t(errors.lastName) : '' }}</p>
+        <p v-if="errors.lastName" class="mt-1 text-sm text-red-500">{{ t(errors.lastName) }}</p>
       </div>
 
       <!-- Major select — loaded dynamically from API -->
       <div>
-        <label>{{ t('auth.register.department') }}</label>
+        <label class="text-sm font-semibold text-gray-600">{{ t('auth.register.department') }}</label>
         <select
           v-model="form.major_id"
           @blur="validateMajor"
-          class="w-full border-2 border-[#D9D9D9] rounded-[10px] px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-          :class="form.major_id === '' ? 'text-gray-400' : 'text-black'"
+          class="mt-1.5 w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#008CB9]"
+          :class="form.major_id === '' ? 'text-gray-400' : 'text-gray-900'"
         >
           <option disabled value="">{{ t('auth.register.chooseDepartment') }}</option>
           <option
-            v-for="major in majorsStore.majors"
+            v-for="major in selectableMajors"
             :key="major.id"
             :value="major.id"
           >
             {{ major.acronym }}
           </option>
         </select>
-        <p class="text-red-500 text-sm">{{ errors.major_id ? t(errors.major_id) : '' }}</p>
+        <p v-if="errors.major_id" class="mt-1 text-sm text-red-500">{{ t(errors.major_id) }}</p>
+      </div>
+
+      <!-- Academic year — range depends on the chosen department -->
+      <div>
+        <label class="text-sm font-semibold text-gray-600">{{ t('auth.register.year') }}</label>
+        <select
+          v-model="form.year_level"
+          @blur="validateYear"
+          :disabled="!form.major_id"
+          class="mt-1.5 w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#008CB9] disabled:bg-gray-100 disabled:cursor-not-allowed"
+          :class="form.year_level === '' ? 'text-gray-400' : 'text-gray-900'"
+        >
+          <option disabled value="">{{ t('auth.register.chooseYear') }}</option>
+          <option v-for="y in yearOptions" :key="y" :value="String(y)">
+            {{ t('auth.register.yearN', { year: y }) }}
+          </option>
+        </select>
+        <p v-if="errors.year_level" class="mt-1 text-sm text-red-500">{{ t(errors.year_level) }}</p>
       </div>
 
       <div>
-        <label>{{ t('auth.register.email') }}</label>
+        <label class="text-sm font-semibold text-gray-600">{{ t('auth.register.email') }}</label>
         <input
           @blur="validateEmail"
           v-model="form.email"
-          class="w-full border-2 border-[#D9D9D9] rounded-[10px] px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          class="mt-1.5 w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#008CB9]"
           placeholder="e20220886@itc.edu.kh"
         />
-        <p class="text-red-500 text-sm">{{ errors.email ? t(errors.email) : '' }}</p>
+        <p v-if="errors.email" class="mt-1 text-sm text-red-500">{{ t(errors.email) }}</p>
       </div>
 
       <div>
-        <label>{{ t('auth.register.password') }}</label>
+        <label class="text-sm font-semibold text-gray-600">{{ t('auth.register.password') }}</label>
         <input
           @blur="validatePassword"
           v-model="form.password"
           type="password"
-          class="w-full border-2 border-[#D9D9D9] rounded-[10px] px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          class="mt-1.5 w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#008CB9]"
           :placeholder="t('auth.register.enterPassword')"
         />
-        <p class="text-red-500 text-sm">{{ errors.password ? t(errors.password) : '' }}</p>
+        <p v-if="errors.password" class="mt-1 text-sm text-red-500">{{ t(errors.password) }}</p>
       </div>
 
       <div>
-        <label>{{ t('auth.register.confirmPassword') }}</label>
+        <label class="text-sm font-semibold text-gray-600">{{ t('auth.register.confirmPassword') }}</label>
         <input
           @blur="validateConfirmPassword"
           v-model="form.confirmPassword"
           type="password"
-          class="w-full border-2 border-[#D9D9D9] rounded-[10px] px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          class="mt-1.5 w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#008CB9]"
           :placeholder="t('auth.register.enterConfirmPassword')"
         />
-        <p class="text-red-500 text-sm">
-          {{ errors.confirmPassword ? t(errors.confirmPassword) : '' }}
+        <p v-if="errors.confirmPassword" class="mt-1 text-sm text-red-500">
+          {{ t(errors.confirmPassword) }}
         </p>
       </div>
 
-      <div class="md:col-span-2">
+      <div class="md:col-span-2 mt-2">
         <button
-          class="w-full bg-[#1B68FF] text-white py-3 rounded-lg font-semibold hover:bg-[#093ABE] transition cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+          class="w-full bg-[#008CB9] text-white py-3 rounded-xl font-semibold hover:bg-[#00749b] active:scale-[0.99] transition cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
           type="submit"
           :disabled="authStore.loading"
         >
@@ -256,9 +314,9 @@ async function submitForm(e: Event) {
       </div>
     </form>
 
-    <div class="flex justify-center gap-2 mt-5">
+    <div class="flex justify-center gap-2 mt-6 text-sm text-gray-600">
       <span>{{ t('auth.register.haveAccount') }}</span>
-      <RouterLink to="/auth/login" class="text-[#1B68FF] ml-2">
+      <RouterLink to="/auth/login" class="font-semibold text-[#008CB9] hover:underline">
         {{ t('auth.register.login') }}
       </RouterLink>
     </div>

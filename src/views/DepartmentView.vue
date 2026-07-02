@@ -5,6 +5,7 @@ import YearCard from '@/components/YearCard.vue'
 import Breadcrumb from '@/components/Breadcrumb.vue'
 import { useMajorsStore } from '@/stores/majors.store'
 import { useSubjectsStore } from '@/stores/subjects.store'
+import { isLanguageMajor, cefrLevel, LANGUAGE_LEVEL_COUNT } from '@/utils/format'
 
 const props = defineProps<{ slug: string }>()
 const { t } = useI18n({ useScope: 'global' })
@@ -52,9 +53,30 @@ const years = [
   },
 ]
 
-const filteredYears = computed(() =>
-  props.slug === 'foundation' ? years.filter((y) => y.id <= 2) : years.filter((y) => y.id >= 3),
-)
+const filteredYears = computed(() => {
+  // Year cards use the major's own image (falling back to the year illustration).
+  const majorImg = (fallback: string) => currentMajor.value?.image_url ?? fallback
+  // English & French: years 1–4 are CEFR levels (A1–B2), year 5 is a normal year.
+  if (isLanguageMajor(props.slug)) {
+    return Array.from({ length: LANGUAGE_LEVEL_COUNT }, (_, i) => {
+      const n = i + 1
+      return {
+        id: n,
+        label: cefrLevel(props.slug, n) ?? t(`common.departmentPage.year${n}`),
+        subtitle: t('common.departmentPage.subject'),
+        img: majorImg(years[i]!.img),
+      }
+    })
+  }
+  const subset =
+    props.slug === 'foundation' ? years.filter((y) => y.id <= 2) : years.filter((y) => y.id >= 3)
+  return subset.map((y) => ({
+    id: y.id,
+    label: t(y.title),
+    subtitle: t(y.subtitle),
+    img: majorImg(y.img),
+  }))
+})
 
 async function loadCounts() {
   if (!majorsStore.majors.length) await majorsStore.fetchMajors()
@@ -106,8 +128,8 @@ watch(() => props.slug, loadCounts)
       <YearCard
         v-for="year in filteredYears"
         :key="year.id"
-        :title="t(year.title)"
-        :subtitle="t(year.subtitle)"
+        :title="year.label"
+        :subtitle="year.subtitle"
         :img="year.img"
         :slug="props.slug"
         :year="year.id"

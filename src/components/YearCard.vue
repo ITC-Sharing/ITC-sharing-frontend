@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
+import { isLanguageMajor } from '@/utils/format'
 
 const { t } = useI18n({ useScope: 'global' })
 const router = useRouter()
@@ -15,7 +16,12 @@ const props = defineProps({
 })
 
 function goToWhichYear() {
-  router.push(`/department/${props.slug}/year/${props.year}`)
+  // English & French have no subjects — jump straight to the level's documents.
+  if (isLanguageMajor(props.slug)) {
+    router.push(`/department/${props.slug}/year/${props.year}/documents`)
+  } else {
+    router.push(`/department/${props.slug}/year/${props.year}`)
+  }
 }
 
 function handleCardClick() {
@@ -25,17 +31,17 @@ function handleCardClick() {
 
 <template>
   <div
-    class="w-90 rounded-md border border-[#D9D9D9] bg-white px-6 py-3 shadow-[0_1px_4px_rgba(0,0,0,0.08)] sm:cursor-default cursor-pointer active:scale-95 transition-transform sm:active:scale-100"
+    class="w-80 rounded-md border border-[#D9D9D9] bg-white px-6 py-3 shadow-[0_1px_4px_rgba(0,0,0,0.08)] sm:cursor-default cursor-pointer active:scale-95 transition-transform sm:active:scale-100"
     @click="handleCardClick"
   >
     <div class="flex flex-col items-center text-center">
-      <img :src="img" :alt="title" class="h-30 rounded-md" />
+      <img :src="img" :alt="title" class="h-20 rounded-md" />
 
-      <h2 class="text-2xl font-semibold leading-none text-black">
+      <h2 class="text-xl font-semibold leading-none text-black mt-3">
         {{ title }}
       </h2>
 
-      <p class="mt-2 text-sm font-normal text-[#B8B8B8]"><span>{{ subjectCount }}</span> {{ subtitle }}</p>
+      <p v-if="!isLanguageMajor(slug)" class="mt-2 text-sm font-normal text-[#B8B8B8]"><span>{{ subjectCount }}</span> {{ subtitle }}</p>
 
       <button
         type="button"

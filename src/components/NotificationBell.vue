@@ -1,17 +1,24 @@
 <script setup lang="ts">
-import { onBeforeUnmount, onMounted, ref, computed } from 'vue'
+import { onBeforeUnmount, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { useNotificationsStore } from '@/stores/notifications.store'
-import { useSubjectsStore } from '@/stores/subjects.store'
+import { useI18n } from 'vue-i18n'
+import { useNotifications } from '@/composables/useNotifications'
 import type { Notification } from '@/stores/notifications.store'
 
-const notifStore = useNotificationsStore()
-const subjectsStore = useSubjectsStore()
+const { t } = useI18n({ useScope: 'global' })
 const router = useRouter()
+const { notifStore, groupedNotifications, handleNotifClick, markAllRead, iconBg, timeAgo } =
+  useNotifications()
+
 const notifOpen = ref(false)
 const notifRef = ref<HTMLElement | null>(null)
 
 function toggleNotif() {
+  // On mobile, open a full page instead of a cramped dropdown.
+  if (window.innerWidth < 640) {
+    router.push({ name: 'notifications' })
+    return
+  }
   notifOpen.value = !notifOpen.value
   if (notifOpen.value) notifStore.fetch()
 }
@@ -20,138 +27,13 @@ function closeNotif() {
   notifOpen.value = false
 }
 
-async function handleNotifClick(n: Notification) {
-  if (!n.is_read) await notifStore.markRead(n.id)
+async function onItemClick(n: Notification) {
   closeNotif()
-
-  if (n.ref_type === 'book_request') {
-    // Donor's incoming-request notification → Dashboard (accept/reject there)
-    if (n.type === 'book_request') {
-      router.push({ name: 'dashboard' })
-      return
-    }
-    // Requester's accepted/declined notification → detail page (status + contact)
-    router.push({
-      name: 'notification-detail',
-      query: {
-        notif_id: n.id,
-        ...(n.ref_id ? { ref_id: n.ref_id } : {}),
-        ref_type: n.ref_type,
-      },
-    })
-    return
-  }
-
-  const approved = n.type.includes('approved')
-
-  if (!approved) {
-    router.push({
-      name: 'notification-detail',
-      query: {
-        notif_id: n.id,
-        ...(n.ref_id ? { ref_id: n.ref_id } : {}),
-        ...(n.ref_type ? { ref_type: n.ref_type } : {}),
-      },
-    })
-    return
-  }
-
-  if (n.ref_type === 'document' && n.ref_id) {
-    router.push({ name: 'document-details', query: { upload_id: n.ref_id } })
-    return
-  }
-
-  if (n.ref_type === 'subject' && n.ref_id) {
-    let subject = subjectsStore.mySubjects.find((s) => s.id === n.ref_id)
-    if (!subject) {
-      await subjectsStore.fetchMine()
-      subject = subjectsStore.mySubjects.find((s) => s.id === n.ref_id)
-    }
-    if (subject) {
-      router.push({
-        name: 'subject-documents',
-        params: {
-          slug: subject.major?.acronym?.toLowerCase(),
-          year: subject.year_level,
-          subjectId: n.ref_id,
-        },
-      })
-      return
-    }
-  }
-
-  router.push({ name: 'dashboard' })
+  await handleNotifClick(n)
 }
 
 async function handleMarkAllRead() {
-  await notifStore.markAllRead()
-}
-
-function iconBg(type: string) {
-  if (type.includes('approved')) return 'bg-green-100'
-  if (type.includes('rejected')) return 'bg-red-100'
-  return 'bg-blue-100'
-}
-
-function timeAgo(dateStr: string) {
-  const utc = toUtc(dateStr)
-  const diff = Math.floor((Date.now() - new Date(utc).getTime()) / 1000)
-  if (diff < 60) return 'Just now'
-  if (diff < 3600) return `${Math.floor(diff / 60)}m ago`
-  if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`
-  if (diff < 259200) return `${Math.floor(diff / 86400)}d ago`
-  return new Date(utc).toLocaleDateString('en-GB', {
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric',
-  })
-}
-
-function toUtc(dateStr: string) {
-  return dateStr.endsWith('Z') || /[+-]\d{2}:\d{2}$/.test(dateStr) ? dateStr : dateStr + 'Z'
-}
-
-const groupedNotifications = computed(() => {
-  const now = new Date()
-  const todayStr = now.toDateString()
-  const yesterday = new Date(now)
-  yesterday.setDate(yesterday.getDate() - 1)
-  const yesterdayStr = yesterday.toDateString()
-
-  const groups: { key: string; label: string; items: Notification[] }[] = []
-  const keyMap: Record<string, number> = {}
-
-  for (const n of notifStore.notifications) {
-    const d = new Date(toUtc(n.created_at))
-    const key = d.toDateString()
-
-    let label: string
-    if (key === todayStr) label = 'Today'
-    else if (key === yesterdayStr) label = 'Yesterday'
-    else label = d.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
-
-    if (keyMap[key] === undefined) {
-      keyMap[key] = groups.length
-      groups.push({ key, label, items: [] })
-    }
-    groups[keyMap[key]]!.items.push(n)
-  }
-
-  return groups
-})
-
-let pollTimer: ReturnType<typeof setInterval> | null = null
-
-function startPolling() {
-  if (pollTimer) return
-  pollTimer = setInterval(() => notifStore.fetch(), 15_000)
-}
-
-function stopPolling() {
-  if (pollTimer) {
-    clearInterval(pollTimer)
-    pollTimer = null
-  }
+  await markAllRead()
 }
 
 function handleClickOutside(event: MouseEvent) {
@@ -161,18 +43,19 @@ function handleClickOutside(event: MouseEvent) {
 }
 
 function handleVisibilityChange() {
+  // Resync the list when the tab regains focus (covers events missed offline).
   if (document.visibilityState === 'visible') notifStore.fetch()
 }
 
 onMounted(() => {
-  notifStore.fetch()
-  startPolling()
+  notifStore.fetch() // initial list
+  notifStore.connectSocket() // real-time updates (replaces polling)
   document.addEventListener('click', handleClickOutside)
   document.addEventListener('visibilitychange', handleVisibilityChange)
 })
 
 onBeforeUnmount(() => {
-  stopPolling()
+  notifStore.disconnectSocket()
   document.removeEventListener('click', handleClickOutside)
   document.removeEventListener('visibilitychange', handleVisibilityChange)
 })
@@ -184,15 +67,15 @@ onBeforeUnmount(() => {
     <button
       type="button"
       @click.stop="toggleNotif"
-      class="relative flex items-center justify-center w-10 h-10 rounded-full bg-gray-100 hover:bg-gray-200 transition-colors"
+      class="relative flex items-center justify-center transition-colors"
       aria-label="Notifications"
     >
-      <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-gray-800" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6 text-gray-800" fill="none" viewBox="0 0 24 24" stroke="currentColor">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6 6 0 10-12 0v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
       </svg>
       <span
         v-if="notifStore.unreadCount > 0"
-        class="absolute -top-0.5 -right-0.5 h-4 min-w-4 px-1 rounded-full bg-red-500 text-white text-[10px] font-bold flex items-center justify-center"
+        class="absolute -top-0.5 -right-0.5 h-3 min-w-3 px-1 rounded-full bg-red-500 text-white text-[10px] font-bold flex items-center justify-center"
       >{{ notifStore.unreadCount > 9 ? '9+' : notifStore.unreadCount }}</span>
     </button>
 
@@ -203,12 +86,12 @@ onBeforeUnmount(() => {
     >
       <!-- Header -->
       <div class="flex items-center justify-between px-4 pt-4 pb-1">
-        <h2 class="text-xl font-bold text-gray-900">Notifications</h2>
+        <h2 class="text-xl font-bold text-gray-900">{{ t('common.notifications.title') }}</h2>
         <button
           v-if="notifStore.unreadCount > 0"
           @click="handleMarkAllRead"
           class="text-xs font-semibold text-[#0057BD] px-3 py-1.5 rounded-lg hover:bg-blue-50 transition-colors"
-        >Mark all read</button>
+        >{{ t('common.notifications.markAllRead') }}</button>
       </div>
 
       <!-- List -->
@@ -231,7 +114,7 @@ onBeforeUnmount(() => {
               <path stroke-linecap="round" stroke-linejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6 6 0 10-12 0v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
             </svg>
           </div>
-          <p class="text-sm font-medium">No notifications yet</p>
+          <p class="text-sm font-medium">{{ t('common.notifications.empty') }}</p>
         </div>
 
         <!-- Grouped items -->
@@ -240,7 +123,7 @@ onBeforeUnmount(() => {
           <button
             v-for="n in group.items"
             :key="n.id"
-            @click="handleNotifClick(n)"
+            @click="onItemClick(n)"
             :class="[
               'w-full text-left flex items-center gap-3 px-3 py-2.5 rounded-xl transition-colors',
               !n.is_read ? 'bg-blue-50 hover:bg-blue-100/80' : 'hover:bg-gray-100',

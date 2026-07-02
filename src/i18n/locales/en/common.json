@@ -6,6 +6,7 @@
     "home": "Home",
     "docs": "Documents",
     "books": "Books",
+    "dashboard": "Dashboard",
     "login": "Login",
     "search": "Search"
   },
@@ -29,9 +30,9 @@
   "filterButton": {
     "sortBy": "Sort by",
     "default": "Default",
-    "byName": "Sort By Letter A-Z",
-    "bySemester1": "Sort By Semester 1",
-    "bySemester2": "Sort By Semester 2"
+    "byName": "Letter A-Z",
+    "bySemester1": "Semester 1",
+    "bySemester2": "Semester 2"
   },
   "DocumentCard": {
     "viewDetails": "View Details",
@@ -40,7 +41,8 @@
     "deleteMessage": "This action cannot be undone.",
     "deleteCancel": "Cancel",
     "deleteConfirm": "Delete",
-    "academicYear": "Academic Year"
+    "academicYear": "Academic Year",
+    "by": "by"
   },
   "subjectCreateModal": {
     "title": "Create Subject",
@@ -57,9 +59,15 @@
     "createButton": "Create",
     "nameRequired": "Please enter subject name",
     "nameTooLong": "Subject name must be 80 characters or less",
+    "nameInvalid": "Subject name must not contain special characters",
+    "slugInvalid": "Slug can only contain lowercase letters, numbers and single hyphens",
     "slugLabel": "Slug"
   },
   "documentsPage": {
+    "title": "Documents",
+    "subtitle": "I{year}-{major}",
+    "prev": "Previous",
+    "next": "Next",
     "subject": "Subject",
     "year": "Year {year}",
     "upload": "Upload",
@@ -110,7 +118,14 @@
     "semesterLabel": "Semester",
     "uploadButton": "Upload",
     "uploading": "Uploading...",
+    "editTitle": "Edit Document",
+    "currentFiles": "Current files",
+    "removeFile": "Remove file",
+    "saveButton": "Save Changes",
+    "saving": "Saving...",
     "errorTitleRequired": "Title is required",
+    "errorTitleInvalid": "Title must not contain special characters",
+    "errorTagInvalid": "Tags can only contain letters, numbers and hyphens",
     "errorSelectType": "Please select a type",
     "errorSelectYear": "Please select a year",
     "errorSelectMajor": "Please select a major",
@@ -120,5 +135,66 @@
     "errorAcademicYearEnd": "End year must be exactly {year}",
     "errorAcademicYearFuture": "Academic year cannot be in the future (current year is {year})",
     "cancelButton": "Cancel"
+  },
+  "donateBookModal": {
+    "editTitle": "Edit Book",
+    "createTitle": "Donate a Book",
+    "coverLabel": "Cover Image",
+    "coverUpload": "Click to upload (JPG, PNG, WebP)",
+    "titleLabel": "Title",
+    "titlePlaceholder": "e.g. Introduction to Algorithms",
+    "departmentLabel": "Department",
+    "selectDepartment": "Select department",
+    "descriptionLabel": "Description",
+    "optional": "(optional)",
+    "descriptionPlaceholder": "Condition, edition, notes…",
+    "contactLabel": "Contact",
+    "contactPlaceholder": "e.g. Telegram: {'@'}username",
+    "cancel": "Cancel",
+    "submitting": "Submitting…",
+    "saveChanges": "Save Changes",
+    "donateButton": "Donate Book",
+    "errorTitleRequired": "Title is required",
+    "errorTitleInvalid": "Title must not contain special characters",
+    "errorDepartmentRequired": "Please select a department",
+    "errorContactRequired": "Contact is required",
+    "errorContactInvalid": "Contact must not contain $, {'{'} or {'}'}",
+    "errorDescriptionInvalid": "Description must not contain $, {'{'} or {'}'}",
+    "errorCoverRequired": "Cover image is required",
+    "noBooksAvailable": "No books available yet. Be the first to donate one!",
+    "bookSubtitle": "Browse and donate second-hand books"
+  },
+  "profilePage": {
+    "title": "Profile",
+    "subtitle": "Manage your department and academic year",
+    "name": "Name",
+    "firstName": "First Name",
+    "lastName": "Last name",
+    "email": "Email",
+    "department": "Department",
+    "academicYear": "Academic Year",
+    "updateProfile": "Update Profile",
+    "removePhoto": "Remove photo",
+    "cancel": "Cancel",
+    "save": "Save Changes",
+    "saving": "Saving…",
+    "saved": "Profile updated",
+    "errorFirstName": "First name is required",
+    "errorLastName": "Last name is required",
+    "errorNameInvalid": "Name cannot contain numbers or special characters",
+    "errorNameTooLong": "Name must be {max} characters or less",
+    "errorYear": "Please choose your year"
+  },
+  "notifications": {
+    "title": "Notifications",
+    "markAllRead": "Mark all read",
+    "empty": "No notifications yet",
+    "back": "Back",
+    "today": "Today",
+    "yesterday": "Yesterday",
+    "justNow": "Just now",
+    "minutesAgo": "{n}m ago",
+    "hoursAgo": "{n}h ago",
+    "daysAgo": "{n}d ago"
   }
 }

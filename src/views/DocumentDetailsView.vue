@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, onBeforeUnmount, ref } from 'vue'
+import { computed, onMounted, onBeforeUnmount, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { useDocumentsStore } from '@/stores/documents.store'
@@ -113,15 +113,21 @@ onMounted(async () => {
   document.addEventListener('click', handleSortOutside)
 })
 
+// Same-route navigation (e.g. clicking another doc notification) only changes
+// the query param — refetch so the page reflects the new upload_id.
+watch(uploadId, async (id) => {
+  if (id) await docs.fetchOne(id)
+})
+
 onBeforeUnmount(() => {
   document.removeEventListener('click', handleSortOutside)
 })
 </script>
 
 <template>
-  <div class="w-full px-6 py-8">
+  <div class="w-full px-6">
     <!-- Breadcrumb / Back — aligned with navbar logo -->
-    <div class="mx-auto w-full max-w-7xl px-6 mb-6 cursor-pointer">
+    <div class="mx-auto w-full max-w-7xl md:px-6 mb-6 cursor-pointer">
       <button
         class="flex items-center gap-1 text-sm text-gray-400 hover:text-gray-700 transition-colors cursor-pointer"
         @click="router.back()"

@@ -72,30 +72,30 @@ const submitForm = async (e: Event) => {
 
 <template>
   <div class="flex flex-col">
-    <div class="md:w-115 w-80 h-fit bg-white border-2 border-[#D9D9D9] rounded-[20px] px-8">
-      <h1 class="text-[36px] font-bold flex justify-center mt-3">{{ t('auth.login.login') }}</h1>
+    <div class="md:w-115 w-80 h-fit bg-white border border-gray-200 rounded-2xl shadow-sm px-8 py-8">
+      <h1 class="text-3xl font-bold text-gray-900 text-center">{{ t('auth.login.login') }}</h1>
 
       <!-- Server error banner -->
-      <div v-if="authStore.error" class="mt-3 p-3 bg-red-50 border border-red-200 rounded-lg">
+      <div v-if="authStore.error" class="mt-5 p-3 bg-red-50 border border-red-200 rounded-xl">
         <p class="text-red-600 text-sm text-center">{{ authStore.error }}</p>
       </div>
 
-      <form @submit="submitForm" class="mt-2 mb-5 flex flex-col gap-4">
-        <div class="flex flex-col gap-2">
-          <label for="email">{{ t('auth.login.email') }}</label>
+      <form @submit="submitForm" class="mt-6 flex flex-col gap-4">
+        <div>
+          <label for="email" class="text-sm font-semibold text-gray-600">{{ t('auth.login.email') }}</label>
           <input
             @blur="validateEmail"
             id="email"
             name="email"
             :placeholder="t('auth.login.enterEmail')"
             v-model="form.email"
-            class="border-2 border-[#D9D9D9] rounded-[10px] p-2 focus:outline-none focus:ring-2 focus:ring-[#1B68FF]"
+            class="mt-1.5 w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#008CB9]"
           />
-          <p class="text-red-500 text-sm">{{ errors.email ? t(errors.email) : '' }}</p>
+          <p v-if="errors.email" class="mt-1 text-sm text-red-500">{{ t(errors.email) }}</p>
         </div>
 
-        <div class="flex flex-col gap-2">
-          <label for="password">{{ t('auth.login.password') }}</label>
+        <div>
+          <label for="password" class="text-sm font-semibold text-gray-600">{{ t('auth.login.password') }}</label>
           <input
             @blur="validatePassword"
             type="password"
@@ -103,18 +103,18 @@ const submitForm = async (e: Event) => {
             name="password"
             :placeholder="t('auth.login.enterPassword')"
             v-model="form.password"
-            class="border-2 border-[#D9D9D9] rounded-[10px] p-2 focus:outline-none focus:ring-2 focus:ring-[#1B68FF]"
+            class="mt-1.5 w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#008CB9]"
           />
-          <div class="flex justify-between">
-            <p class="text-red-500 text-sm">{{ errors.password ? t(errors.password) : '' }}</p>
-            <span class="text-[#1570EF] flex justify-end">{{ t('auth.login.forgotPassword') }}</span>
+          <div class="mt-1 flex items-center justify-between gap-2">
+            <p class="text-sm text-red-500">{{ errors.password ? t(errors.password) : '' }}</p>
+            <span class="text-sm text-[#008CB9] hover:underline cursor-pointer shrink-0">{{ t('auth.login.forgotPassword') }}</span>
           </div>
         </div>
 
         <button
           type="submit"
           :disabled="authStore.loading"
-          class="w-full h-13 text-white rounded-lg bg-[#1B68FF] cursor-pointer hover:bg-[#093ABE] transition font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
+          class="w-full py-3 mt-1 text-white rounded-xl bg-[#008CB9] cursor-pointer hover:bg-[#00749b] active:scale-[0.99] transition font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
         >
           <span v-if="authStore.loading" class="flex items-center justify-center gap-2">
             <svg class="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
@@ -126,9 +126,9 @@ const submitForm = async (e: Event) => {
           <span v-else>{{ t('auth.login.login') }}</span>
         </button>
 
-        <div class="flex justify-center gap-2">
-          <span class="text-[#98A2B3]">{{ t('auth.login.dontHaveAccount') }}</span>
-          <RouterLink to="/auth/register" class="text-[#1570EF]">{{ t('auth.login.register') }}</RouterLink>
+        <div class="flex justify-center gap-2 text-sm text-gray-600">
+          <span>{{ t('auth.login.dontHaveAccount') }}</span>
+          <RouterLink to="/auth/register" class="font-semibold text-[#008CB9] hover:underline">{{ t('auth.login.register') }}</RouterLink>
         </div>
       </form>
     </div>

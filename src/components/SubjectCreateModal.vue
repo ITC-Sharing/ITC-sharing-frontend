@@ -2,6 +2,7 @@
 import { computed, onBeforeUnmount, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import SelectDropdown from '@/components/SelectDropdown.vue'
+import { cefrLevel } from '@/utils/format'
 
 const { t } = useI18n({ useScope: 'global' })
 
@@ -50,6 +51,15 @@ const slugTouched = ref(false)
 const modalRef = ref<HTMLElement | null>(null)
 
 const departmentOptions = computed(() => props.departments)
+
+// Year label respects CEFR levels for English/French (department label is the acronym).
+const yearDisplay = computed(() => {
+  const acronym = departmentOptions.value.find((d) => d.value === departmentId.value)?.label
+  return (
+    cefrLevel(acronym, academicYear.value) ??
+    `${t('common.subjectCreateModal.year')} ${academicYear.value}`
+  )
+})
 const semesterOptions = computed(() => [
   { label: `${t('common.subjectCreateModal.semesterLabel')} 1`, value: '1' },
   { label: `${t('common.subjectCreateModal.semesterLabel')} 2`, value: '2' },
@@ -130,6 +140,12 @@ function handleDragLeave(event: DragEvent) {
   isDragActive.value = false
 }
 
+// Letters (any language, incl. combining marks for Khmer), numbers, spaces and
+// hyphens — and at least one letter/number.
+const NAME_PATTERN = /^(?=.*[\p{L}\p{N}])[\p{L}\p{M}\p{N}\s-]+$/u
+// Lowercase kebab-case: letters/numbers split by single hyphens.
+const SLUG_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/
+
 function validateSubjectName() {
   const name = subjectName.value.trim()
 
@@ -140,6 +156,11 @@ function validateSubjectName() {
 
   if (name.length > 80) {
     nameError.value = t('common.subjectCreateModal.nameTooLong')
+    return false
+  }
+
+  if (!NAME_PATTERN.test(name)) {
+    nameError.value = t('common.subjectCreateModal.nameInvalid')
     return false
   }
 
@@ -156,7 +177,12 @@ function validateSlugName() {
   }
 
   if (slug.length > 80) {
-    formError.value = t('common.subjectCreateModal.nameTooLong')
+    slugNameError.value = t('common.subjectCreateModal.nameTooLong')
+    return false
+  }
+
+  if (!SLUG_PATTERN.test(slug)) {
+    slugNameError.value = t('common.subjectCreateModal.slugInvalid')
     return false
   }
 
@@ -335,7 +361,7 @@ onBeforeUnmount(() => {
                 class="w-full appearance-none rounded-xl border border-[#D9D9D9] bg-[#F5F5F5] px-4 py-2 text-sm text-gray-600 outline-none sm:text-base"
               >
                 <option :value="academicYear">
-                  {{ t('common.subjectCreateModal.year') }} {{ academicYear }}
+                  {{ yearDisplay }}
                 </option>
               </select>
             </div>

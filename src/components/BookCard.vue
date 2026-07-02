@@ -16,11 +16,13 @@ const props = defineProps<{
     description?: string | null
     contact?: string | null
     status: string
+    has_active_request?: boolean
     cover_image_url?: string | null
     created_at: string
     majors?: { id: string; acronym: string } | null
     users?: { id: string; first_name: string; last_name: string; avatar_url?: string | null } | null
   }
+  isMyRequest?: boolean
 }>()
 
 const emit = defineEmits<{ (e: 'deleted', id: string): void }>()
@@ -65,7 +67,7 @@ async function confirmDelete() {
 
 <template>
   <article
-    class="flex flex-col rounded-2xl border border-[#E0E0E0] bg-white overflow-hidden hover:border-[#008CB9] transition-colors cursor-pointer"
+    class="flex w-full max-w-64 flex-col rounded-2xl border border-[#E0E0E0] bg-white overflow-hidden hover:border-[#008CB9] transition-colors cursor-pointer"
     @click="router.push({ name: 'book-detail', params: { id: book.id } })"
   >
     <!-- Cover image -->
@@ -77,10 +79,21 @@ async function confirmDelete() {
       />
       <!-- Status badge -->
       <span
+        v-if="!isOwner"
         class="absolute left-2 top-2 rounded-full px-2 py-0.5 text-xs font-semibold capitalize"
-        :class="book.status === 'available' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'"
+        :class="[
+          book.status === 'available' && !book.has_active_request
+            ? 'bg-green-100 text-green-700'
+            : book.status === 'available' && book.has_active_request && isMyRequest
+              ? 'bg-yellow-100 text-yellow-700'
+              : 'bg-gray-100 text-gray-500',
+        ]"
       >
-        {{ book.status }}
+        {{
+          book.status === 'available' && book.has_active_request
+            ? isMyRequest ? 'Requested' : 'Unavailable'
+            : book.status
+        }}
       </span>
       <!-- Delete button (owner only) -->
       <button
@@ -109,7 +122,7 @@ async function confirmDelete() {
 
       <div class="mt-auto pt-2 flex items-center justify-between border-t border-gray-100">
         <div>
-          <p class="text-xs font-medium text-gray-700">{{ donorName }}</p>
+          <p class="text-xs font-medium text-gray-700">Owner: {{ isOwner ? 'You' : donorName }}</p>
           <p class="text-xs text-gray-400">{{ dateText }}</p>
         </div>
         <span v-if="isOwner" class="text-xs text-gray-400 italic">Your book</span>

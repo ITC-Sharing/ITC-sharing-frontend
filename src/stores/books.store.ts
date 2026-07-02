@@ -10,6 +10,7 @@ export const useBooksStore = defineStore('books', () => {
   const incomingRequests = ref<any[]>([])
   const myBooks = ref<any[]>([])
   const outgoingRequests = ref<any[]>([])
+  const bookStats = ref({ listed: 0, received: 0, pendingIncoming: 0 })
 
   async function fetchAll(majorId?: string) {
     loading.value = true
@@ -70,14 +71,31 @@ export const useBooksStore = defineStore('books', () => {
   async function remove(bookId: string) {
     await api.delete(`/books/${bookId}`)
     books.value = books.value.filter((b) => b.id !== bookId)
+    myBooks.value = myBooks.value.filter((b) => b.id !== bookId)
+  }
+
+  async function update(
+    bookId: string,
+    payload: {
+      title?: string
+      department?: string
+      description?: string
+      contact?: string
+      cover_image_url?: string
+    },
+  ) {
+    const { data } = await api.patch(`/books/${bookId}`, payload)
+    const i = myBooks.value.findIndex((b) => b.id === bookId)
+    if (i !== -1) myBooks.value[i] = { ...myBooks.value[i], ...data }
+    return data
   }
 
   // ── Book requests ─────────────────────────────────────────────────────────
 
-  async function request(bookId: string, contact: string, message?: string) {
+  async function request(bookId: string, contact: string, message: string) {
     const { data } = await api.post(`/books/${bookId}/request`, {
       contact,
-      message: message ?? null,
+      message,
     })
     return data
   }
@@ -88,15 +106,23 @@ export const useBooksStore = defineStore('books', () => {
     return data
   }
 
-  async function fetchMyBooks() {
-    const { data } = await api.get('/books/mine')
+  async function fetchMyBooks(filter: 'all' | 'pending' | 'donated' = 'all') {
+    const { data } = await api.get('/books/mine', { params: { filter } })
     myBooks.value = data
     return data
   }
 
-  async function fetchOutgoingRequests() {
-    const { data } = await api.get('/books/requests/outgoing')
+  async function fetchOutgoingRequests(status?: 'pending' | 'accepted') {
+    const { data } = await api.get('/books/requests/outgoing', {
+      params: status ? { status } : {},
+    })
     outgoingRequests.value = data
+    return data
+  }
+
+  async function fetchBookStats() {
+    const { data } = await api.get('/books/stats')
+    bookStats.value = data
     return data
   }
 
@@ -130,8 +156,8 @@ export const useBooksStore = defineStore('books', () => {
     return data
   }
 
-  async function declineRequest(bookId: string, requestId: string) {
-    await api.patch(`/books/${bookId}/request/${requestId}/decline`)
+  async function declineRequest(bookId: string, requestId: string, reason?: string) {
+    await api.patch(`/books/${bookId}/request/${requestId}/decline`, { reason })
     const r = incomingRequests.value.find((x) => x.id === requestId)
     if (r) r.status = 'declined'
     const b = myBooks.value.find((x) => x.id === bookId)
@@ -146,15 +172,18 @@ export const useBooksStore = defineStore('books', () => {
     incomingRequests,
     myBooks,
     outgoingRequests,
+    bookStats,
     fetchAll,
     fetchOne,
     uploadCover,
     donate,
+    update,
     remove,
     request,
     fetchIncomingRequests,
     fetchMyBooks,
     fetchOutgoingRequests,
+    fetchBookStats,
     fetchRequestDetail,
     acceptRequest,
     declineRequest,

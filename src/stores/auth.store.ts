@@ -8,7 +8,8 @@ interface User {
   last_name: string
   email: string
   avatar_url: string | null
-  year_level: number
+  major_id: string | null
+  year_level: number | null
   role: string
   majors: { id: string; name: string; acronym: string }
 }
@@ -30,6 +31,7 @@ export const useAuthStore = defineStore('auth', () => {
     email: string
     password: string
     major_id: string
+    year_level: number
   }) {
     loading.value = true
     error.value = null
@@ -68,7 +70,42 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
-  function logout() {
+  async function updateMe(payload: {
+    first_name?: string
+    last_name?: string
+    major_id?: string
+    year_level?: number
+    avatar_url?: string | null
+  }) {
+    loading.value = true
+    error.value = null
+    try {
+      const { data } = await api.patch('/users/me', payload)
+      user.value = data
+      return data
+    } catch (e: any) {
+      error.value = e.response?.data?.message ?? 'Failed to update profile'
+      throw e
+    } finally {
+      loading.value = false
+    }
+  }
+
+  async function uploadAvatar(file: File): Promise<string> {
+    const formData = new FormData()
+    formData.append('file', file)
+    const { data } = await api.post('/users/avatar', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    })
+    return data.url as string
+  }
+
+  async function logout() {
+    try {
+      await api.post('/auth/logout') // revoke the refresh token + clear cookie
+    } catch {
+      // ignore — clear client state regardless
+    }
     user.value = null
     token.value = null
     localStorage.removeItem('token')
@@ -79,5 +116,5 @@ export const useAuthStore = defineStore('auth', () => {
     if (token.value && !user.value) await fetchMe()
   }
 
-  return { user, token, loading, error, isAuthenticated, fullName, register, login, logout, fetchMe, init }
+  return { user, token, loading, error, isAuthenticated, fullName, register, login, logout, fetchMe, updateMe, uploadAvatar, init }
 })
