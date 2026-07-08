@@ -74,11 +74,6 @@ export const useDocumentsStore = defineStore('documents', () => {
     }
   }
 
-  // Track download on a specific file (document row id, not upload id)
-  async function trackDownload(fileId: string) {
-    await api.patch(`/documents/${fileId}/download`)
-  }
-
   async function fetchMine() {
     loading.value = true
     error.value = null
@@ -148,7 +143,6 @@ export const useDocumentsStore = defineStore('documents', () => {
     fetchOne,
     fetchMine,
     upload,
-    trackDownload,
     updateDocument,
     addFiles,
     removeFile,

@@ -1,11 +1,10 @@
 <script setup lang="ts">
 import { onMounted, onBeforeUnmount } from 'vue'
-import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { useNotifications } from '@/composables/useNotifications'
+import BackButton from '@/components/common/BackButton.vue'
 
 const { t } = useI18n({ useScope: 'global' })
-const router = useRouter()
 const { notifStore, groupedNotifications, handleNotifClick, markAllRead, iconBg, timeAgo } =
   useNotifications()
 
@@ -21,15 +20,7 @@ onBeforeUnmount(() => notifStore.disconnectSocket())
     <!-- Header -->
     <div class="flex items-center justify-between gap-3">
       <div class="flex items-center gap-2">
-        <button
-          @click="router.back()"
-          class="p-1 -ml-1 text-gray-500 hover:text-gray-800 transition-colors"
-          :aria-label="t('common.notifications.back')"
-        >
-          <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" />
-          </svg>
-        </button>
+        <BackButton icon-only :label="t('common.notifications.back')" />
         <h1 class="text-2xl font-bold text-gray-900">{{ t('common.notifications.title') }}</h1>
       </div>
       <button

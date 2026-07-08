@@ -26,7 +26,7 @@ function goToDocuments() {
 <template>
   <div class="w-70 h-auto rounded-xl cursor-pointer" @click="goToDocuments">
     <div
-      class="overflow-hidden h-48 rounded-lg border border-[#D9D9D9] bg-white hover:border-[#0057BD] transition-colors"
+      class="overflow-hidden h-48 rounded-lg border border-[#D9D9D9] bg-white hover:border-[#008CB9] transition-colors"
     >
       <div class="flex h-full w-full items-center justify-center p-3">
         <img :src="img" alt="Subject" class="block max-h-full max-w-full object-contain" />

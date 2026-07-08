@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import SelectDropdown from '@/components/SelectDropdown.vue'
+import SelectDropdown from '@/components/common/SelectDropdown.vue'
 import { cefrLevel } from '@/utils/format'
 
 const { t } = useI18n({ useScope: 'global' })

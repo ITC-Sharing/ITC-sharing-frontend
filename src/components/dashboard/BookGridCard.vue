@@ -10,11 +10,13 @@ defineProps<{
 <template>
   <div
     :class="[
-      'w-full max-w-70 mx-auto md:mx-0 bg-white rounded-2xl border overflow-hidden flex flex-col transition-colors',
-      highlight ? 'border-[#008CB9]/30 ring-1 ring-[#008CB9]/10' : 'border-gray-100',
+      'w-full max-w-70 mx-auto md:mx-0 bg-white rounded-2xl overflow-hidden flex flex-col transition-colors',
+      highlight ? 'ring-1 ring-[#008CB9]/10' : '',
     ]"
   >
-    <img :src="coverUrl || noImage" class="h-40 w-full object-cover" />
+    <div class="h-56 bg-white p-3">
+      <img :src="coverUrl || noImage" class="h-full w-full object-contain" />
+    </div>
     <div class="flex flex-1 flex-col gap-2 p-4">
       <slot />
     </div>

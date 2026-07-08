@@ -15,7 +15,7 @@ const routes = [
       {
         path: 'documents',
         name: 'documents',
-        component: () => import('@/views/DocumentView.vue'),
+        component: () => import('@/views/documents/DocumentInNavView.vue'),
         meta: { requiresAuth: true },
       },
       {
@@ -27,7 +27,7 @@ const routes = [
       {
         path: 'documents/details',
         name: 'document-details',
-        component: () => import('@/views/DocumentDetailsView.vue'),
+        component: () => import('@/views/documents/DocumentDetailsView.vue'),
         meta: { requiresAuth: true },
       },
       {
@@ -45,34 +45,34 @@ const routes = [
       {
         path: 'books',
         name: 'books',
-        component: () => import('@/views/BookView.vue'),
+        component: () => import('@/views/books/BookView.vue'),
         meta: { requiresAuth: true },
       },
       {
         path: 'books/:id',
         name: 'book-detail',
-        component: () => import('@/views/BookDetailView.vue'),
+        component: () => import('@/views/books/BookDetailView.vue'),
         meta: { requiresAuth: true },
       },
       {
         path: 'dashboard',
-        component: () => import('@/views/DashboardView.vue'),
+        component: () => import('@/views/dashboard/user/DashboardView.vue'),
         meta: { requiresAuth: true },
         children: [
           {
             path: '',
             name: 'dashboard',
-            component: () => import('@/views/dashboard/DashboardActivity.vue'),
+            component: () => import('@/views/dashboard/user/DashboardActivity.vue'),
           },
           {
             path: 'documents',
             name: 'dashboard-documents',
-            component: () => import('@/views/dashboard/DashboardDocuments.vue'),
+            component: () => import('@/views/dashboard/user/DashboardDocuments.vue'),
           },
           {
             path: 'books',
             name: 'dashboard-books',
-            component: () => import('@/views/dashboard/DashboardBooks.vue'),
+            component: () => import('@/views/dashboard/user/DashboardBooks.vue'),
           },
         ],
       },
@@ -93,7 +93,7 @@ const routes = [
       {
         path: 'department/:slug/year/:year/subject/:subjectId',
         name: 'subject-documents',
-        component: () => import('@/views/DocumentsView.vue'),
+        component: () => import('@/views/documents/DocumentsView.vue'),
         props: true,
         meta: { requiresAuth: true },
       },
@@ -101,7 +101,7 @@ const routes = [
         // English & French have no subjects — documents live directly under a level.
         path: 'department/:slug/year/:year/documents',
         name: 'level-documents',
-        component: () => import('@/views/DocumentsView.vue'),
+        component: () => import('@/views/documents/DocumentsView.vue'),
         props: true,
         meta: { requiresAuth: true },
       },
@@ -112,13 +112,13 @@ const routes = [
   {
     path: '/admin/dashboard',
     name: 'admin',
-    component: () => import('@/views/AdminDashboardView.vue'),
+    component: () => import('@/views/dashboard/admin/AdminDashboardView.vue'),
     meta: { requiresAdmin: true },
   },
   {
     path: '/admin/review/:groupId',
     name: 'admin-review',
-    component: () => import('@/views/AdminDocumentReviewView.vue'),
+    component: () => import('@/views/dashboard/admin/AdminDocumentReviewView.vue'),
     meta: { requiresAdmin: true },
   },
 
@@ -131,12 +131,12 @@ const routes = [
       {
         path: 'login',
         name: 'login',
-        component: () => import('@/views/LoginView.vue'),
+        component: () => import('@/views/auth/LoginView.vue'),
       },
       {
         path: 'register',
         name: 'register',
-        component: () => import('@/views/RegisterView.vue'),
+        component: () => import('@/views/auth/RegisterView.vue'),
       },
     ],
   },

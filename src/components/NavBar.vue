@@ -82,7 +82,7 @@
             <button
               type="button"
               @click="toggleAccountMenu"
-              class="flex items-center"
+              class="flex items-center cursor-pointer"
               aria-label="Open account menu"
             >
               <span
@@ -102,9 +102,6 @@
               v-if="isAccountMenuOpen"
               class="absolute right-0 mt-2 w-52 bg-white border border-gray-200 rounded-lg shadow-lg py-1"
             >
-              <div class="px-4 py-2 border-b border-gray-100 text-sm text-gray-700">
-                {{ authStore.fullName || 'Account' }}
-              </div>
               <RouterLink
                 :to="{ name: 'profile' }"
                 @click="isAccountMenuOpen = false"

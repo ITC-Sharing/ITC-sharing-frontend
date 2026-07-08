@@ -1,18 +1,20 @@
 <script setup lang="ts">
 import { computed, onMounted } from 'vue'
 import { useMajorsStore } from '@/stores/majors.store'
-import DepartmentCard from '@/components/DepartmentCard.vue'
-import LoadingSpinner from '@/components/LoadingSpinner.vue'
+import DepartmentCard from '@/components/departments/DepartmentCard.vue'
+import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
 
 const majorsStore = useMajorsStore()
 
 const departments = computed(() =>
-  majorsStore.majors.map((major: { id: string; name: string; acronym: string; image_url: string | null }) => ({
-    id: major.id,
-    name: major.acronym,
-    img: major.image_url ?? '/src/assets/images/no-image.png',
-    slug: major.acronym.toLowerCase(),
-  })),
+  majorsStore.majors.map(
+    (major: { id: string; name: string; acronym: string; image_url: string | null }) => ({
+      id: major.id,
+      name: major.acronym,
+      img: major.image_url ?? '/src/assets/images/no-image.png',
+      slug: major.acronym.toLowerCase(),
+    }),
+  ),
 )
 
 onMounted(() => {
