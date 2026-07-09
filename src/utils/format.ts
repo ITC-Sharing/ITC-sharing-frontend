@@ -22,6 +22,28 @@ export function formatFileSize(kb: number): string {
   return `${(kb / 1024).toFixed(1)} MB`
 }
 
+/** Lowercased file extension (without the dot), or '' when there's none. */
+export function fileExtension(name: string | null | undefined): string {
+  return (name ?? '').split('.').pop()?.toLowerCase() ?? ''
+}
+
+/** True for raster image files that can be shown directly in an <img>. */
+export function isImageFile(name: string | null | undefined): boolean {
+  return ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg'].includes(fileExtension(name))
+}
+
+/** Colored badge (background class + short label) for a file by its extension. */
+export function getFileIcon(name: string | null | undefined): { bg: string; label: string } {
+  const ext = fileExtension(name)
+  if (ext === 'pdf') return { bg: 'bg-red-500', label: 'PDF' }
+  if (['doc', 'docx'].includes(ext)) return { bg: 'bg-blue-500', label: 'DOC' }
+  if (['xls', 'xlsx'].includes(ext)) return { bg: 'bg-green-500', label: 'XLS' }
+  if (['ppt', 'pptx'].includes(ext)) return { bg: 'bg-orange-500', label: 'PPT' }
+  if (['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(ext)) return { bg: 'bg-purple-500', label: 'IMG' }
+  if (['zip', 'rar', '7z'].includes(ext)) return { bg: 'bg-yellow-500', label: 'ZIP' }
+  return { bg: 'bg-gray-400', label: 'FILE' }
+}
+
 export function formatTotalFileSize(kb: number): string {
   if (kb < 1024) return `${kb} KB`
   if (kb < 1024 * 1024) return `${(kb / 1024).toFixed(1)} MB`

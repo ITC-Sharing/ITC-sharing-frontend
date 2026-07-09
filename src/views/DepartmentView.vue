@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { computed, onMounted, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import YearCard from '@/components/YearCard.vue'
-import Breadcrumb from '@/components/Breadcrumb.vue'
+import YearCard from '@/components/departments/YearCard.vue'
+import Breadcrumb from '@/components/common/Breadcrumb.vue'
 import { useMajorsStore } from '@/stores/majors.store'
 import { useSubjectsStore } from '@/stores/subjects.store'
 import { isLanguageMajor, cefrLevel, LANGUAGE_LEVEL_COUNT } from '@/utils/format'
@@ -21,41 +21,17 @@ const currentMajor = computed(() =>
 )
 
 const years = [
-  {
-    id: 1,
-    title: 'common.departmentPage.year1',
-    subtitle: 'common.departmentPage.subject',
-    img: '/src/assets/images/year/year3.jpg',
-  },
-  {
-    id: 2,
-    title: 'common.departmentPage.year2',
-    subtitle: 'common.departmentPage.subject',
-    img: '/src/assets/images/year/year4.jpg',
-  },
-  {
-    id: 3,
-    title: 'common.departmentPage.year3',
-    subtitle: 'common.departmentPage.subject',
-    img: '/src/assets/images/year/year3.jpg',
-  },
-  {
-    id: 4,
-    title: 'common.departmentPage.year4',
-    subtitle: 'common.departmentPage.subject',
-    img: '/src/assets/images/year/year4.jpg',
-  },
-  {
-    id: 5,
-    title: 'common.departmentPage.year5',
-    subtitle: 'common.departmentPage.subject',
-    img: '/src/assets/images/year/year5.jpg',
-  },
+  { id: 1, title: 'common.departmentPage.year1', subtitle: 'common.departmentPage.subject' },
+  { id: 2, title: 'common.departmentPage.year2', subtitle: 'common.departmentPage.subject' },
+  { id: 3, title: 'common.departmentPage.year3', subtitle: 'common.departmentPage.subject' },
+  { id: 4, title: 'common.departmentPage.year4', subtitle: 'common.departmentPage.subject' },
+  { id: 5, title: 'common.departmentPage.year5', subtitle: 'common.departmentPage.subject' },
 ]
 
 const filteredYears = computed(() => {
-  // Year cards use the major's own image (falling back to the year illustration).
-  const majorImg = (fallback: string) => currentMajor.value?.image_url ?? fallback
+  // Year cards use the major's image from the server; YearCard shows its own
+  // placeholder when the major has no image_url.
+  const img = currentMajor.value?.image_url ?? undefined
   // English & French: years 1–4 are CEFR levels (A1–B2), year 5 is a normal year.
   if (isLanguageMajor(props.slug)) {
     return Array.from({ length: LANGUAGE_LEVEL_COUNT }, (_, i) => {
@@ -64,7 +40,7 @@ const filteredYears = computed(() => {
         id: n,
         label: cefrLevel(props.slug, n) ?? t(`common.departmentPage.year${n}`),
         subtitle: t('common.departmentPage.subject'),
-        img: majorImg(years[i]!.img),
+        img,
       }
     })
   }
@@ -74,7 +50,7 @@ const filteredYears = computed(() => {
     id: y.id,
     label: t(y.title),
     subtitle: t(y.subtitle),
-    img: majorImg(y.img),
+    img,
   }))
 })
 

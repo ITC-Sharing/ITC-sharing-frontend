@@ -5,7 +5,9 @@ import { useNotificationsStore } from '@/stores/notifications.store'
 import { useDocumentsStore } from '@/stores/documents.store'
 import { useSubjectsStore } from '@/stores/subjects.store'
 import { useBooksStore } from '@/stores/books.store'
-import LoadingSpinner from '@/components/LoadingSpinner.vue'
+import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
+import BackButton from '@/components/common/BackButton.vue'
+import { formatRelativeDate } from '@/utils/format'
 import noImage from '@/assets/images/no-image.png'
 
 const route = useRoute()
@@ -104,21 +106,6 @@ async function onDecline() {
 
 const loading = computed(() => docs.loading || subjectsStore.loading || bookReqLoading.value)
 
-function formatDate(iso: string | null | undefined): string {
-  if (!iso) return '—'
-  const date = new Date(iso)
-  const now = new Date()
-  const diffSec = Math.floor((now.getTime() - date.getTime()) / 1000)
-  const diffMin = Math.floor(diffSec / 60)
-  const diffHour = Math.floor(diffMin / 60)
-  const diffDay = Math.floor(diffHour / 24)
-  if (diffSec < 60) return 'just now'
-  if (diffMin < 60) return `${diffMin} min ago`
-  if (diffHour < 24) return `${diffHour} hour${diffHour > 1 ? 's' : ''} ago`
-  if (diffDay <= 3) return `${diffDay} day${diffDay > 1 ? 's' : ''} ago`
-  return date.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })
-}
-
 function getFileIcon(name: string | null | undefined): { bg: string; label: string } {
   const ext = (name ?? '').split('.').pop()?.toLowerCase() ?? ''
   if (ext === 'pdf') return { bg: 'bg-red-500', label: 'PDF' }
@@ -148,16 +135,8 @@ onMounted(async () => {
 <template>
   <div class="mx-auto w-full max-w-6xl px-6">
     <!-- Back -->
-    <div class="flex items-center gap-2 text-sm text-gray-400 mb-6">
-      <button
-        class="flex items-center gap-1 hover:text-gray-700 transition-colors"
-        @click="router.back()"
-      >
-        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" />
-        </svg>
-        Back
-      </button>
+    <div class="mb-6">
+      <BackButton />
     </div>
 
     <div class="flex flex-col gap-6">
@@ -221,13 +200,13 @@ onMounted(async () => {
             <div class="grid grid-cols-2 px-5 py-3">
               <span class="text-sm text-gray-400">Submitted</span>
               <span class="text-sm font-medium text-gray-800">{{
-                formatDate(upload.uploaded_at)
+                formatRelativeDate(upload.uploaded_at)
               }}</span>
             </div>
             <div class="grid grid-cols-2 px-5 py-3">
               <span class="text-sm text-gray-400">Rejected</span>
               <span class="text-sm font-medium text-gray-800">{{
-                formatDate(upload.rejected_at)
+                formatRelativeDate(upload.rejected_at)
               }}</span>
             </div>
           </div>
@@ -303,13 +282,13 @@ onMounted(async () => {
             <div class="grid grid-cols-2 px-5 py-3">
               <span class="text-sm text-gray-400">Submitted</span>
               <span class="text-sm font-medium text-gray-800">{{
-                formatDate(subject.created_at)
+                formatRelativeDate(subject.created_at)
               }}</span>
             </div>
             <div class="grid grid-cols-2 px-5 py-3">
               <span class="text-sm text-gray-400">Rejected</span>
               <span class="text-sm font-medium text-gray-800">{{
-                formatDate(subject.rejected_at)
+                formatRelativeDate(subject.rejected_at)
               }}</span>
             </div>
           </div>
@@ -430,7 +409,7 @@ onMounted(async () => {
               <div class="flex items-start gap-4 px-5 py-3">
                 <span class="w-1/3 shrink-0 text-sm text-gray-400">Requested</span>
                 <span class="flex-1 text-sm font-medium text-gray-800">{{
-                  formatDate(bookRequest.requested_at)
+                  formatRelativeDate(bookRequest.requested_at)
                 }}</span>
               </div>
             </div>

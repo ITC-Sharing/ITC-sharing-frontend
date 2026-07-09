@@ -3,6 +3,8 @@ import { computed, onMounted, reactive, ref, watch, onBeforeUnmount } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useAuthStore } from '@/stores/auth.store'
 import { useMajorsStore } from '@/stores/majors.store'
+import IconTextButton from '@/components/common/Icon&textButton.vue'
+import ImageLightbox from '@/components/common/ImageLightbox.vue'
 
 const { t } = useI18n({ useScope: 'global' })
 const auth = useAuthStore()
@@ -34,12 +36,6 @@ const canRemoveAvatar = computed(
 const showFullImage = ref(false)
 function openFullImage() {
   if (displayAvatar.value) showFullImage.value = true
-}
-function closeFullImage() {
-  showFullImage.value = false
-}
-function onKeydown(e: KeyboardEvent) {
-  if (e.key === 'Escape') closeFullImage()
 }
 const initials = computed(() =>
   `${form.first_name?.[0] ?? ''}${form.last_name?.[0] ?? ''}`.toUpperCase() || '?',
@@ -73,14 +69,12 @@ watch(
 )
 
 onMounted(async () => {
-  window.addEventListener('keydown', onKeydown)
   await majorsStore.fetchMajors()
   if (!auth.user) await auth.fetchMe()
   syncFromUser()
 })
 
 onBeforeUnmount(() => {
-  window.removeEventListener('keydown', onKeydown)
   if (avatarPreview.value) URL.revokeObjectURL(avatarPreview.value)
 })
 
@@ -243,17 +237,17 @@ async function save() {
       </div>
 
       <!-- Edit (locked) ⇄ Cancel (while editing) -->
-      <button
+      <IconTextButton
         v-if="!editing"
-        type="button"
+        :text="t('common.profilePage.updateProfile')"
         @click="startEdit"
-        class="flex items-center gap-2 rounded-xl bg-[#1f6f8b] px-4 py-2.5 text-sm font-semibold text-white transition-all hover:bg-[#185868] active:scale-95"
       >
-        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-        </svg>
-        {{ t('common.profilePage.updateProfile') }}
-      </button>
+        <template #icon>
+          <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+          </svg>
+        </template>
+      </IconTextButton>
       <button
         v-else
         type="button"
@@ -359,27 +353,5 @@ async function save() {
   </div>
 
   <!-- Fullscreen avatar viewer -->
-  <Teleport to="body">
-    <div
-      v-if="showFullImage"
-      class="fixed inset-0 z-60 flex items-center justify-center bg-black/90"
-      @click.self="closeFullImage"
-    >
-      <button
-        class="absolute top-4 right-4 flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-white hover:bg-white/20 transition-colors cursor-pointer"
-        @click="closeFullImage"
-        aria-label="Close"
-      >
-        <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
-        </svg>
-      </button>
-      <img
-        :src="displayAvatar"
-        alt=""
-        class="max-h-[90vh] max-w-[90vw] rounded-2xl object-contain"
-        @click.stop
-      />
-    </div>
-  </Teleport>
+  <ImageLightbox v-model="showFullImage" :src="displayAvatar" alt="" />
 </template>

@@ -6,6 +6,9 @@ import enCommon from './locales/en/common.json'
 import kmCommon from './locales/km/common.json'
 import enDashboard from './locales/en/dashboard.json'
 import kmDashboard from './locales/km/dashboard.json'
+import enDocument from './locales/en/document.json'
+import kmDocument from './locales/km/document.json'
+import { EndOfLineState } from 'typescript'
 
 // ✅ get saved language from browser
 const savedLang = localStorage.getItem('lang')
@@ -18,11 +21,13 @@ const messages = {
     auth: enAuth,
     common: enCommon,
     dashboard: enDashboard,
+    document: enDocument,
   },
   km: {
     auth: kmAuth,
     common: kmCommon,
     dashboard: kmDashboard,
+    document: kmDocument,
   },
 }
 

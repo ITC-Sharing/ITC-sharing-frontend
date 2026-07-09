@@ -6,12 +6,12 @@ import { useSubjectsStore } from '@/stores/subjects.store'
 import { useMajorsStore } from '@/stores/majors.store'
 import { cefrLevel } from '@/utils/format'
 import SubjectCard from '@/components/SubjectCard.vue'
-import SearchButton from '@/components/SearchButton.vue'
-import FilterButton from '@/components/FilterButton.vue'
-import AddnewSubject from '@/components/AddnewSubject.vue'
+import SearchButton from '@/components/common/SearchButton.vue'
+import FilterButton from '@/components/common/FilterButton.vue'
+import AddnewSubject from '@/components/common/Icon&textButton.vue'
 import SubjectCreateModal from '@/components/SubjectCreateModal.vue'
-import LoadingSpinner from '@/components/LoadingSpinner.vue'
-import Breadcrumb from '@/components/Breadcrumb.vue'
+import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
+import Breadcrumb from '@/components/common/Breadcrumb.vue'
 
 const route = useRoute()
 const { t } = useI18n({ useScope: 'global' })
@@ -116,7 +116,7 @@ onMounted(async () => {
             },
             {
               label:
-                cefrLevel(slug, yearLevel) ?? t('common.documentsPage.year', { year: yearLevel }),
+                cefrLevel(slug, yearLevel) ?? t('document.documentsPage.year', { year: yearLevel }),
             },
           ]"
         />
@@ -172,7 +172,19 @@ onMounted(async () => {
               />
             </div>
 
-            <AddnewSubject @open="openCreateModal" />
+            <AddnewSubject :text="t('common.subjectPage.addSubject')" @click="openCreateModal">
+              <template #icon>
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  viewBox="0 0 448 512"
+                  class="h-4 w-4 fill-white shrink-0"
+                >
+                  <path
+                    d="M256 64c0-17.7-14.3-32-32-32s-32 14.3-32 32l0 160-160 0c-17.7 0-32 14.3-32 32s14.3 32 32 32l160 0 0 160c0 17.7 14.3 32 32 32s32-14.3 32-32l0-160 160 0c17.7 0 32-14.3 32-32s-14.3-32-32-32l-160 0 0-160z"
+                  />
+                </svg>
+              </template>
+            </AddnewSubject>
           </div>
 
           <!-- mobile -->
@@ -184,7 +196,19 @@ onMounted(async () => {
                 :placeholder="t('common.filterButton.sortBy')"
               />
             </div>
-            <AddnewSubject @open="openCreateModal" />
+            <AddnewSubject :text="t('common.subjectPage.addSubject')" @click="openCreateModal">
+              <template #icon>
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  viewBox="0 0 448 512"
+                  class="h-4 w-4 fill-white shrink-0"
+                >
+                  <path
+                    d="M256 64c0-17.7-14.3-32-32-32s-32 14.3-32 32l0 160-160 0c-17.7 0-32 14.3-32 32s14.3 32 32 32l160 0 0 160c0 17.7 14.3 32 32 32s32-14.3 32-32l0-160 160 0c17.7 0 32-14.3 32-32s-14.3-32-32-32l-160 0 0-160z"
+                  />
+                </svg>
+              </template>
+            </AddnewSubject>
           </div>
         </div>
       </div>
