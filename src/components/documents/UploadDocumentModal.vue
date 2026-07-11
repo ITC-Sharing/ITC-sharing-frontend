@@ -153,10 +153,13 @@ function handleDrop(event: DragEvent) {
 
 function validateTagInput() {
   const tag = tagInput.value.trim().toLowerCase()
-  tagError.value =
-    tag && !TEXT_TAG_PATTERN.test(tag)
-      ? t('common.documentUploadModal.errorTagInvalid')
-      : ''
+  if (tag && tag.length > 10) {
+    tagError.value = t('document.documentUploadModal.errorTagTooLong')
+  } else if (tag && !TEXT_TAG_PATTERN.test(tag)) {
+    tagError.value = t('document.documentUploadModal.errorTagInvalid')
+  } else {
+    tagError.value = ''
+  }
   return !tagError.value
 }
 
@@ -178,9 +181,11 @@ function validateTitle() {
   const needsTitle = selectedFiles.value.length <= 1
   const title = form.title.trim()
   if (needsTitle && !title) {
-    errors.title = t('common.documentUploadModal.errorTitleRequired')
+    errors.title = t('document.documentUploadModal.errorTitleRequired')
+  } else if (title.length > 20) {
+    errors.title = t('document.documentUploadModal.errorTitleTooLong')
   } else if (title && !TEXT_NAME_PATTERN.test(title)) {
-    errors.title = t('common.documentUploadModal.errorTitleInvalid')
+    errors.title = t('document.documentUploadModal.errorTitleInvalid')
   } else {
     errors.title = ''
   }
@@ -188,23 +193,23 @@ function validateTitle() {
 
 function validate() {
   validateTitle()
-  errors.doc_type = form.doc_type ? '' : t('common.documentUploadModal.errorSelectType')
-  errors.year_level = form.year_level ? '' : t('common.documentUploadModal.errorSelectYear')
+  errors.doc_type = form.doc_type ? '' : t('document.documentUploadModal.errorSelectType')
+  errors.year_level = form.year_level ? '' : t('document.documentUploadModal.errorSelectYear')
   errors.academic_year = validateAcademicYear(form.academic_year)
-  errors.major_id = form.major_id ? '' : t('common.documentUploadModal.errorSelectMajor')
-  errors.file = selectedFiles.value.length ? '' : t('common.documentUploadModal.errorSelectFile')
+  errors.major_id = form.major_id ? '' : t('document.documentUploadModal.errorSelectMajor')
+  errors.file = selectedFiles.value.length ? '' : t('document.documentUploadModal.errorSelectFile')
   return !Object.values(errors).some(Boolean)
 }
 
 function validateAcademicYear(value: string): string {
-  if (!value) return t('common.documentUploadModal.errorAcademicYearRequired')
+  if (!value) return t('document.documentUploadModal.errorAcademicYearRequired')
   const match = value.match(/^(\d{4})-(\d{4})$/)
-  if (!match) return t('common.documentUploadModal.errorAcademicYearFormat')
+  if (!match) return t('document.documentUploadModal.errorAcademicYearFormat')
   const start = parseInt(match[1]!)
   const end = parseInt(match[2]!)
-  if (end !== start + 1) return t('common.documentUploadModal.errorAcademicYearEnd', { year: start + 1 })
+  if (end !== start + 1) return t('document.documentUploadModal.errorAcademicYearEnd', { year: start + 1 })
   const currentYear = new Date().getFullYear()
-  if (start > currentYear) return t('common.documentUploadModal.errorAcademicYearFuture', { year: currentYear })
+  if (start > currentYear) return t('document.documentUploadModal.errorAcademicYearFuture', { year: currentYear })
   return ''
 }
 
@@ -243,7 +248,7 @@ async function submit() {
       <!-- Header -->
       <div class="border-b border-black/5 px-5 py-4">
         <p class="text-center text-xl font-bold text-black">
-          {{ t('common.documentUploadModal.docUpload') }}
+          {{ t('document.documentUploadModal.docUpload') }}
         </p>
       </div>
 
@@ -288,8 +293,8 @@ async function submit() {
                   <line x1="9" y1="15" x2="15" y2="15" stroke-linecap="round" />
                 </svg>
               </div>
-              <p class="text-sm font-medium text-gray-500">{{ t('common.documentUploadModal.selectFile') }}</p>
-              <p class="mt-1 text-xs text-gray-400">{{ t('common.documentUploadModal.fileTypes') }}</p>
+              <p class="text-sm font-medium text-gray-500">{{ t('document.documentUploadModal.selectFile') }}</p>
+              <p class="mt-1 text-xs text-gray-400">{{ t('document.documentUploadModal.fileTypes') }}</p>
             </template>
           </label>
           <p v-if="errors.file" class="text-sm text-red-600">{{ errors.file }}</p>
@@ -298,12 +303,12 @@ async function submit() {
         <!-- Title -->
         <div class="space-y-2">
           <label class="text-sm font-medium text-black">
-            {{ t('common.documentUploadModal.title') }} <span class="text-red-500">*</span>
+            {{ t('document.documentUploadModal.title') }} <span class="text-red-500">*</span>
           </label>
           <input
             v-model="form.title"
             type="text"
-            :placeholder="t('common.documentUploadModal.titlePlaceholder')"
+            :placeholder="t('document.documentUploadModal.titlePlaceholder')"
             class="w-full rounded-xl border border-[#D9D9D9] bg-white px-4 py-2.5 text-sm outline-none transition focus:border-[#0057BD]"
             :class="errors.title ? 'border-red-400' : ''"
             @blur="validateTitle"
@@ -316,25 +321,25 @@ async function submit() {
         <div class="grid grid-cols-2 gap-3">
           <div class="space-y-2">
             <label class="text-sm font-medium text-black">
-              {{ t('common.documentUploadModal.typeLabel') }} <span class="text-red-500">*</span>
+              {{ t('document.documentUploadModal.typeLabel') }} <span class="text-red-500">*</span>
             </label>
             <SelectDropdown
               v-model="form.doc_type"
-              :placeholder="t('common.documentUploadModal.selectTypePlaceholder')"
+              :placeholder="t('document.documentUploadModal.selectTypePlaceholder')"
               :options="docTypeOptions"
-              @change="errors.doc_type = form.doc_type ? '' : t('common.documentUploadModal.errorSelectType')"
+              @change="errors.doc_type = form.doc_type ? '' : t('document.documentUploadModal.errorSelectType')"
             />
             <p v-if="errors.doc_type" class="text-sm text-red-600">{{ errors.doc_type }}</p>
           </div>
 
           <div class="space-y-2">
             <label class="text-sm font-medium text-black">
-              {{ t('common.documentUploadModal.academicYearLabel') }} <span class="text-red-500">*</span>
+              {{ t('document.documentUploadModal.academicYearLabel') }} <span class="text-red-500">*</span>
             </label>
             <input
               type="text"
               v-model="form.academic_year"
-              :placeholder="t('common.documentUploadModal.academicYearPlaceholder')"
+              :placeholder="t('document.documentUploadModal.academicYearPlaceholder')"
               maxlength="9"
               @blur="errors.academic_year = validateAcademicYear(form.academic_year)"
               class="w-full rounded-xl border border-[#D9D9D9] bg-white px-4 py-2.5 text-sm outline-none transition focus:border-[#0057BD]"
@@ -345,11 +350,11 @@ async function submit() {
 
           <div class="space-y-2">
             <label class="text-sm font-medium text-black">
-              {{ t('common.documentUploadModal.majorLabel') }} <span class="text-red-500">*</span>
+              {{ t('document.documentUploadModal.majorLabel') }} <span class="text-red-500">*</span>
             </label>
             <SelectDropdown
               v-model="form.major_id"
-              :placeholder="t('common.documentUploadModal.selectMajorPlaceholder')"
+              :placeholder="t('document.documentUploadModal.selectMajorPlaceholder')"
               :options="majorOptions"
               :disabled="lockMajorAndSubject"
             />
@@ -358,14 +363,14 @@ async function submit() {
 
           <div class="space-y-2">
             <label class="text-sm font-medium text-black">
-              {{ t('common.documentUploadModal.yearLevelLabel') }} <span class="text-red-500">*</span>
+              {{ t('document.documentUploadModal.yearLevelLabel') }} <span class="text-red-500">*</span>
             </label>
             <input
               type="text"
               :value="lockYearLevel ? yearLevelDisplay : form.year_level"
               @input="form.year_level = ($event.target as HTMLInputElement).value"
               :disabled="lockYearLevel"
-              :placeholder="t('common.documentUploadModal.yearLevelPlaceholder')"
+              :placeholder="t('document.documentUploadModal.yearLevelPlaceholder')"
               class="w-full rounded-xl border border-[#D9D9D9] bg-[#F5F5F5] px-4 py-2.5 text-sm text-gray-600 outline-none"
             />
             <p v-if="errors.year_level" class="text-sm text-red-600">{{ errors.year_level }}</p>
@@ -374,10 +379,10 @@ async function submit() {
 
         <!-- Subject -->
         <div v-if="form.major_id" class="space-y-2">
-          <label class="text-sm font-medium text-black">{{ t('common.documentUploadModal.subjectLabel') }}</label>
+          <label class="text-sm font-medium text-black">{{ t('document.documentUploadModal.subjectLabel') }}</label>
           <SelectDropdown
             v-model="form.subject_id"
-            :placeholder="t('common.documentUploadModal.selectSubjectPlaceholder')"
+            :placeholder="t('document.documentUploadModal.selectSubjectPlaceholder')"
             :options="subjectOptions"
             :disabled="lockMajorAndSubject"
           />
@@ -386,8 +391,8 @@ async function submit() {
         <!-- Tags -->
         <div class="space-y-2">
           <label class="text-sm font-medium text-black">
-            {{ t('common.documentUploadModal.tagsLabel') }}
-            <span class="font-normal text-gray-400">{{ t('common.documentUploadModal.tagsOptional') }}</span>
+            {{ t('document.documentUploadModal.tagsLabel') }}
+            <span class="font-normal text-gray-400">{{ t('document.documentUploadModal.tagsOptional') }}</span>
           </label>
           <div class="flex gap-2">
             <input
@@ -396,7 +401,7 @@ async function submit() {
               @blur="validateTagInput"
               @input="tagError = ''"
               type="text"
-              :placeholder="t('common.documentUploadModal.tagPlaceholder')"
+              :placeholder="t('document.documentUploadModal.tagPlaceholder')"
               class="flex-1 rounded-xl border border-[#D9D9D9] bg-white px-4 py-2.5 text-sm outline-none transition focus:border-[#0057BD]"
             />
             <button
@@ -404,7 +409,7 @@ async function submit() {
               @click="addTag"
               class="rounded-xl border border-[#D0D0D0] px-4 py-2.5 text-sm font-medium text-black transition hover:bg-[#F4F4F4]"
             >
-              {{ t('common.documentUploadModal.addTag') }}
+              {{ t('document.documentUploadModal.addTag') }}
             </button>
           </div>
           <p v-if="tagError" class="text-sm text-red-600">{{ tagError }}</p>
@@ -428,7 +433,7 @@ async function submit() {
             @click="emit('close')"
             class="rounded-xl border border-[#D0D0D0] px-4 py-2.5 text-sm font-medium text-black transition hover:bg-[#F4F4F4] disabled:cursor-not-allowed disabled:opacity-60"
           >
-            {{ t('common.documentUploadModal.cancelButton') }}
+            {{ t('document.documentUploadModal.cancelButton') }}
           </button>
           <button
             type="button"
@@ -441,9 +446,9 @@ async function submit() {
                 <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" />
                 <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
               </svg>
-              {{ t('common.documentUploadModal.uploading') }}
+              {{ t('document.documentUploadModal.uploading') }}
             </span>
-            <span v-else>{{ t('common.documentUploadModal.uploadButton') }}</span>
+            <span v-else>{{ t('document.documentUploadModal.uploadButton') }}</span>
           </button>
         </div>
 
