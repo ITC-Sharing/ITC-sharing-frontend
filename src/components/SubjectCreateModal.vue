@@ -154,7 +154,7 @@ function validateSubjectName() {
     return false
   }
 
-  if (name.length > 80) {
+  if (name.length > 20) {
     nameError.value = t('common.subjectCreateModal.nameTooLong')
     return false
   }
@@ -176,8 +176,8 @@ function validateSlugName() {
     return false
   }
 
-  if (slug.length > 80) {
-    slugNameError.value = t('common.subjectCreateModal.nameTooLong')
+  if (slug.length > 10) {
+    slugNameError.value = t('common.subjectCreateModal.slugTooLong')
     return false
   }
 
@@ -290,7 +290,6 @@ onBeforeUnmount(() => {
             <input
               v-model="subjectName"
               type="text"
-              maxlength="80"
               @blur="handleNameBlur"
               @input="handleNameInput"
               :placeholder="t('common.subjectCreateModal.nameLabel')"
@@ -309,7 +308,6 @@ onBeforeUnmount(() => {
             <input
               v-model="subjectSlug"
               type="text"
-              maxlength="80"
               @blur="handleSlugBlur"
               @input="handleSlugInput"
               :placeholder="t('common.subjectCreateModal.slugLabel')"

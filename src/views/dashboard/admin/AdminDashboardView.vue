@@ -292,8 +292,16 @@ const subjectsLoading = ref(false)
 const subjectSearch = ref('')
 const editingAdminSubjectId = ref<string | null>(null)
 const editAdminName = ref('')
+const editAdminSlug = ref('')
 const editAdminSemester = ref('')
+const editAdminNameError = ref('')
+const editAdminSlugError = ref('')
 const savingAdminSubjectId = ref<string | null>(null)
+
+// Match the subject create rules: name letters/numbers/spaces/hyphens (any
+// language), slug lowercase kebab-case. Limits: name ≤ 20, slug ≤ 10.
+const ADMIN_NAME_PATTERN = /^(?=.*[\p{L}\p{N}])[\p{L}\p{M}\p{N}\s-]+$/u
+const ADMIN_SLUG_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/
 const deletingAdminSubjectId = ref<string | null>(null)
 let subjectSearchTimer: ReturnType<typeof setTimeout>
 
@@ -320,27 +328,65 @@ async function loadAllSubjects() {
   }
 }
 
-function openAdminSubjectEdit(subject: { id: string; name: string; semester?: string | number }) {
+function openAdminSubjectEdit(subject: {
+  id: string
+  name: string
+  slug?: string
+  semester?: string | number
+}) {
   editingAdminSubjectId.value = subject.id
   editAdminName.value = subject.name
+  editAdminSlug.value = subject.slug ?? ''
   editAdminSemester.value = String(subject.semester ?? '')
+  editAdminNameError.value = ''
+  editAdminSlugError.value = ''
 }
 
 function closeAdminSubjectEdit() {
   editingAdminSubjectId.value = null
 }
 
+function validateAdminSubjectEdit(): boolean {
+  const name = editAdminName.value.trim()
+  const slug = editAdminSlug.value.trim()
+
+  editAdminNameError.value = !name
+    ? 'Please enter subject name'
+    : name.length > 20
+      ? 'You can only enter up to 20 characters'
+      : !ADMIN_NAME_PATTERN.test(name)
+        ? 'Subject name must not contain special characters'
+        : ''
+
+  editAdminSlugError.value = !slug
+    ? 'Please enter slug'
+    : slug.length > 10
+      ? 'You can only enter up to 10 characters'
+      : !ADMIN_SLUG_PATTERN.test(slug)
+        ? 'Slug can only contain lowercase letters, numbers and single hyphens'
+        : ''
+
+  return !editAdminNameError.value && !editAdminSlugError.value
+}
+
 async function saveAdminSubjectEdit(subject: {
   id: string
   name: string
+  slug?: string
   semester?: string | number
 }) {
+  if (!validateAdminSubjectEdit()) return
+
   savingAdminSubjectId.value = subject.id
   try {
-    const payload: { name: string; semester?: number } = { name: editAdminName.value.trim() }
+    const payload: { name: string; slug: string; semester?: number } = {
+      name: editAdminName.value.trim(),
+      slug: editAdminSlug.value.trim(),
+    }
     if (editAdminSemester.value) payload.semester = Number(editAdminSemester.value)
     await api.patch(`/admin/subjects/${subject.id}`, payload)
     subject.name = payload.name
+    subject.slug = payload.slug
     if (payload.semester) subject.semester = payload.semester
     closeAdminSubjectEdit()
   } finally {
@@ -1246,13 +1292,24 @@ onMounted(async () => {
                 v-if="editingAdminSubjectId === subject.id"
                 class="px-6 pb-4 bg-blue-50/40 border-t border-blue-100"
               >
-                <div class="flex items-end gap-3 pt-3 flex-wrap">
+                <div class="flex items-start gap-3 pt-3 flex-wrap">
                   <div class="flex flex-col gap-1 flex-1 min-w-40">
                     <label class="text-xs font-medium text-gray-500">Name</label>
                     <input
                       v-model="editAdminName"
+                      @blur="validateAdminSubjectEdit"
                       class="px-3 py-2 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0057BD] bg-white"
                     />
+                    <p v-if="editAdminNameError" class="text-xs text-red-600">{{ editAdminNameError }}</p>
+                  </div>
+                  <div class="flex flex-col gap-1 flex-1 min-w-32">
+                    <label class="text-xs font-medium text-gray-500">Slug</label>
+                    <input
+                      v-model="editAdminSlug"
+                      @blur="validateAdminSubjectEdit"
+                      class="px-3 py-2 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0057BD] bg-white"
+                    />
+                    <p v-if="editAdminSlugError" class="text-xs text-red-600">{{ editAdminSlugError }}</p>
                   </div>
                   <div class="flex flex-col gap-1 w-36">
                     <label class="text-xs font-medium text-gray-500">Semester</label>
@@ -1264,7 +1321,7 @@ onMounted(async () => {
                       <option value="2">Semester 2</option>
                     </select>
                   </div>
-                  <div class="flex gap-2">
+                  <div class="flex gap-2 pt-5">
                     <button
                       @click="saveAdminSubjectEdit(subject)"
                       :disabled="savingAdminSubjectId === subject.id"

@@ -3,6 +3,13 @@
     "loading": "Loading...",
     "back": "Back"
   },
+  "documentUploadModal": {
+    "errorTitleRequired": "Title is required",
+    "errorTitleInvalid": "Title must not contain special characters",
+    "errorTitleTooLong": "You can only enter up to 20 characters",
+    "errorTagInvalid": "Tags can only contain letters, numbers and hyphens",
+    "errorTagTooLong": "You can only enter up to 10 characters"
+  },
   "nav": {
     "home": "Home",
     "docs": "Documents",
@@ -49,8 +56,9 @@
     "creating": "Creating...",
     "createButton": "Create",
     "nameRequired": "Please enter subject name",
-    "nameTooLong": "Subject name must be 80 characters or less",
+    "nameTooLong": "You can only enter up to 20 characters",
     "nameInvalid": "Subject name must not contain special characters",
+    "slugTooLong": "You can only enter up to 10 characters",
     "slugInvalid": "Slug can only contain lowercase letters, numbers and single hyphens",
     "slugLabel": "Slug"
   },

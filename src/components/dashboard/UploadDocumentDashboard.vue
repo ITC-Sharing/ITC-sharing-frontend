@@ -195,8 +195,13 @@ function handleDrop(event: DragEvent) {
 
 function validateTagInput() {
   const tag = tagInput.value.trim().toLowerCase()
-  tagError.value =
-    tag && !TEXT_TAG_PATTERN.test(tag) ? t('common.documentUploadModal.errorTagInvalid') : ''
+  if (tag && tag.length > 10) {
+    tagError.value = t('common.documentUploadModal.errorTagTooLong')
+  } else if (tag && !TEXT_TAG_PATTERN.test(tag)) {
+    tagError.value = t('common.documentUploadModal.errorTagInvalid')
+  } else {
+    tagError.value = ''
+  }
   return !tagError.value
 }
 
@@ -230,6 +235,8 @@ function validateTitle() {
   const title = form.title.trim()
   if (needsTitle && !title) {
     errors.title = t('common.documentUploadModal.errorTitleRequired')
+  } else if (title.length > 20) {
+    errors.title = t('common.documentUploadModal.errorTitleTooLong')
   } else if (title && !TEXT_NAME_PATTERN.test(title)) {
     errors.title = t('common.documentUploadModal.errorTitleInvalid')
   } else {
