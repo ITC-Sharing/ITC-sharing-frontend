@@ -2,13 +2,7 @@
 import { ref, computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { getFileIcon, formatFileSize, isImageFile, fileExtension } from '@/utils/format'
-
-type UploadFile = {
-  id: string
-  file_url: string
-  file_size_kb: number
-  original_name?: string | null
-}
+import type { UploadFile } from '@/types'
 
 const props = defineProps<{
   file: UploadFile
@@ -93,11 +87,11 @@ function onDownload() {
             <button
               class="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 transition-colors"
               @click.stop="onPreview"
-            >{{ t('common.documentDetailsPage.preview') }}</button>
+            >{{ t('document.documentDetailsPage.preview') }}</button>
             <button
               class="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 transition-colors"
               @click.stop="onDownload"
-            >{{ t('common.documentDetailsPage.download') }}</button>
+            >{{ t('document.documentDetailsPage.download') }}</button>
           </div>
         </template>
       </div>

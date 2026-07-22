@@ -7,8 +7,9 @@ import { useSubjectsStore } from '@/stores/subjects.store'
 import { useBooksStore } from '@/stores/books.store'
 import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
 import BackButton from '@/components/common/BackButton.vue'
-import { formatRelativeDate } from '@/utils/format'
+import { formatRelativeDate, formatFileSize } from '@/utils/format'
 import noImage from '@/assets/images/no-image.png'
+import type { BookRequestDetail } from '@/types'
 
 const route = useRoute()
 const router = useRouter()
@@ -28,20 +29,6 @@ const upload = computed(() => docs.myUploads.find((u) => u.id === refId.value) ?
 const subject = computed(() => subjectsStore.mySubjects.find((s) => s.id === refId.value) ?? null)
 
 // ── Book request detail ─────────────────────────────────────────────────────
-interface BookRequestDetail {
-  id: string
-  role: 'donor' | 'requester'
-  status: 'pending' | 'accepted' | 'declined'
-  message: string | null
-  contact: string | null
-  requested_at: string
-  resolved_at: string | null
-  decline_reason: string | null
-  book: { id: string; title: string; cover_image_url: string | null }
-  requester: { id: string; first_name: string; last_name: string; avatar_url: string | null }
-  donor: { id: string; first_name: string; last_name: string; avatar_url: string | null }
-}
-
 const bookRequest = ref<BookRequestDetail | null>(null)
 const bookReqLoading = ref(false)
 const bookReqMissing = ref(false)
@@ -241,11 +228,7 @@ onMounted(async () => {
               file.original_name || 'Unnamed file'
             }}</span>
             <span class="shrink-0 text-sm text-gray-400">
-              {{
-                file.file_size_kb < 1024
-                  ? `${file.file_size_kb} KB`
-                  : `${(file.file_size_kb / 1024).toFixed(1)} MB`
-              }}
+              {{ formatFileSize(file.file_size_kb ?? 0) }}
             </span>
           </div>
         </div>

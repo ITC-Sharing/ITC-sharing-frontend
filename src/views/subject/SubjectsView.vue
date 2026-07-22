@@ -5,11 +5,11 @@ import { useI18n } from 'vue-i18n'
 import { useSubjectsStore } from '@/stores/subjects.store'
 import { useMajorsStore } from '@/stores/majors.store'
 import { cefrLevel } from '@/utils/format'
-import SubjectCard from '@/components/SubjectCard.vue'
+import SubjectCard from '@/components/subject/SubjectCard.vue'
 import SearchButton from '@/components/common/SearchButton.vue'
 import FilterButton from '@/components/common/FilterButton.vue'
-import AddnewSubject from '@/components/common/Icon&textButton.vue'
-import SubjectCreateModal from '@/components/SubjectCreateModal.vue'
+import AddnewSubject from '@/components/common/IconTextButton.vue'
+import SubjectCreateModal from '@/components/subject/SubjectCreateModal.vue'
 import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
 import Breadcrumb from '@/components/common/Breadcrumb.vue'
 
@@ -18,7 +18,6 @@ const { t } = useI18n({ useScope: 'global' })
 const subjectsStore = useSubjectsStore()
 const majorsStore = useMajorsStore()
 
-type Major = { id: string; acronym: string; name: string }
 type FilterValue = 'name' | 'semester1' | 'semester2'
 
 const slug = route.params.slug as string
@@ -31,11 +30,11 @@ const submitSuccess = ref(false)
 // Match by lowercased acronym so every major works (incl. English/French) —
 // no hardcoded slug map to keep in sync.
 const currentMajor = computed(() =>
-  (majorsStore.majors as Major[]).find((m) => m.acronym?.toLowerCase() === slug),
+  majorsStore.majors.find((m) => m.acronym?.toLowerCase() === slug),
 )
 
 const majorOptions = computed(() =>
-  (majorsStore.majors as Major[]).map((m) => ({ label: m.acronym, value: m.id })),
+  majorsStore.majors.map((m) => ({ label: m.acronym, value: m.id })),
 )
 
 const filterOptions = computed(() => [
@@ -234,7 +233,8 @@ onMounted(async () => {
                 :title="subject.name"
                 :img="subject.subject_url"
                 :subjectId="subject.id"
-                :slug="slug"
+                :subject-slug="subject.slug"
+                :department-slug="slug"
                 :year="yearLevel"
               />
             </div>

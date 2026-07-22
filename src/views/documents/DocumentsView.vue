@@ -13,8 +13,9 @@ import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
 import Breadcrumb from '@/components/common/Breadcrumb.vue'
 import FilterButton from '@/components/common/FilterButton.vue'
 import ViewToggle from '@/components/common/ViewToggle.vue'
-import IconTextButton from '@/components/common/Icon&textButton.vue'
+import IconTextButton from '@/components/common/IconTextButton.vue'
 import EmptyState from '@/components/common/EmptyState.vue'
+import Pagination from '@/components/common/Pagination.vue'
 
 const { t } = useI18n({ useScope: 'global' })
 const route = useRoute()
@@ -29,6 +30,9 @@ const subjectId = (route.params.subjectId as string) || ''
 
 const showUpload = ref(false)
 const selectedType = ref('')
+
+const PAGE_SIZE = 24
+const page = ref(1)
 const viewMode = ref<'card' | 'list'>(
   (localStorage.getItem('docViewMode') as 'card' | 'list') ?? 'card',
 )
@@ -36,10 +40,10 @@ watch(viewMode, (v) => localStorage.setItem('docViewMode', v))
 
 // Match by lowercased acronym so every major works (incl. English/French).
 const currentMajor = computed(() =>
-  majorsStore.majors.find((m: any) => m.acronym?.toLowerCase() === slug),
+  majorsStore.majors.find((m) => m.acronym?.toLowerCase() === slug),
 )
 
-const currentSubject = computed(() => subjectsStore.subjects.find((s: any) => s.id === subjectId))
+const currentSubject = computed(() => subjectsStore.subjects.find((s) => s.id === subjectId))
 
 // Backend already returns one upload per group with embedded documents[]
 const groupedDocs = computed(() =>
@@ -83,10 +87,20 @@ function loadDocs() {
       ? { subject_id: subjectId }
       : { major_id: currentMajor.value?.id, year_level: year }),
     doc_type: selectedType.value || undefined,
+    page: page.value,
+    limit: PAGE_SIZE,
   })
 }
 
-watch(selectedType, loadDocs)
+// Changing the filter re-narrows the result set, so page 3 of the old results
+// is meaningless — go back to page 1. The watcher on `page` then refetches,
+// unless we were already on page 1, in which case fetch directly.
+watch(selectedType, () => {
+  if (page.value === 1) loadDocs()
+  else page.value = 1
+})
+
+watch(page, loadDocs)
 
 const docTypes = [
   { label: 'All', value: '' },
@@ -130,7 +144,8 @@ async function onUploaded() {
             {{ pageTitle }}
           </h1>
           <p class="text-sm text-gray-400 mt-1">
-            {{ t('document.documentsPage.documentsCount', groupedDocs.length) }}
+            <!-- docs.total is every match, not just this page's slice. -->
+            {{ t('document.documentsPage.documentsCount', docs.total) }}
           </p>
         </div>
         <div class="flex w-full md:items-center justify-between md:justify-end gap-3">
@@ -171,16 +186,14 @@ async function onUploaded() {
         <!-- Empty -->
         <EmptyState
           v-else-if="groupedDocs.length === 0"
-          :message="t('common.documentsPage.noDocuments')"
-          :action-label="t('common.documentsPage.uploadFirst')"
+          :message="t('document.documentsPage.noDocuments')"
+          :action-label="t('document.documentsPage.uploadFirst')"
           @action="showUpload = true"
         />
 
         <!-- Card grid -->
-        <div v-else-if="viewMode === 'card'" class="flex justify-center items-center">
-          <div
-            class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 md:w-full"
-          >
+        <div v-else-if="viewMode === 'card'">
+          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6">
             <DocumentCard
               v-for="entry in groupedDocs"
               :key="entry.doc.id"
@@ -220,6 +233,13 @@ async function onUploaded() {
             />
           </div>
         </div>
+
+        <Pagination
+          v-model:page="page"
+          :total="docs.total"
+          :page-size="PAGE_SIZE"
+          scroll-to-top
+        />
       </div>
     </div>
 

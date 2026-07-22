@@ -5,7 +5,7 @@ import { useMajorsStore } from '@/stores/majors.store'
 import { useAuthStore } from '@/stores/auth.store'
 import BookCard from '@/components/books/BookCard.vue'
 import DonateBookModal from '@/components/books/DonateBookModal.vue'
-import IconTextButton from '@/components/common/Icon&textButton.vue'
+import IconTextButton from '@/components/common/IconTextButton.vue'
 import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
 import FilterButton from '@/components/common/FilterButton.vue'
 import { useI18n } from 'vue-i18n'
@@ -27,13 +27,13 @@ const myRequestedBookIds = computed(
   () =>
     new Set(
       books.outgoingRequests
-        .filter((r: any) => r.status === 'pending' || r.status === 'accepted')
-        .map((r: any) => r.book.id),
+        .filter((r) => r.status === 'pending' || r.status === 'accepted')
+        .map((r) => r.book.id),
     ),
 )
 
 onMounted(async () => {
-  const tasks = [majors.fetchMajors(), books.fetchAll()]
+  const tasks: Promise<unknown>[] = [majors.fetchMajors(), books.fetchAll()]
   if (auth.isAuthenticated) tasks.push(books.fetchOutgoingRequests())
   await Promise.all(tasks)
 })

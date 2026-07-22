@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 import { isLanguageMajor } from '@/utils/format'
@@ -6,14 +7,24 @@ import { isLanguageMajor } from '@/utils/format'
 const { t } = useI18n({ useScope: 'global' })
 const router = useRouter()
 
-const props = defineProps({
-  title: { type: String, default: '' },
-  subtitle: { type: String, default: '0 មុខវិជ្ជា' },
-  img: { type: String, default: '/src/assets/images/non-photo.jpg' },
-  slug: { type: String, required: true }, // ← department slug e.g. "gic"
-  year: { type: Number, required: true }, // ← year number e.g. 3
-  subjectCount: { type: Number, default: 0 },
-})
+const props = withDefaults(
+  defineProps<{
+    title?: string
+    subtitle?: string
+    /** The major's image. Null when it has none. */
+    img?: string | null
+    /** Department slug e.g. "gic" */
+    slug: string
+    /** Year number e.g. 3 */
+    year: number
+    subjectCount?: number
+  }>(),
+  { title: '', subtitle: '0 មុខវិជ្ជា', img: '', subjectCount: 0 },
+)
+
+// Majors without an image_url would otherwise render an empty <img>, i.e. a
+// broken-image icon — skip the element entirely instead.
+const hasImage = computed(() => Boolean(props.img?.trim()))
 
 function goToWhichYear() {
   // English & French have no subjects — jump straight to the level's documents.
@@ -35,7 +46,7 @@ function handleCardClick() {
     @click="handleCardClick"
   >
     <div class="flex flex-col items-center text-center">
-      <img :src="img" :alt="title" class="h-20 rounded-md" />
+      <img v-if="hasImage" :src="img ?? ''" :alt="title" class="h-20 rounded-md" />
 
       <h2 class="text-xl font-semibold leading-none text-black mt-3">
         {{ title }}

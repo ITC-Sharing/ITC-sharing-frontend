@@ -277,7 +277,7 @@ async function submit() {
               @change="onFileChange"
             />
             <div v-if="selectedFiles.length" class="text-sm font-medium text-gray-700">
-              <p class="mb-2">{{ t('common.documentUploadModal.filesSelected', { count: selectedFiles.length }) }}</p>
+              <p class="mb-2">{{ t('document.documentUploadModal.filesSelected', { count: selectedFiles.length }) }}</p>
               <ul class="max-h-20 space-y-1 overflow-y-auto text-xs text-gray-500">
                 <li v-for="file in selectedFiles" :key="file.name + file.size">
                   {{ file.name }} ({{ (file.size / 1024).toFixed(0) }} KB)

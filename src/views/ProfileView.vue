@@ -3,7 +3,7 @@ import { computed, onMounted, reactive, ref, watch, onBeforeUnmount } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useAuthStore } from '@/stores/auth.store'
 import { useMajorsStore } from '@/stores/majors.store'
-import IconTextButton from '@/components/common/Icon&textButton.vue'
+import IconTextButton from '@/components/common/IconTextButton.vue'
 import ImageLightbox from '@/components/common/ImageLightbox.vue'
 
 const { t } = useI18n({ useScope: 'global' })

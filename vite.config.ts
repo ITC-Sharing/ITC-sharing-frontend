@@ -18,4 +18,8 @@ export default defineConfig({
       '@': fileURLToPath(new URL('./src', import.meta.url))
     },
   },
+  server: {
+    host: true,   // bind 0.0.0.0 so the container is reachable from the host
+    port: 5173,
+  },
 })

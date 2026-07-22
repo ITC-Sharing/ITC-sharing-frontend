@@ -8,7 +8,6 @@ import enDashboard from './locales/en/dashboard.json'
 import kmDashboard from './locales/km/dashboard.json'
 import enDocument from './locales/en/document.json'
 import kmDocument from './locales/km/document.json'
-import { EndOfLineState } from 'typescript'
 
 // ✅ get saved language from browser
 const savedLang = localStorage.getItem('lang')

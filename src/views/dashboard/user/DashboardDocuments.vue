@@ -7,9 +7,10 @@ import { useAuthStore } from '@/stores/auth.store'
 import UploadDocumentDashboard from '@/components/dashboard/UploadDocumentDashboard.vue'
 import PendingRejectedAlert from '@/components/dashboard/PendingRejectedAlert.vue'
 import SearchButton from '@/components/common/SearchButton.vue'
-import IconTextButton from '@/components/common/Icon&textButton.vue'
+import IconTextButton from '@/components/common/IconTextButton.vue'
 import FilterChips from '@/components/common/FilterChips.vue'
 import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
+import Pagination from '@/components/common/Pagination.vue'
 import { formatFileSize, formatRelativeDate } from '@/utils/format'
 
 const { t } = useI18n({ useScope: 'global' })
@@ -28,6 +29,9 @@ const showUpload = ref(false)
 const selectedType = ref('')
 const searchQuery = ref('')
 const deletingId = ref<string | null>(null)
+
+const PAGE_SIZE = 20
+const page = ref(1)
 
 const docTypes = [
   { label: 'All', value: '' },
@@ -58,23 +62,34 @@ function loadDocs() {
     uploader_id: auth.user?.id,
     doc_type: selectedType.value || undefined,
     search: searchQuery.value.trim() || undefined,
+    page: page.value,
+    limit: PAGE_SIZE,
   })
+}
+
+// Any filter change re-narrows the results, so the current page number no
+// longer refers to anything meaningful — reset to 1 and let the `page` watcher
+// refetch (or fetch directly if already there).
+function reload() {
+  if (page.value === 1) loadDocs()
+  else page.value = 1
 }
 
 // Type chips refetch immediately; the search box is debounced so we don't
 // fire a request per keystroke.
-watch(selectedType, loadDocs)
+watch(selectedType, reload)
 
 let searchTimer: ReturnType<typeof setTimeout> | undefined
 watch(searchQuery, () => {
   clearTimeout(searchTimer)
-  searchTimer = setTimeout(loadDocs, 300)
+  searchTimer = setTimeout(reload, 300)
 })
 
-type FileEntry = { file_size_kb?: number }
-type UploadEntry = { documents?: FileEntry[] }
+watch(page, loadDocs)
 
-function docFileSize(doc: UploadEntry) {
+// Structural on purpose: called with both feed uploads and `myUploads`, whose
+// file entries differ in everything but the size.
+function docFileSize(doc: { documents?: { file_size_kb: number | null }[] }) {
   return (doc.documents ?? []).reduce((s, f) => s + (f.file_size_kb ?? 0), 0)
 }
 
@@ -280,6 +295,9 @@ onMounted(() => {
       </div>
     </div>
   </div>
+
+  <!-- No scroll-to-top: this list sits inside the dashboard panel, already in view. -->
+  <Pagination v-model:page="page" :total="docs.total" :page-size="PAGE_SIZE" />
 
   <!-- Upload modal -->
   <UploadDocumentDashboard
