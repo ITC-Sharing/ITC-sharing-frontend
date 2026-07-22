@@ -33,13 +33,13 @@ const routes = [
       {
         path: 'notifications',
         name: 'notifications',
-        component: () => import('@/views/NotificationsView.vue'),
+        component: () => import('@/views/notifications/NotificationsView.vue'),
         meta: { requiresAuth: true },
       },
       {
         path: 'notifications/detail',
         name: 'notification-detail',
-        component: () => import('@/views/NotificationDetailView.vue'),
+        component: () => import('@/views/notifications/NotificationDetailView.vue'),
         meta: { requiresAuth: true },
       },
       {
@@ -79,14 +79,14 @@ const routes = [
       {
         path: 'dep/:slug',
         name: 'department',
-        component: () => import('@/views/DepartmentView.vue'),
+        component: () => import('@/views/dapartment/DepartmentView.vue'),
         props: true,
         meta: { requiresAuth: true },
       },
       {
         path: 'department/:slug/year/:year',
         name: 'subjects',
-        component: () => import('@/views/SubjectsView.vue'),
+        component: () => import('@/views/subject/SubjectsView.vue'),
         props: true,
         meta: { requiresAuth: true },
       },

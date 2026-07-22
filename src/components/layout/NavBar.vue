@@ -187,8 +187,8 @@
 
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
-import ButtonPrimary from '@/components/ButtonPrimary.vue'
-import NotificationBell from '@/components/NotificationBell.vue'
+import ButtonPrimary from '@/components/common/ButtonPrimary.vue'
+import NotificationBell from '@/components/notifications/NotificationBell.vue'
 import { useAuthStore } from '@/stores/auth.store'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'

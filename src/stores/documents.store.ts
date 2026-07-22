@@ -1,12 +1,14 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import api from '@/lib/axios'
+import type { DocumentStats, MyUpload, Upload } from '@/types'
 
 export const useDocumentsStore = defineStore('documents', () => {
-  const documents = ref<any[]>([])
+  const documents = ref<Upload[]>([])
   const total = ref(0)
-  const currentUpload = ref<any | null>(null)
-  const myUploads = ref<any[]>([])
+  const currentUpload = ref<Upload | null>(null)
+  const myUploads = ref<MyUpload[]>([])
+  const stats = ref<DocumentStats>({ total: 0, size_kb: 0 })
   const docTypes = ref<string[]>([])
   const loading = ref(false)
   const error = ref<string | null>(null)
@@ -34,7 +36,9 @@ export const useDocumentsStore = defineStore('documents', () => {
     loading.value = true
     error.value = null
     try {
-      const { data } = await api.get('/documents', { params: filters })
+      const { data } = await api.get<{ items: Upload[]; total: number }>('/documents', {
+        params: filters,
+      })
       documents.value = data.items
       total.value = data.total
     } catch (e: any) {
@@ -49,7 +53,7 @@ export const useDocumentsStore = defineStore('documents', () => {
     loading.value = true
     error.value = null
     try {
-      const { data } = await api.get(`/documents/${uploadId}`)
+      const { data } = await api.get<Upload>(`/documents/${uploadId}`)
       currentUpload.value = data
     } catch (e: any) {
       error.value = e.response?.data?.message ?? 'Failed to load document'
@@ -74,11 +78,22 @@ export const useDocumentsStore = defineStore('documents', () => {
     }
   }
 
+  // Dashboard totals, aggregated server-side. Kept separate from `documents`
+  // so a paginated list never distorts the numbers.
+  async function fetchStats() {
+    try {
+      const { data } = await api.get<DocumentStats>('/documents/stats')
+      stats.value = data
+    } catch (e: any) {
+      error.value = e.response?.data?.message ?? 'Failed to load document stats'
+    }
+  }
+
   async function fetchMine() {
     loading.value = true
     error.value = null
     try {
-      const { data } = await api.get('/documents/mine')
+      const { data } = await api.get<MyUpload[]>('/documents/mine')
       myUploads.value = data
     } catch (e: any) {
       error.value = e.response?.data?.message ?? 'Failed to load your uploads'
@@ -127,7 +142,7 @@ export const useDocumentsStore = defineStore('documents', () => {
 
   async function deleteDocument(uploadId: string) {
     await api.delete(`/documents/${uploadId}`)
-    documents.value = documents.value.filter((d: any) => d.id !== uploadId)
+    documents.value = documents.value.filter((d) => d.id !== uploadId)
   }
 
   return {
@@ -135,12 +150,14 @@ export const useDocumentsStore = defineStore('documents', () => {
     total,
     currentUpload,
     myUploads,
+    stats,
     docTypes,
     loading,
     error,
     fetchDocTypes,
     fetchAll,
     fetchOne,
+    fetchStats,
     fetchMine,
     upload,
     updateDocument,

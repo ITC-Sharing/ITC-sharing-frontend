@@ -114,7 +114,7 @@ export function useNotifications() {
         await router.push({
           name: 'subject-documents',
           params: {
-            slug: subject.major?.acronym?.toLowerCase(),
+            slug: subject.majors?.acronym?.toLowerCase(),
             year: subject.year_level,
             subjectId: n.ref_id,
           },

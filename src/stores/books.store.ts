@@ -1,22 +1,32 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import api from '@/lib/axios'
+import type {
+  Book,
+  BookRequestDetail,
+  BookStats,
+  IncomingBookRequest,
+  MyBook,
+  OutgoingBookRequest,
+} from '@/types'
 
 export const useBooksStore = defineStore('books', () => {
-  const books = ref<any[]>([])
-  const currentBook = ref<any | null>(null)
+  const books = ref<Book[]>([])
+  const currentBook = ref<Book | null>(null)
   const loading = ref(false)
   const error = ref<string | null>(null)
-  const incomingRequests = ref<any[]>([])
-  const myBooks = ref<any[]>([])
-  const outgoingRequests = ref<any[]>([])
-  const bookStats = ref({ listed: 0, received: 0, pendingIncoming: 0 })
+  const incomingRequests = ref<IncomingBookRequest[]>([])
+  const myBooks = ref<MyBook[]>([])
+  const outgoingRequests = ref<OutgoingBookRequest[]>([])
+  const bookStats = ref<BookStats>({ listed: 0, received: 0, pendingIncoming: 0 })
 
   async function fetchAll(majorId?: string) {
     loading.value = true
     error.value = null
     try {
-      const { data } = await api.get('/books', { params: majorId ? { major_id: majorId } : {} })
+      const { data } = await api.get<Book[]>('/books', {
+        params: majorId ? { major_id: majorId } : {},
+      })
       books.value = data
     } catch (e: any) {
       error.value = e.response?.data?.message ?? 'Failed to load books'
@@ -29,7 +39,7 @@ export const useBooksStore = defineStore('books', () => {
     loading.value = true
     error.value = null
     try {
-      const { data } = await api.get(`/books/${id}`)
+      const { data } = await api.get<Book>(`/books/${id}`)
       currentBook.value = data
     } catch (e: any) {
       error.value = e.response?.data?.message ?? 'Failed to load book'
@@ -41,10 +51,10 @@ export const useBooksStore = defineStore('books', () => {
   async function uploadCover(file: File): Promise<string> {
     const formData = new FormData()
     formData.append('file', file)
-    const { data } = await api.post('/books/upload-cover', formData, {
+    const { data } = await api.post<{ url: string }>('/books/upload-cover', formData, {
       headers: { 'Content-Type': 'multipart/form-data' },
     })
-    return data.url as string
+    return data.url
   }
 
   async function donate(payload: {
@@ -57,7 +67,7 @@ export const useBooksStore = defineStore('books', () => {
     loading.value = true
     error.value = null
     try {
-      const { data } = await api.post('/books', payload)
+      const { data } = await api.post<Book>('/books', payload)
       books.value.unshift(data)
       return data
     } catch (e: any) {
@@ -84,7 +94,7 @@ export const useBooksStore = defineStore('books', () => {
       cover_image_url?: string
     },
   ) {
-    const { data } = await api.patch(`/books/${bookId}`, payload)
+    const { data } = await api.patch<MyBook>(`/books/${bookId}`, payload)
     const i = myBooks.value.findIndex((b) => b.id === bookId)
     if (i !== -1) myBooks.value[i] = { ...myBooks.value[i], ...data }
     return data
@@ -101,19 +111,19 @@ export const useBooksStore = defineStore('books', () => {
   }
 
   async function fetchIncomingRequests() {
-    const { data } = await api.get('/books/requests/incoming')
+    const { data } = await api.get<IncomingBookRequest[]>('/books/requests/incoming')
     incomingRequests.value = data
     return data
   }
 
   async function fetchMyBooks(filter: 'all' | 'pending' | 'donated' = 'all') {
-    const { data } = await api.get('/books/mine', { params: { filter } })
+    const { data } = await api.get<MyBook[]>('/books/mine', { params: { filter } })
     myBooks.value = data
     return data
   }
 
   async function fetchOutgoingRequests(status?: 'pending' | 'accepted') {
-    const { data } = await api.get('/books/requests/outgoing', {
+    const { data } = await api.get<OutgoingBookRequest[]>('/books/requests/outgoing', {
       params: status ? { status } : {},
     })
     outgoingRequests.value = data
@@ -121,18 +131,20 @@ export const useBooksStore = defineStore('books', () => {
   }
 
   async function fetchBookStats() {
-    const { data } = await api.get('/books/stats')
+    const { data } = await api.get<BookStats>('/books/stats')
     bookStats.value = data
     return data
   }
 
   async function fetchRequestDetail(requestId: string) {
-    const { data } = await api.get(`/books/request/${requestId}`)
+    const { data } = await api.get<BookRequestDetail>(`/books/request/${requestId}`)
     return data
   }
 
   async function acceptRequest(bookId: string, requestId: string) {
-    const { data } = await api.patch(`/books/${bookId}/request/${requestId}/accept`)
+    const { data } = await api.patch<{ message: string; contact: string }>(
+      `/books/${bookId}/request/${requestId}/accept`,
+    )
     const r = incomingRequests.value.find((x) => x.id === requestId)
     if (r) {
       r.status = 'accepted'

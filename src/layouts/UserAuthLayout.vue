@@ -7,6 +7,6 @@
   </div>
 </template>
 <script setup lang="ts">
-import NavBarAuth from '@/components/NavBarAuth.vue';
+import NavBarAuth from '@/components/layout/NavBarAuth.vue';
 import { RouterView } from 'vue-router'
 </script>

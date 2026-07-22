@@ -8,6 +8,7 @@ import FileRow from '@/components/documents/FileRow.vue'
 import FileCard from '@/components/documents/FileCard.vue'
 import BackButton from '@/components/common/BackButton.vue'
 import ViewToggle from '@/components/common/ViewToggle.vue'
+import type { UploadFile } from '@/types'
 
 const { t } = useI18n({ useScope: 'global' })
 
@@ -26,13 +27,6 @@ const upload = computed(() => docs.currentUpload)
 const pageTitle = computed(() => upload.value?.title || 'Document Details')
 
 const files = computed(() => upload.value?.documents ?? [])
-
-type UploadFile = {
-  id: string
-  file_url: string
-  file_size_kb: number
-  original_name?: string | null
-}
 
 function getDownloadUrl(file: UploadFile) {
   const name = file.original_name?.trim()

@@ -18,30 +18,24 @@ const auth = useAuthStore()
 
 const myDocs = computed(() => docs.documents)
 
-type FileEntry = { file_size_kb?: number }
-type UploadEntry = { documents?: FileEntry[] }
+// Rows shown in the "recent uploads" panel — also the fetch limit.
+const RECENT_COUNT = 3
 
-function sumFiles(key: keyof FileEntry) {
-  return myDocs.value.reduce((sum: number, d: UploadEntry) => {
-    return sum + (d.documents ?? []).reduce((s: number, f: FileEntry) => s + (f[key] ?? 0), 0)
-  }, 0)
-}
-
+// Counts and total size come from /documents/stats, aggregated in SQL over all
+// of the user's uploads. Deriving them from the fetched list would only ever
+// describe the handful of rows below.
 const stats = computed(() => ({
-  total: myDocs.value.length,
+  total: docs.stats.total,
   books: booksStore.bookStats.listed,
-  size: formatTotalFileSize(sumFiles('file_size_kb')),
+  size: formatTotalFileSize(docs.stats.size_kb),
   received: booksStore.bookStats.received,
 }))
 
-const recentDocs = computed(() =>
-  [...myDocs.value]
-    .sort((a: any, b: any) => new Date(b.uploaded_at).getTime() - new Date(a.uploaded_at).getTime())
-    .slice(0, 3),
-)
+// The server already returns newest-first, and we ask for exactly RECENT_COUNT.
+const recentDocs = computed(() => myDocs.value)
 const recentMyBooks = computed(() =>
   [...booksStore.myBooks]
-    .sort((a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+    .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
     .slice(0, 3),
 )
 
@@ -64,7 +58,10 @@ function goToMyBooks() {
 }
 
 onMounted(() => {
-  docs.fetchAll({ uploader_id: auth.user?.id })
+  // Only the few rows the "recent uploads" panel shows — totals come from
+  // fetchStats(), so there is no reason to pull the full list.
+  docs.fetchAll({ uploader_id: auth.user?.id, limit: RECENT_COUNT })
+  docs.fetchStats()
   docs.fetchMine()
   booksStore.fetchMyBooks('all')
   booksStore.fetchBookStats()
@@ -155,7 +152,7 @@ onMounted(() => {
         <a
           v-for="doc in recentDocs"
           :key="doc.id"
-          :href="doc.file_url"
+          :href="doc.documents?.[0]?.file_url"
           target="_blank"
           class="flex items-center gap-3 px-5 py-3 hover:bg-gray-50 transition-colors"
         >

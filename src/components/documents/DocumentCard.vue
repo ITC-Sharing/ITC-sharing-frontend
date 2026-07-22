@@ -4,6 +4,8 @@ import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth.store'
 import { useDocumentsStore } from '@/stores/documents.store'
+import { formatRelativeDate } from '@/utils/format'
+import type { Upload } from '@/types'
 
 const { t } = useI18n({ useScope: 'global' })
 const auth = useAuthStore()
@@ -11,22 +13,8 @@ const docs = useDocumentsStore()
 const router = useRouter()
 
 const props = defineProps<{
-  doc: {
-    id: string // upload id
-    title: string
-    doc_type: string
-    academic_year?: string | null
-    uploaded_at: string
-    users: { id: string; first_name: string; last_name: string }
-    subjects?: { id: string; slug: string } | null
-    document_tags?: { tag: string }[]
-    documents?: {
-      id: string
-      file_url: string
-      file_size_kb: number
-      original_name?: string | null
-    }[]
-  }
+  /** A feed upload; `doc.id` is the upload id, not a file id. */
+  doc: Upload
   fileCount?: number
 }>()
 
@@ -42,26 +30,9 @@ const postBy = computed(() =>
   `${props.doc.users?.first_name ?? ''} ${props.doc.users?.last_name ?? ''}`.trim(),
 )
 
-const dateText = computed(() =>
-  new Date(props.doc.uploaded_at).toLocaleDateString('en-GB', {
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric',
-  }),
-)
-
-const totalKb = computed(() =>
-  (props.doc.documents ?? []).reduce((s, f) => s + (f.file_size_kb ?? 0), 0),
-)
-
-const sizeText = computed(() => {
-  const kb = totalKb.value
-  return kb < 1024 ? `${kb} KB` : `${(kb / 1024).toFixed(1)} MB`
-})
+const dateText = computed(() => formatRelativeDate(props.doc.uploaded_at))
 
 const tags = computed(() => props.doc.document_tags?.map((t) => t.tag) ?? [])
-
-
 
 // ── Actions ─────────────────────────────────────────────────────────────────
 
@@ -92,8 +63,11 @@ function goToDetails() {
 </script>
 
 <template>
+  <!-- h-full + flex-col so every card fills its grid row and the byline can be
+       pinned to the bottom, keeping it aligned across cards with and without
+       tags. -->
   <article
-    class="w-full max-w-64 rounded-lg border bg-white border-[#B9B9B9] px-4 py-5 relative cursor-pointer hover:border-[#008CB9] transition-colors"
+    class="flex h-full w-full flex-col rounded-lg border bg-white border-[#B9B9B9] px-4 py-5 relative cursor-pointer hover:border-[#008CB9] transition-colors"
     @click="goToDetails"
   >
     <!-- Delete button (owner only) -->
@@ -122,7 +96,10 @@ function goToDetails() {
     <!-- Thumbnail -->
     <div class="flex flex-col items-center justify-center pb-3 gap-1">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640" class="h-25 w-30">
-        <path fill="#1D92BC" d="M128 512L512 512C547.3 512 576 483.3 576 448L576 208C576 172.7 547.3 144 512 144L362.7 144C355.8 144 349 141.8 343.5 137.6L305.1 108.8C294 100.5 280.5 96 266.7 96L128 96C92.7 96 64 124.7 64 160L64 448C64 483.3 92.7 512 128 512z"/>
+        <path
+          fill="#1D92BC"
+          d="M128 512L512 512C547.3 512 576 483.3 576 448L576 208C576 172.7 547.3 144 512 144L362.7 144C355.8 144 349 141.8 343.5 137.6L305.1 108.8C294 100.5 280.5 96 266.7 96L128 96C92.7 96 64 124.7 64 160L64 448C64 483.3 92.7 512 128 512z"
+        />
       </svg>
       <span class="text-sm font-semibold text-[#008CB9] capitalize">{{ doc.doc_type }}</span>
     </div>
@@ -134,15 +111,11 @@ function goToDetails() {
 
     <!-- Subject -->
     <p v-if="doc.subjects" class="text-[12px] text-gray-400 mt-1">
-      <span class="uppercase">{{ doc.subjects.slug }}</span>
-    </p>
-
-    <p class="text-[12px] text-gray-400">
-      {{ t('document.DocumentCard.academicYear') }} &nbsp;•&nbsp; {{ doc.academic_year }}
+      <span class="uppercase">{{ doc.subjects.slug }} &nbsp;•&nbsp; {{ doc.academic_year }}</span>
     </p>
 
     <!-- Tags -->
-    <div class="mt-4 flex flex-wrap gap-1">
+    <div class="mt-2 flex flex-wrap gap-1">
       <span
         v-for="tag in tags"
         :key="tag"
@@ -152,16 +125,9 @@ function goToDetails() {
       </span>
     </div>
 
-    <!-- File meta -->
-    <p class="mt-5 text-sm leading-none text-[#9E9E9E]">
-      <template v-if="fileCount"
-        >{{ t('document.documentDetailsPage.filesCount', fileCount) }} &nbsp;•&nbsp;
-      </template>{{ sizeText }}
-    </p>
-
-    <!-- Author + date -->
-    <p class="mt-3 text-sm font-semibold leading-none text-[#9E9E9E]">
-      {{ t('document.DocumentCard.by') }} {{ postBy }} &nbsp;•&nbsp; {{ dateText }}
+    <!-- Author + date — mt-auto pins it to the bottom of the card. -->
+    <p class="mt-auto pt-3 text-sm font-semibold leading-none text-[#9E9E9E]">
+      {{ postBy }} &nbsp;•&nbsp; {{ dateText }}
     </p>
   </article>
 

@@ -6,8 +6,9 @@ import { useAuthStore } from '@/stores/auth.store'
 import DocumentCard from '@/components/documents/DocumentCard.vue'
 import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
 import UploadDocumentDashboard from '@/components/dashboard/UploadDocumentDashboard.vue'
-import IconTextButton from '@/components/common/Icon&textButton.vue'
+import IconTextButton from '@/components/common/IconTextButton.vue'
 import EmptyState from '@/components/common/EmptyState.vue'
+import Pagination from '@/components/common/Pagination.vue'
 
 const { t } = useI18n({ useScope: 'global' })
 const docs = useDocumentsStore()
@@ -27,9 +28,6 @@ const userMajor = computed(() => {
 })
 const majorId = computed(() => userMajor.value?.id)
 const yearLevel = computed(() => auth.user?.year_level)
-const totalPages = computed(() => Math.max(1, Math.ceil(docs.total / PAGE_SIZE)))
-const selectedType = ref('')
-const searchQuery = ref('')
 
 function load() {
   if (!majorId.value || !yearLevel.value) return
@@ -41,38 +39,11 @@ function load() {
   })
 }
 
-function loadDocs() {
-  return docs.fetchAll({
-    uploader_id: auth.user?.id,
-    doc_type: selectedType.value || undefined,
-    search: searchQuery.value.trim() || undefined,
-  })
-}
-
-function goTo(p: number | '…') {
-  if (p === '…' || p < 1 || p > totalPages.value || p === page.value) return
-  page.value = p
-  window.scrollTo({ top: 0, behavior: 'smooth' })
-}
-
+// Reload this view's own feed. Previously refetched by uploader_id, which
+// replaced the major/year feed with just the current user's uploads.
 async function onUploaded() {
-  await Promise.all([loadDocs(), docs.fetchMine()])
+  await Promise.all([load(), docs.fetchMine()])
 }
-
-// Windowed page numbers (1 … 4 5 6 … 12)
-const visiblePages = computed<(number | '…')[]>(() => {
-  const tp = totalPages.value
-  const cur = page.value
-  if (tp <= 7) return Array.from({ length: tp }, (_, i) => i + 1)
-  const pages: (number | '…')[] = [1]
-  const start = Math.max(2, cur - 1)
-  const end = Math.min(tp - 1, cur + 1)
-  if (start > 2) pages.push('…')
-  for (let i = start; i <= end; i++) pages.push(i)
-  if (end < tp - 1) pages.push('…')
-  pages.push(tp)
-  return pages
-})
 
 // Fire once now and again whenever the user (major/year) loads in or the page changes
 watch([majorId, yearLevel, page], load, { immediate: true })
@@ -119,14 +90,14 @@ watch([majorId, yearLevel, page], load, { immediate: true })
       <!-- Empty -->
       <EmptyState
         v-else-if="docs.documents.length === 0"
-        :message="t('common.documentsPage.noDocuments')"
-        :action-label="t('common.documentsPage.uploadFirst')"
+        :message="t('document.documentsPage.noDocuments')"
+        :action-label="t('document.documentsPage.uploadFirst')"
         @action="showUpload = true"
       />
       <!-- Grid -->
       <template v-else>
-        <div class="flex items-center justify-center md:justify-between mb-4 gap-3 flex-wrap">
-          <div class="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+        <div class="mb-4">
+          <div class="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
             <DocumentCard
               v-for="doc in docs.documents"
               :key="doc.id"
@@ -137,41 +108,12 @@ watch([majorId, yearLevel, page], load, { immediate: true })
           </div>
         </div>
 
-        <!-- Pagination -->
-        <div v-if="totalPages > 1" class="mt-8 flex items-center justify-center gap-1">
-          <button
-            :disabled="page === 1"
-            @click="goTo(page - 1)"
-            class="px-3 py-1.5 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-          >
-            {{ t('common.documentsPage.prev') }}
-          </button>
-
-          <button
-            v-for="(p, i) in visiblePages"
-            :key="i"
-            :disabled="p === '…'"
-            @click="goTo(p)"
-            :class="[
-              'min-w-9 h-9 px-2 rounded-lg text-sm font-medium transition-colors',
-              p === page
-                ? 'bg-[#008CB9] text-white'
-                : p === '…'
-                  ? 'text-gray-400 cursor-default'
-                  : 'text-gray-600 hover:bg-gray-100',
-            ]"
-          >
-            {{ p }}
-          </button>
-
-          <button
-            :disabled="page === totalPages"
-            @click="goTo(page + 1)"
-            class="px-3 py-1.5 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-          >
-            {{ t('common.documentsPage.next') }}
-          </button>
-        </div>
+        <Pagination
+          v-model:page="page"
+          :total="docs.total"
+          :page-size="PAGE_SIZE"
+          scroll-to-top
+        />
       </template>
     </div>
     <UploadDocumentDashboard v-if="showUpload" @close="showUpload = false" @uploaded="onUploaded" />

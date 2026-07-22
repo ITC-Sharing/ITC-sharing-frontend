@@ -196,9 +196,9 @@ function handleDrop(event: DragEvent) {
 function validateTagInput() {
   const tag = tagInput.value.trim().toLowerCase()
   if (tag && tag.length > 10) {
-    tagError.value = t('common.documentUploadModal.errorTagTooLong')
+    tagError.value = t('document.documentUploadModal.errorTagTooLong')
   } else if (tag && !TEXT_TAG_PATTERN.test(tag)) {
-    tagError.value = t('common.documentUploadModal.errorTagInvalid')
+    tagError.value = t('document.documentUploadModal.errorTagInvalid')
   } else {
     tagError.value = ''
   }
@@ -220,13 +220,13 @@ function removeTag(tag: string) {
 }
 
 function validateAcademicYear(value: string): string {
-  if (!value) return t('common.documentUploadModal.errorAcademicYearRequired')
+  if (!value) return t('document.documentUploadModal.errorAcademicYearRequired')
   const match = value.match(/^(\d{4})-(\d{4})$/)
-  if (!match) return t('common.documentUploadModal.errorAcademicYearFormat')
+  if (!match) return t('document.documentUploadModal.errorAcademicYearFormat')
   const start = parseInt(match[1] ?? '')
   const end = parseInt(match[2] ?? '')
   if (end !== start + 1)
-    return t('common.documentUploadModal.errorAcademicYearEnd', { year: start + 1 })
+    return t('document.documentUploadModal.errorAcademicYearEnd', { year: start + 1 })
   return ''
 }
 
@@ -234,11 +234,11 @@ function validateTitle() {
   const needsTitle = isEditing.value || selectedFiles.value.length <= 1
   const title = form.title.trim()
   if (needsTitle && !title) {
-    errors.title = t('common.documentUploadModal.errorTitleRequired')
+    errors.title = t('document.documentUploadModal.errorTitleRequired')
   } else if (title.length > 20) {
-    errors.title = t('common.documentUploadModal.errorTitleTooLong')
+    errors.title = t('document.documentUploadModal.errorTitleTooLong')
   } else if (title && !TEXT_NAME_PATTERN.test(title)) {
-    errors.title = t('common.documentUploadModal.errorTitleInvalid')
+    errors.title = t('document.documentUploadModal.errorTitleInvalid')
   } else {
     errors.title = ''
   }
@@ -246,15 +246,15 @@ function validateTitle() {
 
 function validate() {
   validateTitle()
-  errors.doc_type = form.doc_type ? '' : t('common.documentUploadModal.errorSelectType')
-  errors.year_level = form.year_level ? '' : t('common.documentUploadModal.errorSelectYear')
+  errors.doc_type = form.doc_type ? '' : t('document.documentUploadModal.errorSelectType')
+  errors.year_level = form.year_level ? '' : t('document.documentUploadModal.errorSelectYear')
   errors.academic_year = validateAcademicYear(form.academic_year)
-  errors.major_id = form.major_id ? '' : t('common.documentUploadModal.errorSelectMajor')
+  errors.major_id = form.major_id ? '' : t('document.documentUploadModal.errorSelectMajor')
   // An upload must end up with at least one file.
   const totalFiles = isEditing.value
     ? existingFiles.value.length + selectedFiles.value.length
     : selectedFiles.value.length
-  errors.file = totalFiles >= 1 ? '' : t('common.documentUploadModal.errorSelectFile')
+  errors.file = totalFiles >= 1 ? '' : t('document.documentUploadModal.errorSelectFile')
   return !Object.values(errors).some(Boolean)
 }
 
@@ -320,7 +320,7 @@ async function submit() {
       <!-- Header -->
       <div class="flex items-center justify-between">
         <h2 class="text-xl font-bold text-black">
-          {{ isEditing ? t('common.documentUploadModal.editTitle') : t('common.documentUploadModal.docUpload') }}
+          {{ isEditing ? t('document.documentUploadModal.editTitle') : t('document.documentUploadModal.docUpload') }}
         </h2>
         <button @click="emit('close')" class="text-gray-400 hover:text-gray-600 transition-colors">
           <svg
@@ -351,7 +351,7 @@ async function submit() {
       <!-- Existing files (edit mode) — each can be removed -->
       <div v-if="isEditing && existingFiles.length" class="flex flex-col gap-1.5">
         <p class="text-xs font-medium text-gray-500">
-          {{ t('common.documentUploadModal.currentFiles') }}
+          {{ t('document.documentUploadModal.currentFiles') }}
         </p>
         <div
           v-for="file in existingFiles"
@@ -366,7 +366,7 @@ async function submit() {
             type="button"
             @click="removeExistingFile(file.id)"
             class="shrink-0 p-1 text-gray-400 hover:text-red-500 rounded transition-colors"
-            :title="t('common.documentUploadModal.removeFile')"
+            :title="t('document.documentUploadModal.removeFile')"
           >
             <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
               <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
@@ -431,7 +431,7 @@ async function submit() {
                 type="button"
                 @click.stop="removeSelectedFile(file)"
                 class="shrink-0 text-gray-400 hover:text-red-500"
-                :title="t('common.documentUploadModal.removeFile')"
+                :title="t('document.documentUploadModal.removeFile')"
               >
                 <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                   <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
@@ -442,7 +442,7 @@ async function submit() {
         </div>
         <div v-else class="text-gray-400 text-sm">
           <p class="font-medium text-gray-600 mb-1">
-            {{ t('common.documentUploadModal.selectFile') }}
+            {{ t('document.documentUploadModal.selectFile') }}
           </p>
           <p>PDF, Word, PowerPoint, Image — max 20MB each</p>
         </div>
@@ -452,7 +452,7 @@ async function submit() {
       <!-- Title -->
       <div>
         <label class="text-sm font-medium text-gray-700 block mb-1">{{
-          t('common.documentUploadModal.title')
+          t('document.documentUploadModal.title') }}
         }}</label>
         <input
           v-model="form.title"
@@ -468,14 +468,14 @@ async function submit() {
       <div class="grid grid-cols-2 gap-3">
         <div>
           <label class="text-sm font-medium text-gray-700 block mb-1">{{
-            t('common.documentUploadModal.typeLabel')
+            t('document.documentUploadModal.typeLabel')
           }}</label>
           <SelectDropdown
             v-model="form.doc_type"
             placeholder="Select type"
             :options="docTypeOptions"
             @change="
-              errors.doc_type = form.doc_type ? '' : t('common.documentUploadModal.errorSelectType')
+              errors.doc_type = form.doc_type ? '' : t('document.documentUploadModal.errorSelectType')
             "
           />
           <p v-if="errors.doc_type" class="text-red-500 text-sm mt-1">{{ errors.doc_type }}</p>
@@ -483,7 +483,7 @@ async function submit() {
 
         <div>
           <label class="text-sm font-medium text-gray-700 block mb-1">
-            {{ t('common.documentUploadModal.academicYearLabel') }}
+            {{ t('document.documentUploadModal.academicYearLabel') }}
           </label>
           <input
             type="text"
@@ -501,7 +501,7 @@ async function submit() {
 
         <div>
           <label class="text-sm font-medium text-gray-700 block mb-1">{{
-            t('common.documentUploadModal.majorLabel')
+            t('document.documentUploadModal.majorLabel')
           }}</label>
           <SelectDropdown
             v-model="form.major_id"
@@ -510,7 +510,7 @@ async function submit() {
             @change="
               errors.major_id = form.major_id
                 ? ''
-                : t('common.documentUploadModal.errorSelectMajor')
+                : t('document.documentUploadModal.errorSelectMajor')
             "
           />
           <p v-if="errors.major_id" class="text-red-500 text-sm mt-1">{{ errors.major_id }}</p>
@@ -518,7 +518,7 @@ async function submit() {
 
         <div>
           <label class="text-sm font-medium text-gray-700 block mb-1">
-            {{ t('common.documentUploadModal.yearLevelLabel') }}
+            {{ t('document.documentUploadModal.yearLevelLabel') }}
           </label>
           <SelectDropdown
             v-model="form.year_level"
@@ -527,7 +527,7 @@ async function submit() {
             @change="
               errors.year_level = form.year_level
                 ? ''
-                : t('common.documentUploadModal.errorSelectYear')
+                : t('document.documentUploadModal.errorSelectYear')
             "
           />
           <p v-if="errors.year_level" class="text-red-500 text-sm mt-1">{{ errors.year_level }}</p>
@@ -537,7 +537,7 @@ async function submit() {
       <!-- Subject -->
       <div v-if="form.major_id && form.year_level">
         <label class="text-sm font-medium text-gray-700 block mb-1">{{
-          t('common.documentUploadModal.subjectLabel')
+          t('document.documentUploadModal.subjectLabel')
         }}</label>
         <SelectDropdown
           v-if="subjectOptions.length"
@@ -607,9 +607,9 @@ async function submit() {
             />
             <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
           </svg>
-          {{ isEditing ? t('common.documentUploadModal.saving') : t('common.documentUploadModal.uploading') }}
+          {{ isEditing ? t('document.documentUploadModal.saving') : t('document.documentUploadModal.uploading') }}
         </span>
-        <span v-else>{{ isEditing ? t('common.documentUploadModal.saveButton') : t('common.documentUploadModal.uploadButton') }}</span>
+        <span v-else>{{ isEditing ? t('document.documentUploadModal.saveButton') : t('document.documentUploadModal.uploadButton') }}</span>
       </button>
     </div>
   </div>

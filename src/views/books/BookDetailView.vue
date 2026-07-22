@@ -6,7 +6,7 @@ import { useAuthStore } from '@/stores/auth.store'
 import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
 import BackButton from '@/components/common/BackButton.vue'
 import ImageLightbox from '@/components/common/ImageLightbox.vue'
-import IconTextButton from '@/components/common/Icon&textButton.vue'
+import IconTextButton from '@/components/common/IconTextButton.vue'
 import { formatRelativeDate } from '@/utils/format'
 import noImage from '@/assets/images/no-image.png'
 
@@ -18,7 +18,7 @@ const book = computed(() => booksStore.currentBook)
 const isOwner = computed(() => auth.user?.id === book.value?.users?.id)
 
 const myRequest = computed(() =>
-  booksStore.outgoingRequests.find((r: any) => r.book.id === book.value?.id),
+  booksStore.outgoingRequests.find((r) => r.book.id === book.value?.id),
 )
 
 const showRequestModal = ref(false)
@@ -55,6 +55,7 @@ function openFullImage(src: string) {
 }
 
 async function submitRequest() {
+  if (!book.value) return
   if (!requestContact.value.trim()) {
     requestError.value = 'Please provide your contact so the donor can reach you'
     return

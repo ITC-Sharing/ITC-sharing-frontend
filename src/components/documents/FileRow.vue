@@ -1,12 +1,6 @@
 <script setup lang="ts">
 import { getFileIcon, formatFileSize, formatRelativeDate } from '@/utils/format'
-
-type UploadFile = {
-  id: string
-  file_url: string
-  file_size_kb: number
-  original_name?: string | null
-}
+import type { UploadFile } from '@/types'
 
 const props = defineProps<{
   file: UploadFile
