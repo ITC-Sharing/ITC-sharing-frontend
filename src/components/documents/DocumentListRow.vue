@@ -102,7 +102,7 @@ async function confirmDelete() {
       <button
         v-if="isOwner"
         @click="showDeleteModal = true"
-        class="w-8 h-8 flex items-center justify-center rounded-full text-gray-300 hover:text-red-500 hover:bg-red-50 transition-colors"
+        class="w-8 h-8 flex items-center justify-center rounded-full text-gray-300 hover:text-red-500 hover:bg-red-50 transition-colors hover:cursor-pointer"
       >
         <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
           <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M9 7h6m-7 0a1 1 0 01-1-1V5a1 1 0 011-1h6a1 1 0 011 1v1a1 1 0 01-1 1H9z"/>
@@ -120,18 +120,18 @@ async function confirmDelete() {
     >
       <div class="w-full max-w-sm rounded-2xl bg-white p-6 shadow-2xl ring-1 ring-black/10">
         <div class="text-center">
-          <p class="text-lg font-semibold text-black">{{ t('common.DocumentCard.deleteTitle') }} {{ doc.title }}</p>
-          <p class="mt-2 text-sm text-gray-500">{{ t('common.DocumentCard.deleteMessage') }}</p>
+          <p class="text-lg font-semibold text-black">{{ t('document.DocumentCard.deleteTitle') }} {{ doc.title }}</p>
+          <p class="mt-2 text-sm text-gray-500">{{ t('document.DocumentCard.deleteMessage') }}</p>
         </div>
         <div class="mt-6 grid grid-cols-2 gap-3">
           <button
             class="rounded-xl border border-[#B0B0B0] bg-white px-4 py-2 text-sm text-black"
             @click="showDeleteModal = false"
-          >{{ t('common.DocumentCard.deleteCancel') }}</button>
+          >{{ t('document.DocumentCard.deleteCancel') }}</button>
           <button
             class="rounded-xl bg-red-500 px-4 py-2 text-sm text-white hover:bg-red-600"
             @click="confirmDelete"
-          >{{ t('common.DocumentCard.deleteConfirm') }}</button>
+          >{{ t('document.DocumentCard.deleteConfirm') }}</button>
         </div>
       </div>
     </div>

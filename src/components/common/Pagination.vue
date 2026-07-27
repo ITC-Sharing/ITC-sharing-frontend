@@ -43,38 +43,65 @@ const visiblePages = computed<(number | '…')[]>(() => {
 </script>
 
 <template>
-  <div v-if="totalPages > 1" class="mt-8 flex items-center justify-center gap-1">
+  <nav v-if="totalPages > 1" class="flex items-center justify-center gap-2">
+    <!-- Previous -->
     <button
+      type="button"
       :disabled="page === 1"
       @click="goTo(page - 1)"
-      class="px-3 py-1.5 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+      :aria-label="t('document.documentsPage.prev')"
+      class="flex h-9 w-9 items-center justify-center rounded-lg text-gray-500 transition-colors hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-40 hover:cursor-pointer"
     >
-      {{ t('common.documentsPage.prev') }}
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="1.8"
+        class="h-4 w-4"
+      >
+        <path stroke-linecap="round" stroke-linejoin="round" d="m15 18-6-6 6-6" />
+      </svg>
     </button>
 
+    <!-- Page numbers -->
     <button
       v-for="(p, i) in visiblePages"
       :key="i"
+      type="button"
       :disabled="p === '…'"
       @click="goTo(p)"
+      :aria-current="p === page ? 'page' : undefined"
       :class="[
-        'min-w-9 h-9 px-2 rounded-lg text-sm font-medium transition-colors',
+        'h-9 min-w-9 rounded-lg border px-2 text-sm font-medium transition-colors hover:cursor-pointer',
         p === page
-          ? 'bg-[#008CB9] text-white'
+          ? 'border-[#008CB9] bg-[#EAF6FB] text-[#008CB9]'
           : p === '…'
-            ? 'text-gray-400 cursor-default'
-            : 'text-gray-600 hover:bg-gray-100',
+            ? 'cursor-default border-transparent text-gray-400'
+            : 'border-gray-200 text-gray-600 hover:bg-gray-50',
       ]"
     >
       {{ p }}
     </button>
 
+    <!-- Next -->
     <button
+      type="button"
       :disabled="page === totalPages"
       @click="goTo(page + 1)"
-      class="px-3 py-1.5 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+      :aria-label="t('document.documentsPage.next')"
+      class="flex h-9 w-9 items-center justify-center rounded-lg text-gray-500 transition-colors hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-40 hover:cursor-pointer"
     >
-      {{ t('common.documentsPage.next') }}
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="1.8"
+        class="h-4 w-4"
+      >
+        <path stroke-linecap="round" stroke-linejoin="round" d="m9 18 6-6-6-6" />
+      </svg>
     </button>
-  </div>
+  </nav>
 </template>

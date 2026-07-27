@@ -43,7 +43,7 @@ const filterOptions = computed(() => [
   { label: t('common.filterButton.bySemester2'), value: 'semester2' },
 ])
 
-// Sort by name is still client-side (presentation only, no data change)
+// Sort by name is client-side (presentation only, no data change).
 const displayedSubjects = computed(() => {
   const list = [...subjectsStore.subjects]
   if (selectedFilter.value === 'name') list.sort((a, b) => a.name.localeCompare(b.name))
@@ -68,9 +68,7 @@ watch(searchQuery, () => {
   searchTimer = setTimeout(fetchSubjects, 300)
 })
 
-watch(selectedFilter, () => {
-  fetchSubjects()
-})
+watch(selectedFilter, fetchSubjects)
 
 function openCreateModal() {
   subjectsStore.createError = null

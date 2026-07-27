@@ -70,28 +70,37 @@ function goToDetails() {
     class="flex h-full w-full flex-col rounded-lg border bg-white border-[#B9B9B9] px-4 py-5 relative cursor-pointer hover:border-[#008CB9] transition-colors"
     @click="goToDetails"
   >
-    <!-- Delete button (owner only) -->
-    <button
-      v-if="isOwner"
-      @click.stop="handleDelete"
-      class="absolute top-3 right-3 text-gray-300 hover:text-red-500 transition-colors cursor-pointer"
-      :title="t('common.DocumentCard.deleteConfirm')"
-    >
-      <svg
-        xmlns="http://www.w3.org/2000/svg"
-        class="h-4 w-4"
-        fill="none"
-        viewBox="0 0 24 24"
-        stroke="currentColor"
+    <!-- Delete button (owner only), with a hover tooltip -->
+    <div v-if="isOwner" class="group absolute top-3 right-3">
+      <button
+        @click.stop="handleDelete"
+        class="text-gray-300 hover:text-red-500 transition-colors cursor-pointer"
+        :aria-label="t('document.DocumentCard.deleteConfirm')"
       >
-        <path
-          stroke-linecap="round"
-          stroke-linejoin="round"
-          stroke-width="2"
-          d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M9 7h6m-7 0a1 1 0 01-1-1V5a1 1 0 011-1h6a1 1 0 011 1v1a1 1 0 01-1 1H9z"
-        />
-      </svg>
-    </button>
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          class="h-4 w-4"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M9 7h6m-7 0a1 1 0 01-1-1V5a1 1 0 011-1h6a1 1 0 011 1v1a1 1 0 01-1 1H9z"
+          />
+        </svg>
+      </button>
+
+      <!-- Tooltip: fades in on hover. pointer-events-none so it never blocks
+           the click; right-aligned so it can't overflow the card edge. -->
+      <span
+        class="pointer-events-none absolute right-0 top-full mt-1 z-10 whitespace-nowrap rounded-md bg-gray-900 px-2 py-1 text-xs font-medium text-white opacity-0 shadow-md transition-opacity duration-150 group-hover:opacity-100"
+      >
+        {{ t('document.DocumentCard.deleteConfirm') }}
+      </span>
+    </div>
 
     <!-- Thumbnail -->
     <div class="flex flex-col items-center justify-center pb-3 gap-1">
@@ -140,10 +149,10 @@ function goToDetails() {
       <div class="w-full max-w-sm rounded-2xl bg-white p-6 shadow-2xl ring-1 ring-black/10">
         <div class="text-center">
           <p class="text-lg font-semibold text-black">
-            {{ t('common.DocumentCard.deleteTitle') }} {{ doc.title }}
+            {{ t('document.DocumentCard.deleteTitle') }} {{ doc.title }}
           </p>
           <p class="mt-2 text-sm text-gray-500">
-            {{ t('common.DocumentCard.deleteMessage') }}
+            {{ t('document.DocumentCard.deleteMessage') }}
           </p>
         </div>
 
@@ -153,14 +162,14 @@ function goToDetails() {
             class="rounded-xl border border-[#B0B0B0] bg-white px-4 py-2 text-sm text-black"
             @click="closeDeleteModal"
           >
-            {{ t('common.DocumentCard.deleteCancel') }}
+            {{ t('document.DocumentCard.deleteCancel') }}
           </button>
           <button
             type="button"
             class="rounded-xl bg-red-500 px-4 py-2 text-sm text-white hover:bg-red-600"
             @click="confirmDelete"
           >
-            {{ t('common.DocumentCard.deleteConfirm') }}
+            {{ t('document.DocumentCard.deleteConfirm') }}
           </button>
         </div>
       </div>
