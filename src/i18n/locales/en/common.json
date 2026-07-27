@@ -40,7 +40,8 @@
     "default": "Default",
     "byName": "Letter A-Z",
     "bySemester1": "Semester 1",
-    "bySemester2": "Semester 2"
+    "bySemester2": "Semester 2",
+    "perPage": "Show per page"
   },
   "subjectCreateModal": {
     "title": "Create Subject",

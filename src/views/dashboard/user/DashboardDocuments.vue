@@ -297,7 +297,7 @@ onMounted(() => {
   </div>
 
   <!-- No scroll-to-top: this list sits inside the dashboard panel, already in view. -->
-  <Pagination v-model:page="page" :total="docs.total" :page-size="PAGE_SIZE" />
+  <Pagination v-model:page="page" :total="docs.total" :page-size="PAGE_SIZE" class="mt-8" />
 
   <!-- Upload modal -->
   <UploadDocumentDashboard

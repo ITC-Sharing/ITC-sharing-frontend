@@ -90,6 +90,18 @@ export interface DocumentStats {
   size_kb: number
 }
 
+/**
+ * A paginated list response. `total` is the full filtered count (not just the
+ * current page), so a pager can derive its page count. Endpoints paginate only
+ * when a `limit` is passed; without one, `items` holds every match.
+ */
+export interface Paginated<T> {
+  items: T[]
+  total: number
+  page: number
+  limit: number
+}
+
 // ─── Majors ──────────────────────────────────────────────────────────────────
 
 /** `GET /majors` returns the full row. */

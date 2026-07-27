@@ -16,6 +16,7 @@ import ViewToggle from '@/components/common/ViewToggle.vue'
 import IconTextButton from '@/components/common/IconTextButton.vue'
 import EmptyState from '@/components/common/EmptyState.vue'
 import Pagination from '@/components/common/Pagination.vue'
+import PageSizeSelect from '@/components/common/PageSizeSelect.vue'
 
 const { t } = useI18n({ useScope: 'global' })
 const route = useRoute()
@@ -31,8 +32,8 @@ const subjectId = (route.params.subjectId as string) || ''
 const showUpload = ref(false)
 const selectedType = ref('')
 
-const PAGE_SIZE = 24
 const page = ref(1)
+const pageSize = ref(10)
 const viewMode = ref<'card' | 'list'>(
   (localStorage.getItem('docViewMode') as 'card' | 'list') ?? 'card',
 )
@@ -88,7 +89,7 @@ function loadDocs() {
       : { major_id: currentMajor.value?.id, year_level: year }),
     doc_type: selectedType.value || undefined,
     page: page.value,
-    limit: PAGE_SIZE,
+    limit: pageSize.value,
   })
 }
 
@@ -101,6 +102,12 @@ watch(selectedType, () => {
 })
 
 watch(page, loadDocs)
+
+// Page size change: same reset-to-page-1 dance as the filter above.
+watch(pageSize, () => {
+  if (page.value === 1) loadDocs()
+  else page.value = 1
+})
 
 const docTypes = [
   { label: 'All', value: '' },
@@ -234,12 +241,26 @@ async function onUploaded() {
           </div>
         </div>
 
-        <Pagination
-          v-model:page="page"
-          :total="docs.total"
-          :page-size="PAGE_SIZE"
-          scroll-to-top
-        />
+        <!-- Footer: page size + pager -->
+        <!-- Hidden when the list fits the smallest page size (≤10). -->
+        <div
+          v-if="docs.total > 10"
+          class="mt-8 grid grid-cols-[1fr_auto_1fr] items-center gap-4"
+        >
+          <Pagination
+            class="col-start-2 justify-self-center"
+            v-model:page="page"
+            :total="docs.total"
+            :page-size="pageSize"
+            scroll-to-top
+          />
+          <PageSizeSelect
+            class="col-start-3 justify-self-end"
+            v-model="pageSize"
+            :options="[10, 20, 30, 50]"
+            direction="up"
+          />
+        </div>
       </div>
     </div>
 

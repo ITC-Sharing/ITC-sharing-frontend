@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { useBooksStore } from '@/stores/books.store'
 import { useMajorsStore } from '@/stores/majors.store'
 import { useAuthStore } from '@/stores/auth.store'
@@ -8,6 +8,8 @@ import DonateBookModal from '@/components/books/DonateBookModal.vue'
 import IconTextButton from '@/components/common/IconTextButton.vue'
 import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
 import FilterButton from '@/components/common/FilterButton.vue'
+import Pagination from '@/components/common/Pagination.vue'
+import PageSizeSelect from '@/components/common/PageSizeSelect.vue'
 import { useI18n } from 'vue-i18n'
 
 const books = useBooksStore()
@@ -17,6 +19,8 @@ const { t } = useI18n({ useScope: 'global' })
 
 const showDonateModal = ref(false)
 const selectedMajor = ref('')
+const page = ref(1)
+const pageSize = ref(10)
 
 const majorOptions = computed(() => [
   { value: '', label: 'All Departments' },
@@ -32,22 +36,40 @@ const myRequestedBookIds = computed(
     ),
 )
 
+function fetchBooks() {
+  return books.fetchAll(selectedMajor.value || undefined, page.value, pageSize.value)
+}
+
+// Anything that changes the result set sends us back to page 1; a page change
+// just refetches. Resetting to page 1 fires the page watcher, which fetches —
+// so only fetch directly when already on page 1, to avoid a double request.
+function resetAndFetch() {
+  if (page.value !== 1) page.value = 1
+  else void fetchBooks()
+}
+
 onMounted(async () => {
-  const tasks: Promise<unknown>[] = [majors.fetchMajors(), books.fetchAll()]
+  const tasks: Promise<unknown>[] = [majors.fetchMajors(), fetchBooks()]
   if (auth.isAuthenticated) tasks.push(books.fetchOutgoingRequests())
   await Promise.all(tasks)
 })
 
-async function onMajorChange() {
-  await books.fetchAll(selectedMajor.value || undefined)
+watch(page, () => void fetchBooks())
+watch(pageSize, resetAndFetch)
+
+function onMajorChange() {
+  resetAndFetch()
 }
 
-function onDeleted(id: string) {
-  books.books = books.books.filter((b) => b.id !== id)
+async function onDeleted() {
+  // Refetch so total and the current page stay correct after removal; if that
+  // emptied the last page, fall back to page 1.
+  await fetchBooks()
+  if (!books.books.length && page.value > 1) page.value = 1
 }
 
-async function onDonated() {
-  await books.fetchAll(selectedMajor.value || undefined)
+function onDonated() {
+  resetAndFetch()
 }
 </script>
 
@@ -106,6 +128,27 @@ async function onDonated() {
             @deleted="onDeleted"
           />
         </div>
+      </div>
+
+      <!-- Footer: page size + pager -->
+      <!-- Hidden when the list fits the smallest page size (≤10). -->
+      <div
+        v-if="!books.loading && !books.error && books.booksTotal > 10"
+        class="mt-8 grid grid-cols-[1fr_auto_1fr] items-center gap-4"
+      >
+        <Pagination
+          class="col-start-2 justify-self-center"
+          v-model:page="page"
+          :total="books.booksTotal"
+          :page-size="pageSize"
+          scroll-to-top
+        />
+        <PageSizeSelect
+          class="col-start-3 justify-self-end"
+          v-model="pageSize"
+          :options="[10, 20, 30, 50]"
+          direction="up"
+        />
       </div>
     </div>
   </div>
