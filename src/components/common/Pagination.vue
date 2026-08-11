@@ -75,7 +75,7 @@ const visiblePages = computed<(number | '…')[]>(() => {
       :class="[
         'h-9 min-w-9 rounded-lg border px-2 text-sm font-medium transition-colors hover:cursor-pointer',
         p === page
-          ? 'border-[#008CB9] bg-[#EAF6FB] text-[#008CB9]'
+          ? 'border-primary bg-[#EAF6FB] text-primary'
           : p === '…'
             ? 'cursor-default border-transparent text-gray-400'
             : 'border-gray-200 text-gray-600 hover:bg-gray-50',

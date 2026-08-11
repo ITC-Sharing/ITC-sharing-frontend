@@ -4,6 +4,7 @@ import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth.store'
 import { useDocumentsStore } from '@/stores/documents.store'
+import ConfirmDeleteModal from '@/components/common/ConfirmDeleteModal.vue'
 
 const { t } = useI18n({ useScope: 'global' })
 const auth = useAuthStore()
@@ -16,10 +17,10 @@ const props = defineProps<{
     title: string
     doc_type: string
     academic_year?: string | null
+    description?: string | null
     uploaded_at: string
-    users: { id: string; first_name: string; last_name: string }
-    document_tags?: { tag: string }[]
-    documents?: { file_size_kb?: number }[]
+    users: { id: string; first_name: string; last_name: string } | null
+    documents?: { file_size_kb?: number | null }[]
   }
   fileCount?: number
 }>()
@@ -29,8 +30,6 @@ const emit = defineEmits<{ (e: 'deleted', id: string): void }>()
 const showDeleteModal = ref(false)
 
 const isOwner = computed(() => auth.user?.id === props.doc.users?.id)
-
-const tags = computed(() => props.doc.document_tags?.map((tag) => tag.tag) ?? [])
 
 const postBy = computed(() =>
   `${props.doc.users?.first_name ?? ''} ${props.doc.users?.last_name ?? ''}`.trim(),
@@ -58,7 +57,7 @@ async function confirmDelete() {
 
 <template>
   <div
-    class="grid grid-cols-1 md:grid-cols-[2fr_120px_160px_100px_160px_110px_40px] gap-3 items-center px-4 py-3 hover:bg-gray-50 cursor-pointer transition-colors"
+    class="grid grid-cols-1 md:grid-cols-[2fr_120px_100px_160px_110px_40px] gap-3 items-center px-4 py-3 hover:bg-gray-50 cursor-pointer transition-colors"
     @click="goToDetails"
   >
     <!-- Name col: icon + title + type -->
@@ -68,22 +67,12 @@ async function confirmDelete() {
       </svg>
       <div class="min-w-0">
         <p class="text-sm font-semibold text-gray-900 truncate">{{ doc.title }}</p>
-        <p class="text-xs text-[#008CB9] font-medium mt-0.5">{{ doc.doc_type }}</p>
+        <p class="text-xs text-primary font-medium mt-0.5">{{ doc.doc_type }}</p>
       </div>
     </div>
 
     <!-- Academic year -->
     <span class="text-sm text-gray-500">{{ doc.academic_year || '—' }}</span>
-
-    <!-- Tags -->
-    <div class="flex items-center gap-1 flex-wrap">
-      <span
-        v-for="tag in tags"
-        :key="tag"
-        class="text-xs px-2.5 py-0.5 rounded-full bg-[#B8EDFF] text-[#0082B8]"
-      >{{ tag }}</span>
-      <span v-if="!tags.length" class="text-sm text-gray-300">—</span>
-    </div>
 
     <!-- File size -->
     <div class="text-sm text-gray-500">
@@ -111,29 +100,10 @@ async function confirmDelete() {
     </div>
   </div>
 
-  <!-- Delete confirm modal -->
-  <Teleport to="body">
-    <div
-      v-if="showDeleteModal"
-      class="fixed inset-0 z-50 flex items-center justify-center bg-black/45 px-4"
-      @click.self="showDeleteModal = false"
-    >
-      <div class="w-full max-w-sm rounded-2xl bg-white p-6 shadow-2xl ring-1 ring-black/10">
-        <div class="text-center">
-          <p class="text-lg font-semibold text-black">{{ t('document.DocumentCard.deleteTitle') }} {{ doc.title }}</p>
-          <p class="mt-2 text-sm text-gray-500">{{ t('document.DocumentCard.deleteMessage') }}</p>
-        </div>
-        <div class="mt-6 grid grid-cols-2 gap-3">
-          <button
-            class="rounded-xl border border-[#B0B0B0] bg-white px-4 py-2 text-sm text-black"
-            @click="showDeleteModal = false"
-          >{{ t('document.DocumentCard.deleteCancel') }}</button>
-          <button
-            class="rounded-xl bg-red-500 px-4 py-2 text-sm text-white hover:bg-red-600"
-            @click="confirmDelete"
-          >{{ t('document.DocumentCard.deleteConfirm') }}</button>
-        </div>
-      </div>
-    </div>
-  </Teleport>
+  <ConfirmDeleteModal
+    v-if="showDeleteModal"
+    :target="doc.title"
+    @cancel="showDeleteModal = false"
+    @confirm="confirmDelete"
+  />
 </template>

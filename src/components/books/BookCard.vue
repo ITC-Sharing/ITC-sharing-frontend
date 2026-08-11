@@ -52,7 +52,7 @@ async function confirmDelete() {
 
 <template>
   <article
-    class="flex w-full max-w-64 flex-col rounded-2xl border border-[#E0E0E0] bg-white overflow-hidden hover:border-[#008CB9] transition-colors cursor-pointer"
+    class="flex w-full max-w-64 flex-col rounded-2xl border border-[#E0E0E0] bg-white overflow-hidden hover:border-primary transition-colors cursor-pointer"
     @click="router.push({ name: 'book-detail', params: { id: book.id } })"
   >
     <!-- Cover image -->

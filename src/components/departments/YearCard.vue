@@ -2,7 +2,6 @@
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
-import { isLanguageMajor } from '@/utils/format'
 
 const { t } = useI18n({ useScope: 'global' })
 const router = useRouter()
@@ -27,12 +26,7 @@ const props = withDefaults(
 const hasImage = computed(() => Boolean(props.img?.trim()))
 
 function goToWhichYear() {
-  // English & French have no subjects — jump straight to the level's documents.
-  if (isLanguageMajor(props.slug)) {
-    router.push(`/department/${props.slug}/year/${props.year}/documents`)
-  } else {
-    router.push(`/department/${props.slug}/year/${props.year}`)
-  }
+  router.push(`/department/${props.slug}/year/${props.year}`)
 }
 
 function handleCardClick() {
@@ -46,18 +40,25 @@ function handleCardClick() {
     @click="handleCardClick"
   >
     <div class="flex flex-col items-center text-center">
-      <img v-if="hasImage" :src="img ?? ''" :alt="title" class="h-20 rounded-md" />
+      <!-- Every card's image gets the same 80×80 box: the square department
+           logos fill it, wide ones (the language flags) scale down to fit. -->
+      <img
+        v-if="hasImage"
+        :src="img ?? ''"
+        :alt="title"
+        class="h-20 w-20 rounded-md object-contain"
+      />
 
       <h2 class="text-xl font-semibold leading-none text-black mt-3">
         {{ title }}
       </h2>
 
-      <p v-if="!isLanguageMajor(slug)" class="mt-2 text-sm font-normal text-[#B8B8B8]"><span>{{ subjectCount }}</span> {{ subtitle }}</p>
+      <p class="mt-2 text-sm font-normal text-[#B8B8B8]"><span>{{ subjectCount }}</span> {{ subtitle }}</p>
 
       <button
         type="button"
         @click.stop="goToWhichYear"
-        class="mt-4 hidden sm:inline-flex items-center justify-center rounded-md bg-[#008CB9] px-4 py-2 text-sm font-medium leading-none text-white transition-colors hover:bg-[#00749b] focus:outline-none focus:ring-4 focus:ring-[#D1E9FF] cursor-pointer"
+        class="mt-4 hidden sm:inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium leading-none text-white transition-colors hover:bg-[#00749b] focus:outline-none focus:ring-4 focus:ring-[#D1E9FF] cursor-pointer"
       >
         {{ t('common.departmentPage.enter') }}
       </button>

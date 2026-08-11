@@ -4,7 +4,6 @@ import { useRoute } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { useSubjectsStore } from '@/stores/subjects.store'
 import { useMajorsStore } from '@/stores/majors.store'
-import { cefrLevel } from '@/utils/format'
 import SubjectCard from '@/components/subject/SubjectCard.vue'
 import SearchButton from '@/components/common/SearchButton.vue'
 import FilterButton from '@/components/common/FilterButton.vue'
@@ -12,6 +11,7 @@ import AddnewSubject from '@/components/common/IconTextButton.vue'
 import SubjectCreateModal from '@/components/subject/SubjectCreateModal.vue'
 import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
 import Breadcrumb from '@/components/common/Breadcrumb.vue'
+import { isLanguageMajor, languageLabelKey } from '@/utils/format'
 
 const route = useRoute()
 const { t } = useI18n({ useScope: 'global' })
@@ -27,11 +27,21 @@ const selectedFilter = ref<FilterValue>('name')
 const showAddSubjectModal = ref(false)
 const submitSuccess = ref(false)
 
-// Match by lowercased acronym so every major works (incl. English/French) —
-// no hardcoded slug map to keep in sync.
+// Match by lowercased acronym so every major works — no hardcoded slug map to
+// keep in sync.
 const currentMajor = computed(() =>
   majorsStore.majors.find((m) => m.acronym?.toLowerCase() === slug),
 )
+
+// The language levels (A1, A2, B1, …) have no semesters, so the sort-by filter
+// has nothing to offer there.
+const isLanguageDepartment = computed(() => isLanguageMajor(currentMajor.value?.acronym))
+
+// DFL's year_level holds a language (English/French), not an academic year.
+const yearLabel = computed(() => {
+  const languageKey = languageLabelKey(currentMajor.value?.acronym, yearLevel)
+  return languageKey ? t(languageKey) : t('document.documentsPage.year', { year: yearLevel })
+})
 
 const majorOptions = computed(() =>
   majorsStore.majors.map((m) => ({ label: m.acronym, value: m.id })),
@@ -77,7 +87,6 @@ function openCreateModal() {
 
 async function handleCreateSubject(payload: {
   name: string
-  slug: string
   major_id: string
   year_level: number
   semester: number
@@ -111,10 +120,7 @@ onMounted(async () => {
               label: currentMajor?.acronym ?? slug.toUpperCase(),
               to: { name: 'department', params: { slug } },
             },
-            {
-              label:
-                cefrLevel(slug, yearLevel) ?? t('document.documentsPage.year', { year: yearLevel }),
-            },
+            { label: yearLabel },
           ]"
         />
       </div>
@@ -153,14 +159,14 @@ onMounted(async () => {
       <!-- Header -->
       <div class="flex md:justify-between md:flex-row flex-col justify-center mb-6 gap-3 md:gap-0">
         <h1 class="text-3xl font-bold text-black">
-          I{{ yearLevel }} - {{ currentMajor?.acronym }}
+          {{ yearLabel }} - {{ currentMajor?.acronym }}
         </h1>
         <div class="flex gap-3 md:flex-row flex-col">
           <SearchButton v-model="searchQuery" placeholder="ស្វែងរក" />
 
           <!-- desktop -->
           <div class="hidden md:flex items-center gap-3">
-            <div class="w-36">
+            <div v-if="!isLanguageDepartment" class="w-36">
               <FilterButton
                 v-model="selectedFilter"
                 :options="filterOptions"
@@ -169,7 +175,11 @@ onMounted(async () => {
               />
             </div>
 
-            <AddnewSubject :text="t('common.subjectPage.addSubject')" @click="openCreateModal">
+            <AddnewSubject
+              v-if="!isLanguageDepartment"
+              :text="t('common.subjectPage.addSubject')"
+              @click="openCreateModal"
+            >
               <template #icon>
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
@@ -186,14 +196,18 @@ onMounted(async () => {
 
           <!-- mobile -->
           <div class="flex justify-between items-center gap-2 md:hidden">
-            <div class="w-40">
+            <div v-if="!isLanguageDepartment" class="w-40">
               <FilterButton
                 v-model="selectedFilter"
                 :options="filterOptions"
                 :placeholder="t('common.filterButton.sortBy')"
               />
             </div>
-            <AddnewSubject :text="t('common.subjectPage.addSubject')" @click="openCreateModal">
+            <AddnewSubject
+              v-if="!isLanguageDepartment"
+              :text="t('common.subjectPage.addSubject')"
+              @click="openCreateModal"
+            >
               <template #icon>
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
@@ -231,7 +245,7 @@ onMounted(async () => {
                 :title="subject.name"
                 :img="subject.subject_url"
                 :subjectId="subject.id"
-                :subject-slug="subject.slug"
+                :subject-acronym="subject.acronym"
                 :department-slug="slug"
                 :year="yearLevel"
               />

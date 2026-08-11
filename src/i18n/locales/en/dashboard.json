@@ -37,7 +37,8 @@
     "shareNotes": "Share your notes with fellow students",
     "uploadFirst": "Upload your first document",
     "delete": "Delete",
-    "deleteConfirm": "Delete \"{title}\"? This cannot be undone."
+    "deleteConfirm": "Delete \"{title}\"? This cannot be undone.",
+    "expired": "Expired"
   },
   "books": {
     "title": "Books",

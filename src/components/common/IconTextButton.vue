@@ -8,7 +8,7 @@ defineProps<{ text: string }>()
 <template>
   <button
     type="button"
-    class="cursor-pointer flex items-center gap-2 rounded-xl bg-[#008CB9] px-4 py-3 text-sm text-white transition-colors hover:bg-[#00749b] whitespace-nowrap"
+    class="cursor-pointer flex items-center gap-2 rounded-xl bg-primary px-4 py-3 text-sm text-white transition-colors hover:bg-[#00749b] whitespace-nowrap"
   >
     <slot name="icon" />
     {{ text }}

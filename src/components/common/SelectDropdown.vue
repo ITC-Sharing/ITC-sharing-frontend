@@ -61,8 +61,8 @@ onBeforeUnmount(() => document.removeEventListener('click', handleClickOutside))
     <button
       type="button"
       :disabled="disabled"
-      class="flex w-full items-center justify-between rounded-xl border border-[#D9D9D9] bg-white px-4 py-2.5 text-left text-sm outline-none transition focus:border-[#008CB9] disabled:cursor-not-allowed disabled:bg-[#F5F5F5] disabled:opacity-70"
-      :class="isOpen ? 'border-[#008CB9]' : ''"
+      class="flex w-full items-center justify-between rounded-xl border border-[#D9D9D9] bg-white px-4 py-2.5 text-left text-sm outline-none transition focus:border-primary disabled:cursor-not-allowed disabled:bg-[#F5F5F5] disabled:opacity-70 *:hover:cursor-pointer"
+      :class="isOpen ? 'border-primary' : ''"
       @click="toggleMenu"
     >
       <span class="truncate" :class="selectedLabel ? 'text-black' : 'text-gray-400'">
@@ -90,8 +90,8 @@ onBeforeUnmount(() => document.removeEventListener('click', handleClickOutside))
         v-for="option in options"
         :key="option.value"
         type="button"
-        class="block w-full px-4 py-2.5 text-left text-sm transition hover:bg-[#EAF6FB] hover:text-[#008CB9]"
-        :class="option.value === modelValue ? 'bg-[#EAF6FB] text-[#008CB9]' : 'text-gray-700'"
+        class="block w-full px-4 py-2.5 text-left text-sm transition hover:bg-[#EAF6FB] hover:text-primary hover:cursor-pointer"
+        :class="option.value === modelValue ? 'bg-[#EAF6FB] text-primary' : 'text-gray-700'"
         @click="handleSelect(option.value)"
       >
         {{ option.label }}

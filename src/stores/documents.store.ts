@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import api from '@/lib/axios'
-import type { DocumentStats, MyUpload, Upload } from '@/types'
+import type { AudienceEntry, DocumentStats, MyUpload, Upload } from '@/types'
 
 export const useDocumentsStore = defineStore('documents', () => {
   const documents = ref<Upload[]>([])
@@ -9,7 +9,11 @@ export const useDocumentsStore = defineStore('documents', () => {
   const currentUpload = ref<Upload | null>(null)
   const myUploads = ref<MyUpload[]>([])
   const stats = ref<DocumentStats>({ total: 0, size_kb: 0 })
+  // Every type, plus the subset each kind of course offers — a department doc
+  // and a language (DFL) doc are asked for different things.
   const docTypes = ref<string[]>([])
+  const departmentDocTypes = ref<string[]>([])
+  const languageDocTypes = ref<string[]>([])
   const loading = ref(false)
   const error = ref<string | null>(null)
 
@@ -17,6 +21,8 @@ export const useDocumentsStore = defineStore('documents', () => {
     try {
       const { data } = await api.get('/documents/types')
       docTypes.value = data.types as string[]
+      departmentDocTypes.value = (data.department ?? data.types) as string[]
+      languageDocTypes.value = (data.language ?? data.types) as string[]
     } catch {
       // keep empty; modal falls back gracefully
     }
@@ -62,12 +68,43 @@ export const useDocumentsStore = defineStore('documents', () => {
     }
   }
 
-  async function upload(formData: FormData) {
+  /**
+   * Send one file ahead of the metadata. The upload form calls this as soon as
+   * a file is picked, so the transfer runs while the user fills in the rest;
+   * the returned id is passed back as `staged_file_ids` on submit.
+   */
+  async function stageFile(file: File, onProgress?: (percent: number) => void) {
+    const formData = new FormData()
+    formData.append('file', file)
+    const { data } = await api.post('/documents/staged-files', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+      onUploadProgress: (e) => {
+        if (onProgress && e.total) onProgress(Math.round((e.loaded / e.total) * 100))
+      },
+    })
+    return data as {
+      id: string
+      file_url: string
+      preview_url: string | null
+      original_name: string | null
+      file_size_kb: number | null
+    }
+  }
+
+  /** Discard a staged file the user removed from the form. */
+  async function deleteStagedFile(id: string) {
+    await api.delete(`/documents/staged-files/${id}`)
+  }
+
+  async function upload(formData: FormData, onProgress?: (percent: number) => void) {
     loading.value = true
     error.value = null
     try {
       const { data } = await api.post('/documents', formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
+        onUploadProgress: (e) => {
+          if (onProgress && e.total) onProgress(Math.round((e.loaded / e.total) * 100))
+        },
       })
       return data
     } catch (e: any) {
@@ -111,7 +148,9 @@ export const useDocumentsStore = defineStore('documents', () => {
       academic_year?: string
       major_id?: string
       subject_id?: string | null
-      tags?: string[]
+      audience?: AudienceEntry[]
+      expires_at?: string | null
+      description?: string | null
     },
   ) {
     loading.value = true
@@ -127,11 +166,26 @@ export const useDocumentsStore = defineStore('documents', () => {
     }
   }
 
-  async function addFiles(uploadId: string, files: File[]) {
+  async function addFiles(
+    uploadId: string,
+    files: File[],
+    onProgress?: (percent: number) => void,
+  ) {
     const formData = new FormData()
     files.forEach((f) => formData.append('files', f))
     const { data } = await api.post(`/documents/${uploadId}/files`, formData, {
       headers: { 'Content-Type': 'multipart/form-data' },
+      onUploadProgress: (e) => {
+        if (onProgress && e.total) onProgress(Math.round((e.loaded / e.total) * 100))
+      },
+    })
+    return data
+  }
+
+  /** Attach files that were staged while the edit form was open. */
+  async function addStagedFiles(uploadId: string, stagedFileIds: string[]) {
+    const { data } = await api.post(`/documents/${uploadId}/files`, {
+      staged_file_ids: stagedFileIds,
     })
     return data
   }
@@ -152,9 +206,13 @@ export const useDocumentsStore = defineStore('documents', () => {
     myUploads,
     stats,
     docTypes,
+    departmentDocTypes,
+    languageDocTypes,
     loading,
     error,
     fetchDocTypes,
+    stageFile,
+    deleteStagedFile,
     fetchAll,
     fetchOne,
     fetchStats,
@@ -162,6 +220,7 @@ export const useDocumentsStore = defineStore('documents', () => {
     upload,
     updateDocument,
     addFiles,
+    addStagedFiles,
     removeFile,
     deleteDocument,
   }

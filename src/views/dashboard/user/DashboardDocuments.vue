@@ -3,8 +3,9 @@ import { computed, onMounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { useDocumentsStore } from '@/stores/documents.store'
+import type { AudienceEntry } from '@/types'
 import { useAuthStore } from '@/stores/auth.store'
-import UploadDocumentDashboard from '@/components/dashboard/UploadDocumentDashboard.vue'
+import UploadAndEditDocModal from '@/components/dashboard/UploadAndEditDocModal.vue'
 import PendingRejectedAlert from '@/components/dashboard/PendingRejectedAlert.vue'
 import SearchButton from '@/components/common/SearchButton.vue'
 import IconTextButton from '@/components/common/IconTextButton.vue'
@@ -33,24 +34,28 @@ const deletingId = ref<string | null>(null)
 const PAGE_SIZE = 20
 const page = ref(1)
 
-const docTypes = [
+// Own uploads can mix department and language courses, so every type is on
+// offer here rather than one course's subset.
+const docTypes = computed(() => [
   { label: 'All', value: '' },
-  { label: 'Note', value: 'Note' },
-  { label: 'TD', value: 'TD' },
-  { label: 'Examination paper', value: 'Examination paper' },
-  { label: 'TP', value: 'TP' },
-  { label: 'Project', value: 'Project' },
-  { label: 'Lesson', value: 'Lesson' },
-  { label: 'Other', value: 'Other' },
-]
+  ...docs.docTypes.map((type) => ({ label: type, value: type })),
+])
 
 const typeColorMap: Record<string, string> = {
   Note: 'bg-blue-100 text-blue-700',
   TD: 'bg-yellow-100 text-yellow-700',
-  'Examination paper': 'bg-red-100 text-red-700',
   TP: 'bg-green-100 text-green-700',
   Project: 'bg-purple-100 text-purple-700',
   Lesson: 'bg-orange-100 text-orange-700',
+  Thesis: 'bg-indigo-100 text-indigo-700',
+  Grammar: 'bg-sky-100 text-sky-700',
+  Vocabulary: 'bg-teal-100 text-teal-700',
+  Speaking: 'bg-rose-100 text-rose-700',
+  Listening: 'bg-amber-100 text-amber-700',
+  Reading: 'bg-lime-100 text-lime-700',
+  Writing: 'bg-violet-100 text-violet-700',
+  'Exam Preparation': 'bg-red-100 text-red-700',
+  'Practice Exercises': 'bg-emerald-100 text-emerald-700',
   Other: 'bg-gray-100 text-gray-700',
 }
 
@@ -93,6 +98,12 @@ function docFileSize(doc: { documents?: { file_size_kb: number | null }[] }) {
   return (doc.documents ?? []).reduce((s, f) => s + (f.file_size_kb ?? 0), 0)
 }
 
+// This list is the owner's own uploads, so expired docs still appear here (the
+// feed hides them from everyone else). Flag them so the owner knows.
+function isExpired(doc: { expires_at?: string | null }): boolean {
+  return !!doc.expires_at && new Date(doc.expires_at).getTime() < Date.now()
+}
+
 async function handleDelete(id: string, title: string) {
   if (!confirm(t('dashboard.documents.deleteConfirm', { title }))) return
   deletingId.value = id
@@ -110,9 +121,13 @@ type EditableDoc = {
   doc_type: string
   year_level?: number | null
   academic_year?: string | null
+  // Both are edited in the form and saved back, so they have to arrive with the
+  // document — absent would look like "cleared" and overwrite the real value.
+  audience?: AudienceEntry[]
+  expires_at?: string | null
   majors?: { id: string } | null
   subjects?: { id: string } | null
-  document_tags?: { tag: string }[]
+  description?: string | null
 }
 const editDoc = ref<EditableDoc | null>(null)
 
@@ -137,6 +152,7 @@ async function onUploaded() {
 }
 
 onMounted(() => {
+  docs.fetchDocTypes()
   loadDocs()
   docs.fetchMine()
 })
@@ -207,7 +223,7 @@ onMounted(() => {
     <button
       v-if="!searchQuery && !selectedType"
       @click="showUpload = true"
-      class="mt-1 bg-[#008CB9] hover:bg-[#00749b] text-white text-sm font-semibold px-5 py-2.5 rounded-xl transition-colors"
+      class="mt-1 bg-primary hover:bg-[#00749b] text-white text-sm font-semibold px-5 py-2.5 rounded-xl transition-colors"
     >
       {{ t('dashboard.documents.uploadFirst') }}
     </button>
@@ -239,7 +255,15 @@ onMounted(() => {
         </svg>
       </div>
       <div class="flex-1 min-w-0">
-        <p class="text-sm font-semibold text-gray-900 truncate">{{ doc.title }}</p>
+        <div class="flex items-center gap-2">
+          <p class="text-sm font-semibold text-gray-900 truncate">{{ doc.title }}</p>
+          <span
+            v-if="isExpired(doc)"
+            class="shrink-0 rounded-full bg-red-100 px-2 py-0.5 text-[10px] font-semibold text-red-600"
+          >
+            {{ t('dashboard.documents.expired') }}
+          </span>
+        </div>
         <p class="text-xs text-gray-400 truncate">
           {{ doc.subjects?.name ?? '—' }} &bull; {{ doc.majors?.acronym }}
         </p>
@@ -300,7 +324,7 @@ onMounted(() => {
   <Pagination v-model:page="page" :total="docs.total" :page-size="PAGE_SIZE" class="mt-8" />
 
   <!-- Upload modal -->
-  <UploadDocumentDashboard
+  <UploadAndEditDocModal
     v-if="showUpload"
     :edit-doc="editDoc"
     @close="closeModal"

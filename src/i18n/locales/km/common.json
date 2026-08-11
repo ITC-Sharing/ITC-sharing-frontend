@@ -1,7 +1,15 @@
 {
   "common": {
     "loading": "កំពុងដំណើរការ...",
-    "back": "ត្រឡប់"
+    "back": "ត្រឡប់",
+    "search": "ស្វែងរក",
+    "noResults": "គ្មានលទ្ធផល"
+  },
+  "dateField": {
+    "invalid": "សូមបញ្ចូលកាលបរិច្ឆេទឲ្យបានត្រឹមត្រូវ (dd/mm/yyyy)",
+    "invalidDay": "ថ្ងៃត្រូវនៅចន្លោះ ១ ដល់ ៣១",
+    "invalidMonth": "ខែត្រូវនៅចន្លោះ ១ ដល់ ១២",
+    "past": "កាលបរិច្ឆេទមិនអាចនៅអតីតកាលបានទេ"
   },
   "documentUploadModal": {
     "errorTitleRequired": "ចំណងជើងត្រូវការ",
@@ -26,7 +34,10 @@
     "year5": "ឆ្នាំទី៥",
     "subject": "មុខវិជ្ជា",
     "enter": "ចូល",
-    "chooseYear": "ជ្រើសរើសឆ្នាំសិក្សារបស់អ្នក"
+    "chooseYear": "ជ្រើសរើសឆ្នាំសិក្សារបស់អ្នក",
+    "languageEnglish": "អង់គ្លេស",
+    "languageFrench": "បារាំង",
+    "chooseLanguage": "ជ្រើសរើសវគ្គសិក្សាភាសា"
   },
   "subjectPage": {
     "addSubject": "បន្ថែមមុខវិជ្ជា",
@@ -51,17 +62,14 @@
     "yearLabel": "ឆ្នាំសិក្សា",
     "year": "ឆ្នាំទី",
     "semesterLabel": "ឆមាស",
-    "imageLabel": "រូបភាពមុខវិជ្ជា (optional)",
+    "imageLabel": "រូបភាពមុខវិជ្ជា",
     "dragAndDrop": "ទាញ និងដាក់ឯកសារនៅទីនេះ ឬ ចុចដើម្បីជ្រើសរើស",
     "cancelButton": "បោះបង់",
     "creating": "កំពុងបង្កើត...",
     "createButton": "បង្កើត",
     "nameRequired": "សូមបញ្ចូលឈ្មោះមុខវិជ្ជា",
     "nameTooLong": "អ្នកអាចបញ្ចូលបានត្រឹមតែ ២០ តួអក្សរ",
-    "nameInvalid": "ឈ្មោះមុខវិជ្ជាមិនត្រូវមានតួអក្សរពិសេសទេ",
-    "slugTooLong": "អ្នកអាចបញ្ចូលបានត្រឹមតែ ១០ តួអក្សរ",
-    "slugInvalid": "Slug អាចមានតែអក្សរតូច លេខ និងសហសញ្ញាតែមួយ",
-    "slugLabel": "អក្សរកាត់"
+    "nameInvalid": "ឈ្មោះមុខវិជ្ជាមិនត្រូវមានតួអក្សរពិសេសទេ"
   },
   "donateBookModal": {
     "editTitle": "កែសម្រួលសៀវភៅ",
@@ -123,5 +131,15 @@
     "minutesAgo": "{n} នាទីមុន",
     "hoursAgo": "{n} ម៉ោងមុន",
     "daysAgo": "{n} ថ្ងៃមុន"
+  },
+  "confirmDelete": {
+    "title": "លុប",
+    "message": "តើអ្នកប្រាកដថាចង់លុប {target} មែនទេ?",
+    "messageGeneric": "តើអ្នកប្រាកដថាចង់លុបមែនទេ?",
+    "cancel": "បោះបង់",
+    "confirm": "បញ្ជាក់"
+  },
+  "toast": {
+    "uploadSuccess": "បានបញ្ចូលឯកសារ។ វានឹងបង្ហាញនៅពេលអ្នកគ្រប់គ្រងអនុម័ត។"
   }
 }
