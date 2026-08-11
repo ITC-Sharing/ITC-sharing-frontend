@@ -4,8 +4,10 @@ import { useI18n } from 'vue-i18n'
 import { useDocumentsStore } from '@/stores/documents.store'
 import { useAuthStore } from '@/stores/auth.store'
 import DocumentCard from '@/components/documents/DocumentCard.vue'
+import DocumentListRow from '@/components/documents/DocumentListRow.vue'
+import ViewToggle from '@/components/common/ViewToggle.vue'
 import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
-import UploadDocumentDashboard from '@/components/dashboard/UploadDocumentDashboard.vue'
+import UploadAndEditDocModal from '@/components/dashboard/UploadAndEditDocModal.vue'
 import IconTextButton from '@/components/common/IconTextButton.vue'
 import EmptyState from '@/components/common/EmptyState.vue'
 import Pagination from '@/components/common/Pagination.vue'
@@ -18,6 +20,12 @@ const docs = useDocumentsStore()
 const auth = useAuthStore()
 const showUpload = ref(false)
 
+// Card vs list, persisted (shared key with DocumentsView so the choice carries).
+const viewMode = ref<'card' | 'list'>(
+  (localStorage.getItem('docViewMode') as 'card' | 'list') ?? 'card',
+)
+watch(viewMode, (v) => localStorage.setItem('docViewMode', v))
+
 const page = ref(1)
 const pageSize = ref(10)
 const searchQuery = ref('')
@@ -27,7 +35,7 @@ const docTypes = [
   { label: 'All', value: '' },
   { label: 'Note', value: 'Note' },
   { label: 'TD', value: 'TD' },
-  { label: 'Examination paper', value: 'Examination paper' },
+  { label: 'Exam Preparation', value: 'Exam Preparation' },
   { label: 'TP', value: 'TP' },
   { label: 'Project', value: 'Project' },
   { label: 'Lesson', value: 'Lesson' },
@@ -108,6 +116,7 @@ watch(searchQuery, () => {
           <div class="w-40 shrink-0">
             <FilterButton v-model="selectedType" placeholder="All" :options="docTypes" />
           </div>
+          <ViewToggle v-model="viewMode" />
           <IconTextButton :text="t('dashboard.documents.upload')" @click="showUpload = true">
             <template #icon>
               <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -141,7 +150,54 @@ watch(searchQuery, () => {
       <!-- Grid -->
       <template v-else>
         <div class="mb-4">
-          <div class="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
+          <!-- Card grid -->
+          <div
+            v-if="viewMode === 'card'"
+            class="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5"
+          >
+            <DocumentCard
+              v-for="doc in docs.documents"
+              :key="doc.id"
+              :doc="doc"
+              :file-count="doc.documents?.length ?? 1"
+              @deleted="load"
+            />
+          </div>
+
+          <!-- List view — desktop only; mobile falls back to cards below -->
+          <div
+            v-else
+            class="hidden md:block rounded-2xl border border-gray-200 bg-white overflow-hidden"
+          >
+            <!-- Table header -->
+            <div
+              class="hidden md:grid grid-cols-[2fr_120px_100px_160px_110px_40px] gap-3 items-center border-b border-gray-100 px-4 py-3 text-sm font-medium text-black"
+            >
+              <span>{{ t('document.documentsPage.colName') }}</span>
+              <span>{{ t('document.documentsPage.colAcademicYear') }}</span>
+              <span>{{ t('document.documentsPage.colFileSize') }}</span>
+              <span>{{ t('document.documentsPage.colUploadBy') }}</span>
+              <span>{{ t('document.documentsPage.colDate') }}</span>
+              <span></span>
+            </div>
+
+            <!-- Rows -->
+            <div class="divide-y divide-gray-100">
+              <DocumentListRow
+                v-for="doc in docs.documents"
+                :key="doc.id"
+                :doc="doc"
+                :file-count="doc.documents?.length ?? 1"
+                @deleted="load"
+              />
+            </div>
+          </div>
+
+          <!-- Mobile fallback: list view is desktop-only, so show cards on small screens -->
+          <div
+            v-if="viewMode === 'list'"
+            class="grid grid-cols-1 gap-5 sm:grid-cols-2 md:hidden"
+          >
             <DocumentCard
               v-for="doc in docs.documents"
               :key="doc.id"
@@ -175,6 +231,6 @@ watch(searchQuery, () => {
         </div>
       </template>
     </div>
-    <UploadDocumentDashboard v-if="showUpload" @close="showUpload = false" @uploaded="onUploaded" />
+    <UploadAndEditDocModal v-if="showUpload" @close="showUpload = false" @uploaded="onUploaded" />
   </div>
 </template>

@@ -72,8 +72,8 @@ onBeforeUnmount(() => {
   <div ref="rootRef" class="relative inline-block w-full max-w-xs">
     <button
       type="button"
-      class="flex w-full items-center justify-between rounded-xl border border-gray-200 bg-white px-4 py-3 text-right text-sm font-medium text-gray-800 transition hover:border-gray-300 disabled:cursor-not-allowed disabled:opacity-60"
-      :class="isOpen ? 'border-[#008CB9] shadow-md' : ''"
+      class="flex w-full items-center justify-between rounded-xl border border-gray-200 bg-white px-4 py-3 text-right text-sm font-medium text-gray-800 transition hover:border-gray-300 disabled:cursor-not-allowed disabled:opacity-60 hover:cursor-pointer"
+      :class="isOpen ? 'border-primary shadow-md' : ''"
       :disabled="disabled"
       @click="toggleMenu"
     >
@@ -100,7 +100,7 @@ onBeforeUnmount(() => {
         v-for="option in options"
         :key="option.value"
         type="button"
-        class="block w-full px-4 py-3 text-left text-sm text-gray-700 transition hover:bg-[#EAF6FB] hover:text-[#008CB9]"
+        class="block w-full px-4 py-3 text-left text-sm text-gray-700 transition hover:bg-[#EAF6FB] hover:text-primary hover:cursor-pointer"
         @click="handleSelect(option.value)"
       >
         {{ option.label }}

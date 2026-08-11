@@ -66,7 +66,6 @@ export const useSubjectsStore = defineStore('subjects', () => {
   async function createSubject(payload: {
     major_id: string
     name: string
-    slug: string
     year_level: number
     semester: number
     image?: File | null
@@ -78,7 +77,7 @@ export const useSubjectsStore = defineStore('subjects', () => {
       const formData = new FormData()
       formData.append('major_id', payload.major_id)
       formData.append('name', payload.name)
-      formData.append('slug', payload.slug)
+      // No acronym: the API derives it from the name.
       formData.append('year_level', String(payload.year_level))
       formData.append('semester', String(payload.semester))
       if (payload.image) {

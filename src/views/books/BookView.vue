@@ -7,7 +7,7 @@ import BookCard from '@/components/books/BookCard.vue'
 import DonateBookModal from '@/components/books/DonateBookModal.vue'
 import IconTextButton from '@/components/common/IconTextButton.vue'
 import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
-import FilterButton from '@/components/common/FilterButton.vue'
+import SearchableSelect from '@/components/common/SearchableSelect.vue'
 import Pagination from '@/components/common/Pagination.vue'
 import PageSizeSelect from '@/components/common/PageSizeSelect.vue'
 import { useI18n } from 'vue-i18n'
@@ -85,7 +85,11 @@ function onDonated() {
 
         <div class="flex w-full items-center justify-between gap-4 md:w-auto">
           <div class="w-48 shrink-0">
-            <FilterButton v-model="selectedMajor" :options="majorOptions" @change="onMajorChange" />
+            <SearchableSelect
+              v-model="selectedMajor"
+              :options="majorOptions"
+              @change="onMajorChange"
+            />
           </div>
           <IconTextButton :text="t('dashboard.books.listABook')" @click="showDonateModal = true">
             <template #icon>

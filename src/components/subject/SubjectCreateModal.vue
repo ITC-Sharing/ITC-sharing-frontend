@@ -2,7 +2,7 @@
 import { computed, onBeforeUnmount, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import SelectDropdown from '@/components/common/SelectDropdown.vue'
-import { cefrLevel } from '@/utils/format'
+import { languageLabelKey } from '@/utils/format'
 
 const { t } = useI18n({ useScope: 'global' })
 
@@ -26,7 +26,6 @@ const emit = defineEmits<{
     e: 'submit',
     payload: {
       name: string
-      slug: string
       major_id: string
       year_level: number
       semester: number
@@ -36,7 +35,6 @@ const emit = defineEmits<{
 }>()
 
 const subjectName = ref('')
-const subjectSlug = ref('')
 const departmentId = ref(props.defaultDepartmentId || '')
 const academicYear = ref(String(props.yearLevel))
 const semester = ref('1')
@@ -45,20 +43,16 @@ const imagePreview = ref<string | null>(null)
 const isDragActive = ref(false)
 const formError = ref('')
 const nameError = ref('')
-const slugNameError = ref('')
 const nameTouched = ref(false)
-const slugTouched = ref(false)
 const modalRef = ref<HTMLElement | null>(null)
 
 const departmentOptions = computed(() => props.departments)
 
-// Year label respects CEFR levels for English/French (department label is the acronym).
+// DFL's year_level holds a language (English/French) rather than a year.
 const yearDisplay = computed(() => {
   const acronym = departmentOptions.value.find((d) => d.value === departmentId.value)?.label
-  return (
-    cefrLevel(acronym, academicYear.value) ??
-    `${t('common.subjectCreateModal.year')} ${academicYear.value}`
-  )
+  const languageKey = languageLabelKey(acronym, academicYear.value)
+  return languageKey ? t(languageKey) : `${t('common.subjectCreateModal.year')} ${academicYear.value}`
 })
 const semesterOptions = computed(() => [
   { label: `${t('common.subjectCreateModal.semesterLabel')} 1`, value: '1' },
@@ -74,8 +68,6 @@ function resetForm() {
   formError.value = ''
   nameError.value = ''
   nameTouched.value = false
-  slugNameError.value = ''
-  slugTouched.value = false
   if (imagePreview.value) {
     URL.revokeObjectURL(imagePreview.value)
   }
@@ -143,8 +135,6 @@ function handleDragLeave(event: DragEvent) {
 // Letters (any language, incl. combining marks for Khmer), numbers, spaces and
 // hyphens — and at least one letter/number.
 const NAME_PATTERN = /^(?=.*[\p{L}\p{N}])[\p{L}\p{M}\p{N}\s-]+$/u
-// Lowercase kebab-case: letters/numbers split by single hyphens.
-const SLUG_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/
 
 function validateSubjectName() {
   const name = subjectName.value.trim()
@@ -168,27 +158,6 @@ function validateSubjectName() {
   return true
 }
 
-function validateSlugName() {
-  const slug = subjectSlug.value.trim()
-
-  if (!slug) {
-    slugNameError.value = t('common.subjectCreateModal.nameRequired')
-    return false
-  }
-
-  if (slug.length > 10) {
-    slugNameError.value = t('common.subjectCreateModal.slugTooLong')
-    return false
-  }
-
-  if (!SLUG_PATTERN.test(slug)) {
-    slugNameError.value = t('common.subjectCreateModal.slugInvalid')
-    return false
-  }
-
-  slugNameError.value = ''
-  return true
-}
 
 function handleNameBlur() {
   nameTouched.value = true
@@ -201,17 +170,7 @@ function handleNameInput() {
   }
 }
 
-function handleSlugBlur() {
-  slugTouched.value = true
-  validateSlugName()
-}
 
-function handleSlugInput() {
-  slugTouched.value = true
-  if (slugTouched.value) {
-    validateSlugName()
-  }
-}
 
 function handleDrop(event: DragEvent) {
   event.preventDefault()
@@ -223,18 +182,12 @@ function handleDrop(event: DragEvent) {
 function handleSubmit() {
   formError.value = ''
   nameTouched.value = true
-  slugTouched.value = true
 
   if (!validateSubjectName()) {
     return
   }
 
-  if (!validateSlugName()) {
-    return
-  }
-
   const name = subjectName.value.trim()
-  const slug = subjectSlug.value.trim()
 
   if (!departmentId.value) {
     formError.value = 'Department is missing.'
@@ -243,7 +196,6 @@ function handleSubmit() {
 
   emit('submit', {
     name,
-    slug,
     major_id: departmentId.value,
     year_level: Number(academicYear.value),
     semester: Number(semester.value),
@@ -297,24 +249,6 @@ onBeforeUnmount(() => {
             />
             <p v-if="nameError" class="text-sm text-red-600">
               {{ nameError }}
-            </p>
-          </div>
-          
-          <div class="space-y-2">
-            <label class="text-sm font-medium text-black"
-              >{{ t('common.subjectCreateModal.slugLabel') }}
-              <span class="text-red-500">*</span></label
-            >
-            <input
-              v-model="subjectSlug"
-              type="text"
-              @blur="handleSlugBlur"
-              @input="handleSlugInput"
-              :placeholder="t('common.subjectCreateModal.slugLabel')"
-              class="w-full rounded-xl border border-[#D9D9D9] bg-white px-4 py-2 text-sm outline-none transition sm:text-base focus:border-[#0057BD]"
-            />
-            <p v-if="slugNameError" class="text-sm text-red-600">
-              {{ slugNameError }}
             </p>
           </div>
 
@@ -436,7 +370,7 @@ onBeforeUnmount(() => {
             <button
               type="button"
               :disabled="props.submitting"
-              class="rounded-xl border border-[#D0D0D0] px-4 py-2.5 text-sm font-medium text-black transition hover:bg-[#F4F4F4]"
+              class="rounded-xl border border-[#D0D0D0] px-4 py-2.5 text-sm font-medium text-black transition hover:bg-[#F4F4F4] hover:cursor-pointer"
               @click="closeModal"
             >
               {{ t('common.subjectCreateModal.cancelButton') }}
@@ -444,7 +378,7 @@ onBeforeUnmount(() => {
             <button
               type="submit"
               :disabled="props.submitting"
-              class="rounded-xl bg-[#008CB9] px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-[#00749b] disabled:cursor-not-allowed disabled:opacity-60"
+              class="rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-[#00749b] disabled:cursor-not-allowed disabled:opacity-60 hover:cursor-pointer"
             >
               {{
                 props.submitting

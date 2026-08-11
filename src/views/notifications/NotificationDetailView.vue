@@ -9,6 +9,7 @@ import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
 import BackButton from '@/components/common/BackButton.vue'
 import { formatRelativeDate, formatFileSize } from '@/utils/format'
 import noImage from '@/assets/images/no-image.png'
+import FileTypeIcon from '@/components/common/FileTypeIcon.vue'
 import type { BookRequestDetail } from '@/types'
 
 const route = useRoute()
@@ -92,18 +93,6 @@ async function onDecline() {
 }
 
 const loading = computed(() => docs.loading || subjectsStore.loading || bookReqLoading.value)
-
-function getFileIcon(name: string | null | undefined): { bg: string; label: string } {
-  const ext = (name ?? '').split('.').pop()?.toLowerCase() ?? ''
-  if (ext === 'pdf') return { bg: 'bg-red-500', label: 'PDF' }
-  if (['doc', 'docx'].includes(ext)) return { bg: 'bg-blue-500', label: 'DOC' }
-  if (['xls', 'xlsx'].includes(ext)) return { bg: 'bg-green-500', label: 'XLS' }
-  if (['ppt', 'pptx'].includes(ext)) return { bg: 'bg-orange-500', label: 'PPT' }
-  if (['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(ext))
-    return { bg: 'bg-purple-500', label: 'IMG' }
-  if (['zip', 'rar', '7z'].includes(ext)) return { bg: 'bg-yellow-500', label: 'ZIP' }
-  return { bg: 'bg-gray-400', label: ext.toUpperCase() || 'FILE' }
-}
 
 function formatDocType(type: string): string {
   return type
@@ -216,14 +205,7 @@ onMounted(async () => {
             class="flex items-center gap-3 px-4 py-3"
             :class="idx !== upload.documents.length - 1 ? 'border-b border-gray-50' : ''"
           >
-            <div
-              :class="[
-                'shrink-0 w-8 h-8 rounded-lg flex items-center justify-center text-[10px] font-bold text-white',
-                getFileIcon(file.original_name).bg,
-              ]"
-            >
-              {{ getFileIcon(file.original_name).label }}
-            </div>
+            <FileTypeIcon :name="file.original_name" :size="32" />
             <span class="flex-1 truncate text-sm text-gray-700">{{
               file.original_name || 'Unnamed file'
             }}</span>
@@ -314,7 +296,7 @@ onMounted(async () => {
                 </span>
               </div>
               <div class="flex items-center justify-center mt-2">
-                <span class="text-xs text-[#008CB9] shrink-0">View book →</span>
+                <span class="text-xs text-primary shrink-0">View book →</span>
               </div>
             </div>
           </button>
@@ -332,7 +314,7 @@ onMounted(async () => {
               <!-- The other party -->
               <div class="flex items-center gap-3 px-5 py-3">
                 <div
-                  class="h-9 w-9 rounded-full overflow-hidden bg-[#008CB9] flex items-center justify-center shrink-0"
+                  class="h-9 w-9 rounded-full overflow-hidden bg-primary flex items-center justify-center shrink-0"
                 >
                   <template v-if="bookRequest.role === 'donor'">
                     <img
@@ -381,10 +363,10 @@ onMounted(async () => {
                   :href="telegramHref(bookRequest.contact)!"
                   target="_blank"
                   rel="noopener noreferrer"
-                  class="flex-1 text-sm font-semibold text-[#008CB9] hover:underline"
+                  class="flex-1 text-sm font-semibold text-primary hover:underline"
                   >{{ bookRequest.contact }}</a
                 >
-                <span v-else class="flex-1 text-sm font-semibold text-[#008CB9]">{{
+                <span v-else class="flex-1 text-sm font-semibold text-primary">{{
                   bookRequest.contact
                 }}</span>
               </div>
@@ -436,7 +418,7 @@ onMounted(async () => {
                 <button
                   :disabled="reqAction !== null"
                   @click="onAccept"
-                  class="flex-1 rounded-xl bg-[#008CB9] py-2.5 text-sm font-semibold text-white hover:bg-[#006B9C] disabled:opacity-60 transition-colors"
+                  class="flex-1 rounded-xl bg-primary py-2.5 text-sm font-semibold text-white hover:bg-[#006B9C] disabled:opacity-60 transition-colors"
                 >
                   {{ reqAction === 'accept' ? '…' : 'Accept' }}
                 </button>

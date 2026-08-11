@@ -89,7 +89,7 @@ const submitForm = async (e: Event) => {
             name="email"
             :placeholder="t('auth.login.enterEmail')"
             v-model="form.email"
-            class="mt-1.5 w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#008CB9]"
+            class="mt-1.5 w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-gray-900 focus:outline-none focus:ring-2 focus:ring-primary"
           />
           <p v-if="errors.email" class="mt-1 text-sm text-red-500">{{ t(errors.email) }}</p>
         </div>
@@ -103,18 +103,18 @@ const submitForm = async (e: Event) => {
             name="password"
             :placeholder="t('auth.login.enterPassword')"
             v-model="form.password"
-            class="mt-1.5 w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#008CB9]"
+            class="mt-1.5 w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-gray-900 focus:outline-none focus:ring-2 focus:ring-primary"
           />
           <div class="mt-1 flex items-center justify-between gap-2">
             <p class="text-sm text-red-500">{{ errors.password ? t(errors.password) : '' }}</p>
-            <span class="text-sm text-[#008CB9] hover:underline cursor-pointer shrink-0">{{ t('auth.login.forgotPassword') }}</span>
+            <span class="text-sm text-primary hover:underline cursor-pointer shrink-0">{{ t('auth.login.forgotPassword') }}</span>
           </div>
         </div>
 
         <button
           type="submit"
           :disabled="authStore.loading"
-          class="w-full py-3 mt-1 text-white rounded-xl bg-[#008CB9] cursor-pointer hover:bg-[#00749b] active:scale-[0.99] transition font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
+          class="w-full py-3 mt-1 text-white rounded-xl bg-primary cursor-pointer hover:bg-[#00749b] active:scale-[0.99] transition font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
         >
           <span v-if="authStore.loading" class="flex items-center justify-center gap-2">
             <svg class="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
@@ -128,7 +128,7 @@ const submitForm = async (e: Event) => {
 
         <div class="flex justify-center gap-2 text-sm text-gray-600">
           <span>{{ t('auth.login.dontHaveAccount') }}</span>
-          <RouterLink to="/auth/register" class="font-semibold text-[#008CB9] hover:underline">{{ t('auth.login.register') }}</RouterLink>
+          <RouterLink to="/auth/register" class="font-semibold text-primary hover:underline">{{ t('auth.login.register') }}</RouterLink>
         </div>
       </form>
     </div>

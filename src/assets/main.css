@@ -1,5 +1,12 @@
 @import 'tailwindcss';
 
+/* Design tokens. `--color-primary` generates the `*-primary` utilities
+   (bg-primary, text-primary, border-primary, …) and is also usable directly as
+   var(--color-primary). */
+@theme {
+  --color-primary: #008cb9;
+}
+
 @font-face {
   font-family: 'Nunito';
   src: url('../assets/fonts/Nunito-VariableFont_wght.ttf') format('truetype');
@@ -29,4 +36,13 @@ body {
 
 .router-link-exact-active {
   @apply text-[#0057BD];
+}
+
+/* Hide the scrollbar while keeping scroll (used by horizontal chip rows). */
+.scrollbar-hide {
+  -ms-overflow-style: none; /* IE / old Edge */
+  scrollbar-width: none; /* Firefox */
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none; /* Chrome / Safari */
 }

@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import { getFileIcon, formatFileSize, formatRelativeDate } from '@/utils/format'
+import { formatFileSize, formatRelativeDate } from '@/utils/format'
+import FilePreviewThumb from '@/components/common/FilePreviewThumb.vue'
 import type { UploadFile } from '@/types'
 
-const props = defineProps<{
+defineProps<{
   file: UploadFile
   uploadedAt?: string | null
   fallbackName?: string | null
@@ -14,7 +15,6 @@ const emit = defineEmits<{
   download: [file: UploadFile]
 }>()
 
-const icon = getFileIcon(props.file.original_name)
 </script>
 
 <template>
@@ -25,12 +25,12 @@ const icon = getFileIcon(props.file.original_name)
   >
     <!-- Icon + name (first grid cell on desktop, flex item on mobile) -->
     <div class="flex items-center gap-3 min-w-0 flex-1 sm:flex-none">
-      <div
-        class="shrink-0 w-8 h-8 rounded-lg flex items-center justify-center text-white text-[10px] font-bold"
-        :class="icon.bg"
-      >
-        {{ icon.label }}
-      </div>
+      <FilePreviewThumb
+        :name="file.original_name"
+        :url="file.file_url"
+        :preview-url="file.preview_url"
+        :size="40"
+      />
       <div class="min-w-0">
         <span class="block truncate text-md font-medium text-gray-800">
           {{ file.original_name?.trim() || fallbackName || 'Untitled' }}

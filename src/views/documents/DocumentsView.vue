@@ -5,16 +5,19 @@ import { useI18n } from 'vue-i18n'
 import { useDocumentsStore } from '@/stores/documents.store'
 import { useSubjectsStore } from '@/stores/subjects.store'
 import { useMajorsStore } from '@/stores/majors.store'
-import { cefrLevel } from '@/utils/format'
 import DocumentCard from '@/components/documents/DocumentCard.vue'
 import DocumentListRow from '@/components/documents/DocumentListRow.vue'
 import UploadDocumentModal from '@/components/documents/UploadDocumentModal.vue'
 import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
 import Breadcrumb from '@/components/common/Breadcrumb.vue'
+import { isLanguageMajor, languageLabelKey } from '@/utils/format'
 import FilterButton from '@/components/common/FilterButton.vue'
+import SearchButton from '@/components/common/SearchButton.vue'
 import ViewToggle from '@/components/common/ViewToggle.vue'
 import IconTextButton from '@/components/common/IconTextButton.vue'
 import EmptyState from '@/components/common/EmptyState.vue'
+import UploadAndEditDocModal from '@/components/dashboard/UploadAndEditDocModal.vue'
+import type { Upload } from '@/types'
 import Pagination from '@/components/common/Pagination.vue'
 import PageSizeSelect from '@/components/common/PageSizeSelect.vue'
 
@@ -26,11 +29,12 @@ const majorsStore = useMajorsStore()
 
 const slug = route.params.slug as string
 const year = Number(route.params.year)
-// Absent for English/French (no subjects) — docs are listed by major + level.
+// Absent when a level's documents are listed directly (major + level).
 const subjectId = (route.params.subjectId as string) || ''
 
 const showUpload = ref(false)
 const selectedType = ref('')
+const searchQuery = ref('')
 
 const page = ref(1)
 const pageSize = ref(10)
@@ -39,7 +43,7 @@ const viewMode = ref<'card' | 'list'>(
 )
 watch(viewMode, (v) => localStorage.setItem('docViewMode', v))
 
-// Match by lowercased acronym so every major works (incl. English/French).
+// Match by lowercased acronym so every major works.
 const currentMajor = computed(() =>
   majorsStore.majors.find((m) => m.acronym?.toLowerCase() === slug),
 )
@@ -55,8 +59,17 @@ const groupedDocs = computed(() =>
   })),
 )
 
-// Page title + level label
-const levelLabel = computed(() => cefrLevel(slug, year) ?? t('document.documentsPage.year', { year }))
+// Page title + level label. DFL's year_level holds a language, not a year.
+// The card's edit button hands the whole upload over; the form prefills from it.
+const editDoc = ref<Upload | null>(null)
+function openEdit(doc: Upload) {
+  editDoc.value = doc
+}
+
+const levelLabel = computed(() => {
+  const languageKey = languageLabelKey(currentMajor.value?.acronym, year)
+  return languageKey ? t(languageKey) : t('document.documentsPage.year', { year })
+})
 
 const breadcrumbItems = computed(() => {
   const items: { label: string; to?: object }[] = [
@@ -81,13 +94,14 @@ const pageTitle = computed(
 )
 
 // Documents are filtered by type in the DB. With a subject we filter by it;
-// otherwise (English/French levels) we filter by major + level.
+// otherwise we filter by major + level.
 function loadDocs() {
   return docs.fetchAll({
     ...(subjectId
       ? { subject_id: subjectId }
       : { major_id: currentMajor.value?.id, year_level: year }),
     doc_type: selectedType.value || undefined,
+    search: searchQuery.value.trim() || undefined,
     page: page.value,
     limit: pageSize.value,
   })
@@ -101,6 +115,17 @@ watch(selectedType, () => {
   else page.value = 1
 })
 
+// Type chips refetch immediately; the search box is debounced so we don't fire
+// a request per keystroke.
+let searchTimer: ReturnType<typeof setTimeout> | undefined
+watch(searchQuery, () => {
+  clearTimeout(searchTimer)
+  searchTimer = setTimeout(() => {
+    if (page.value === 1) loadDocs()
+    else page.value = 1
+  }, 300)
+})
+
 watch(page, loadDocs)
 
 // Page size change: same reset-to-page-1 dance as the filter above.
@@ -109,19 +134,18 @@ watch(pageSize, () => {
   else page.value = 1
 })
 
-const docTypes = [
+// A language course is filed under Grammar/Speaking/… and a department course
+// under Note/TD/… — offer whichever list this department uses.
+const docTypes = computed(() => [
   { label: 'All', value: '' },
-  { label: 'Note', value: 'Note' },
-  { label: 'TD', value: 'TD' },
-  { label: 'Examination paper', value: 'Examination paper' },
-  { label: 'TP', value: 'TP' },
-  { label: 'Project', value: 'Project' },
-  { label: 'Lesson', value: 'Lesson' },
-  { label: 'Thesis', value: 'Thesis' },
-  { label: 'Other', value: 'Other' },
-]
+  ...(isLanguageMajor(currentMajor.value?.acronym)
+    ? docs.languageDocTypes
+    : docs.departmentDocTypes
+  ).map((type) => ({ label: type, value: type })),
+])
 
 onMounted(async () => {
+  docs.fetchDocTypes()
   if (!majorsStore.majors.length) await majorsStore.fetchMajors()
 
   // Load subjects so currentSubject name resolves
@@ -156,6 +180,8 @@ async function onUploaded() {
           </p>
         </div>
         <div class="flex w-full md:items-center justify-between md:justify-end gap-3">
+          <SearchButton v-model="searchQuery" class="flex-1 sm:flex-none sm:w-62" />
+
           <div class="w-40">
             <FilterButton v-model="selectedType" placeholder="All" :options="docTypes" />
           </div>
@@ -207,6 +233,7 @@ async function onUploaded() {
               :doc="entry.doc"
               :file-count="entry.count"
               @deleted="loadDocs()"
+              @edit="openEdit"
             />
           </div>
         </div>
@@ -218,11 +245,10 @@ async function onUploaded() {
         >
           <!-- Table header -->
           <div
-            class="hidden md:grid grid-cols-[2fr_120px_160px_100px_160px_110px_40px] gap-3 items-center border-b border-gray-100 px-4 py-3 text-sm font-medium text-black"
+            class="hidden md:grid grid-cols-[2fr_120px_100px_160px_110px_40px] gap-3 items-center border-b border-gray-100 px-4 py-3 text-sm font-medium text-black"
           >
             <span>{{ t('document.documentsPage.colName') }}</span>
             <span>{{ t('document.documentsPage.colAcademicYear') }}</span>
-            <span>{{ t('document.documentsPage.colTags') }}</span>
             <span>{{ t('document.documentsPage.colFileSize') }}</span>
             <span>{{ t('document.documentsPage.colUploadBy') }}</span>
             <span>{{ t('document.documentsPage.colDate') }}</span>
@@ -272,6 +298,20 @@ async function onUploaded() {
       :default-year-level="year"
       @close="showUpload = false"
       @uploaded="onUploaded"
+    />
+
+    <!-- Editing an existing upload reuses the dashboard form, which is the one
+         that knows how to add/remove files on a document that already exists. -->
+    <UploadAndEditDocModal
+      v-if="editDoc"
+      :edit-doc="editDoc"
+      @close="editDoc = null"
+      @uploaded="
+        () => {
+          editDoc = null
+          loadDocs()
+        }
+      "
     />
   </div>
 </template>

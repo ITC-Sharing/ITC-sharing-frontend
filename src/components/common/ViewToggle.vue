@@ -6,7 +6,7 @@ defineEmits<{ 'update:modelValue': [value: 'card' | 'list'] }>()
 <template>
   <div class="hidden md:flex items-center gap-1 rounded-xl border border-gray-200 p-2">
     <button
-      :class="['p-1.5 rounded-lg transition-colors cursor-pointer', modelValue === 'card' ? 'bg-[#008CB9] text-white' : 'text-gray-400 hover:text-gray-700']"
+      :class="['p-1.5 rounded-lg transition-colors cursor-pointer', modelValue === 'card' ? 'bg-primary text-white' : 'text-gray-400 hover:text-gray-700']"
       title="Card view"
       @click="$emit('update:modelValue', 'card')"
     >
@@ -15,7 +15,7 @@ defineEmits<{ 'update:modelValue': [value: 'card' | 'list'] }>()
       </svg>
     </button>
     <button
-      :class="['p-1.5 rounded-lg transition-colors cursor-pointer', modelValue === 'list' ? 'bg-[#008CB9] text-white' : 'text-gray-400 hover:text-gray-700']"
+      :class="['p-1.5 rounded-lg transition-colors cursor-pointer', modelValue === 'list' ? 'bg-primary text-white' : 'text-gray-400 hover:text-gray-700']"
       title="List view"
       @click="$emit('update:modelValue', 'list')"
     >

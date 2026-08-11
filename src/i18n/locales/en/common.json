@@ -1,7 +1,15 @@
 {
   "common": {
     "loading": "Loading...",
-    "back": "Back"
+    "back": "Back",
+    "search": "Search",
+    "noResults": "No results"
+  },
+  "dateField": {
+    "invalid": "Please enter a valid date (dd/mm/yyyy)",
+    "invalidDay": "Day must be between 1 and 31",
+    "invalidMonth": "Month must be between 1 and 12",
+    "past": "Date can’t be in the past"
   },
   "documentUploadModal": {
     "errorTitleRequired": "Title is required",
@@ -26,7 +34,10 @@
     "year5": "Fifth Year",
     "subject": "Subject",
     "enter": "Enter",
-    "chooseYear": "Choose your academic year"
+    "chooseYear": "Choose your academic year",
+    "languageEnglish": "English",
+    "languageFrench": "French",
+    "chooseLanguage": "Choose your language course"
   },
   "subjectPage": {
     "addSubject": "Add Subject",
@@ -51,17 +62,14 @@
     "yearLabel": "Academic Year",
     "year": "Year",
     "semesterLabel": "Semester",
-    "imageLabel": "Subject Image (optional)",
+    "imageLabel": "Subject Image",
     "dragAndDrop": "Drag and drop files here or click to select",
     "cancelButton": "Cancel",
     "creating": "Creating...",
     "createButton": "Create",
     "nameRequired": "Please enter subject name",
     "nameTooLong": "You can only enter up to 20 characters",
-    "nameInvalid": "Subject name must not contain special characters",
-    "slugTooLong": "You can only enter up to 10 characters",
-    "slugInvalid": "Slug can only contain lowercase letters, numbers and single hyphens",
-    "slugLabel": "Slug"
+    "nameInvalid": "Subject name must not contain special characters"
   },
   "donateBookModal": {
     "editTitle": "Edit Book",
@@ -123,5 +131,15 @@
     "minutesAgo": "{n}m ago",
     "hoursAgo": "{n}h ago",
     "daysAgo": "{n}d ago"
+  },
+  "confirmDelete": {
+    "title": "Delete",
+    "message": "Are you sure you want to delete {target}?",
+    "messageGeneric": "Are you sure you want to delete?",
+    "cancel": "Cancel",
+    "confirm": "Confirm"
+  },
+  "toast": {
+    "uploadSuccess": "Document uploaded. It will appear once an admin approves it."
   }
 }

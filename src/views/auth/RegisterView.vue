@@ -50,8 +50,9 @@ const errors = reactive<Errors>({
   confirmPassword: '',
 })
 
-// English & French aren't offered for self-registration.
-const HIDDEN_MAJORS = ['english', 'french']
+// The Department of Foreign Languages isn't a department anyone registers
+// into — every student takes its courses alongside their own major.
+const HIDDEN_MAJORS = ['dfl']
 const selectableMajors = computed(() =>
   majorsStore.majors.filter(
     (m) => !HIDDEN_MAJORS.includes(String(m.acronym ?? '').toLowerCase()),
@@ -201,7 +202,7 @@ async function submitForm(e: Event) {
           @blur="validateFirstName"
           v-model="form.firstName"
           type="text"
-          class="mt-1.5 w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#008CB9]"
+          class="mt-1.5 w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-gray-900 focus:outline-none focus:ring-2 focus:ring-primary"
           :placeholder="$t('auth.register.yourFirstName')"
         />
         <p v-if="errors.firstName" class="mt-1 text-sm text-red-500">{{ t(errors.firstName) }}</p>
@@ -213,7 +214,7 @@ async function submitForm(e: Event) {
           @blur="validateLastName"
           v-model="form.lastName"
           type="text"
-          class="mt-1.5 w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#008CB9]"
+          class="mt-1.5 w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-gray-900 focus:outline-none focus:ring-2 focus:ring-primary"
           :placeholder="$t('auth.register.yourLastName')"
         />
         <p v-if="errors.lastName" class="mt-1 text-sm text-red-500">{{ t(errors.lastName) }}</p>
@@ -225,7 +226,7 @@ async function submitForm(e: Event) {
         <select
           v-model="form.major_id"
           @blur="validateMajor"
-          class="mt-1.5 w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#008CB9]"
+          class="mt-1.5 w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 focus:outline-none focus:ring-2 focus:ring-primary"
           :class="form.major_id === '' ? 'text-gray-400' : 'text-gray-900'"
         >
           <option disabled value="">{{ t('auth.register.chooseDepartment') }}</option>
@@ -247,7 +248,7 @@ async function submitForm(e: Event) {
           v-model="form.year_level"
           @blur="validateYear"
           :disabled="!form.major_id"
-          class="mt-1.5 w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#008CB9] disabled:bg-gray-100 disabled:cursor-not-allowed"
+          class="mt-1.5 w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 focus:outline-none focus:ring-2 focus:ring-primary disabled:bg-gray-100 disabled:cursor-not-allowed"
           :class="form.year_level === '' ? 'text-gray-400' : 'text-gray-900'"
         >
           <option disabled value="">{{ t('auth.register.chooseYear') }}</option>
@@ -263,7 +264,7 @@ async function submitForm(e: Event) {
         <input
           @blur="validateEmail"
           v-model="form.email"
-          class="mt-1.5 w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#008CB9]"
+          class="mt-1.5 w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-gray-900 focus:outline-none focus:ring-2 focus:ring-primary"
           placeholder="e20220886@itc.edu.kh"
         />
         <p v-if="errors.email" class="mt-1 text-sm text-red-500">{{ t(errors.email) }}</p>
@@ -275,7 +276,7 @@ async function submitForm(e: Event) {
           @blur="validatePassword"
           v-model="form.password"
           type="password"
-          class="mt-1.5 w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#008CB9]"
+          class="mt-1.5 w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-gray-900 focus:outline-none focus:ring-2 focus:ring-primary"
           :placeholder="t('auth.register.enterPassword')"
         />
         <p v-if="errors.password" class="mt-1 text-sm text-red-500">{{ t(errors.password) }}</p>
@@ -287,7 +288,7 @@ async function submitForm(e: Event) {
           @blur="validateConfirmPassword"
           v-model="form.confirmPassword"
           type="password"
-          class="mt-1.5 w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#008CB9]"
+          class="mt-1.5 w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-gray-900 focus:outline-none focus:ring-2 focus:ring-primary"
           :placeholder="t('auth.register.enterConfirmPassword')"
         />
         <p v-if="errors.confirmPassword" class="mt-1 text-sm text-red-500">
@@ -297,7 +298,7 @@ async function submitForm(e: Event) {
 
       <div class="md:col-span-2 mt-2">
         <button
-          class="w-full bg-[#008CB9] text-white py-3 rounded-xl font-semibold hover:bg-[#00749b] active:scale-[0.99] transition cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+          class="w-full bg-primary text-white py-3 rounded-xl font-semibold hover:bg-[#00749b] active:scale-[0.99] transition cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
           type="submit"
           :disabled="authStore.loading"
         >
@@ -316,7 +317,7 @@ async function submitForm(e: Event) {
 
     <div class="flex justify-center gap-2 mt-6 text-sm text-gray-600">
       <span>{{ t('auth.register.haveAccount') }}</span>
-      <RouterLink to="/auth/login" class="font-semibold text-[#008CB9] hover:underline">
+      <RouterLink to="/auth/login" class="font-semibold text-primary hover:underline">
         {{ t('auth.register.login') }}
       </RouterLink>
     </div>
