@@ -42,7 +42,7 @@ const recentMyBooks = computed(() =>
 const typeColorMap: Record<string, string> = {
   Note: 'bg-blue-100 text-blue-700',
   TD: 'bg-yellow-100 text-yellow-700',
-  'Examination paper': 'bg-red-100 text-red-700',
+  'Exam Preparation': 'bg-red-100 text-red-700',
   TP: 'bg-green-100 text-green-700',
   Project: 'bg-purple-100 text-purple-700',
   Lesson: 'bg-orange-100 text-orange-700',
@@ -140,7 +140,7 @@ onMounted(() => {
         <button
           v-if="recentDocs.length"
           @click="goToDocuments"
-          class="text-xs font-semibold text-[#008CB9] hover:underline cursor-pointer"
+          class="text-xs font-semibold text-primary hover:underline cursor-pointer"
         >
           {{ t('dashboard.activity.viewAll') }}
         </button>
@@ -194,7 +194,7 @@ onMounted(() => {
         <button
           v-if="recentMyBooks.length"
           @click="goToMyBooks"
-          class="text-xs font-semibold text-[#008CB9] hover:underline cursor-pointer"
+          class="text-xs font-semibold text-primary hover:underline cursor-pointer"
         >
           {{ t('dashboard.activity.viewAll') }}
         </button>

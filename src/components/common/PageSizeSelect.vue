@@ -71,8 +71,8 @@ const buttonId = `page-size-${Math.random().toString(36).slice(2, 8)}`
         :disabled="disabled"
         :aria-expanded="isOpen"
         aria-haspopup="listbox"
-        class="flex items-center justify-between gap-2 rounded-lg border border-[#D9D9D9] bg-white px-3 py-1.5 text-sm text-black outline-none transition focus:border-[#008CB9] disabled:cursor-not-allowed disabled:bg-[#F5F5F5] disabled:opacity-70"
-        :class="isOpen ? 'border-[#008CB9]' : ''"
+        class="flex items-center justify-between gap-2 rounded-lg border border-[#D9D9D9] bg-white px-3 py-1.5 text-sm text-black outline-none transition focus:border-primary disabled:cursor-not-allowed disabled:bg-[#F5F5F5] disabled:opacity-70 hover:cursor-pointer"
+        :class="isOpen ? 'border-primary' : ''"
         @click="toggleMenu"
       >
         <span class="min-w-4 text-center tabular-nums">{{ modelValue }}</span>
@@ -100,8 +100,8 @@ const buttonId = `page-size-${Math.random().toString(36).slice(2, 8)}`
           :key="option"
           role="option"
           :aria-selected="option === modelValue"
-          class="cursor-pointer px-4 py-1.5 text-center text-sm tabular-nums transition hover:bg-[#EAF6FB] hover:text-[#008CB9]"
-          :class="option === modelValue ? 'bg-[#EAF6FB] font-semibold text-[#008CB9]' : 'text-gray-700'"
+          class="cursor-pointer px-4 py-1.5 text-center text-sm tabular-nums transition hover:bg-[#EAF6FB] hover:text-primary"
+          :class="option === modelValue ? 'bg-[#EAF6FB] font-semibold text-primary' : 'text-gray-700'"
           @click="handleSelect(option)"
         >
           {{ option }}

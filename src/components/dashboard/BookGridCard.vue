@@ -11,7 +11,7 @@ defineProps<{
   <div
     :class="[
       'w-full max-w-70 mx-auto md:mx-0 bg-white rounded-2xl overflow-hidden flex flex-col transition-colors',
-      highlight ? 'ring-1 ring-[#008CB9]/10' : '',
+      highlight ? 'ring-1 ring-primary/10' : '',
     ]"
   >
     <div class="h-56 bg-white p-3">

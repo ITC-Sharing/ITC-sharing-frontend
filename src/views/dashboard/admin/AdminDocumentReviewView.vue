@@ -98,7 +98,7 @@ function formatDate(dateStr: string) {
 const typeColor: Record<string, string> = {
   Note: 'bg-blue-100 text-blue-700',
   TD: 'bg-yellow-100 text-yellow-700',
-  'Examination paper': 'bg-red-100 text-red-700',
+  'Exam Preparation': 'bg-red-100 text-red-700',
   TP: 'bg-green-100 text-green-700',
   Project: 'bg-purple-100 text-purple-700',
   Lesson: 'bg-orange-100 text-orange-700',

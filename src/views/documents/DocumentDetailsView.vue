@@ -8,6 +8,7 @@ import FileRow from '@/components/documents/FileRow.vue'
 import FileCard from '@/components/documents/FileCard.vue'
 import BackButton from '@/components/common/BackButton.vue'
 import ViewToggle from '@/components/common/ViewToggle.vue'
+import DocumentPreviewModal from '@/components/documents/DocumentPreviewModal.vue'
 import type { UploadFile } from '@/types'
 
 const { t } = useI18n({ useScope: 'global' })
@@ -46,16 +47,24 @@ function downloadFile(file: UploadFile) {
   triggerDownload(getDownloadUrl(file), file.original_name?.trim() || 'file')
 }
 
+// Files we can render in-app: images + pdf natively, office docs via the
+// Office Online viewer (see DocumentPreviewModal). Everything else downloads.
 function isInlinePreviewable(name: string | null | undefined): boolean {
   const ext = (name ?? '').split('.').pop()?.toLowerCase() ?? ''
-  return ['pdf', 'jpg', 'jpeg', 'png', 'gif', 'webp'].includes(ext)
+  return ['pdf', 'jpg', 'jpeg', 'png', 'gif', 'webp', 'ppt', 'pptx', 'doc', 'docx', 'xls', 'xlsx'].includes(ext)
 }
 
+const previewOpen = ref(false)
+const previewTarget = ref<UploadFile | null>(null)
+
 function previewFile(file: UploadFile) {
-  // Non-previewable files (docx, xlsx, etc.) get downloaded by the browser anyway —
-  // use the named URL so the saved file gets the original name, not the random storage path.
-  const url = isInlinePreviewable(file.original_name) ? file.file_url : getDownloadUrl(file)
-  window.open(url, '_blank')
+  if (isInlinePreviewable(file.original_name)) {
+    previewTarget.value = file
+    previewOpen.value = true
+  } else {
+    // Unsupported type — just download it with its original name.
+    downloadFile(file)
+  }
 }
 
 onMounted(async () => {
@@ -98,10 +107,10 @@ watch(uploadId, async (id) => {
 
       <!-- Error states -->
       <div v-else-if="!canLoad" class="text-sm text-gray-500 py-8">
-        {{ t('common.documentDetailsPage.missingId') }}
+        {{ t('document.documentDetailsPage.missingId') }}
       </div>
       <div v-else-if="!files.length" class="text-sm text-gray-500 py-8">
-        {{ t('common.documentDetailsPage.noFiles') }}
+        {{ t('document.documentDetailsPage.noFiles') }}
       </div>
 
       <!-- Files: list view is desktop-only; mobile always shows cards -->
@@ -151,5 +160,11 @@ watch(uploadId, async (id) => {
       </template>
     </div>
     <!-- max-w-6xl -->
+
+    <DocumentPreviewModal
+      v-model="previewOpen"
+      :file="previewTarget"
+      @download="downloadFile"
+    />
   </div>
 </template>

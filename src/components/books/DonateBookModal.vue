@@ -178,7 +178,7 @@ async function submit() {
           </div>
           <label
             v-else
-            class="flex h-23 w-full cursor-pointer flex-col items-center justify-center rounded-2xl border-2 border-dashed border-[#D3D3D3] bg-[#FAFAFA] text-sm text-gray-400 transition hover:border-[#008CB9] hover:bg-[#F3FBFF]"
+            class="flex h-23 w-full cursor-pointer flex-col items-center justify-center rounded-2xl border-2 border-dashed border-[#D3D3D3] bg-[#FAFAFA] text-sm text-gray-400 transition hover:border-primary hover:bg-[#F3FBFF]"
           >
             <input
               type="file"
@@ -222,7 +222,7 @@ async function submit() {
             :placeholder="t('common.donateBookModal.titlePlaceholder')"
             @blur="validateTitle"
             @input="errors.title = form.title.trim() ? '' : errors.title"
-            class="w-full rounded-xl border border-[#D9D9D9] px-4 py-2.5 text-sm outline-none transition focus:border-[#008CB9]"
+            class="w-full rounded-xl border border-[#D9D9D9] px-4 py-2.5 text-sm outline-none transition focus:border-primary"
             :class="errors.title ? 'border-red-400' : ''"
           />
           <p v-if="errors.title" class="text-xs text-red-500">{{ errors.title }}</p>
@@ -257,7 +257,7 @@ async function submit() {
             :placeholder="t('common.donateBookModal.descriptionPlaceholder')"
             @blur="validateDescription"
             @input="errors.description = ''"
-            class="w-full rounded-xl border border-[#D9D9D9] px-4 py-2.5 text-sm outline-none transition focus:border-[#008CB9] resize-none"
+            class="w-full rounded-xl border border-[#D9D9D9] px-4 py-2.5 text-sm outline-none transition focus:border-primary resize-none"
             :class="errors.description ? 'border-red-400' : ''"
           />
           <p v-if="errors.description" class="text-xs text-red-500">{{ errors.description }}</p>
@@ -275,7 +275,7 @@ async function submit() {
             :placeholder="t('common.donateBookModal.contactPlaceholder')"
             @blur="validateContact"
             @input="errors.contact = ''"
-            class="w-full rounded-xl border border-[#D9D9D9] px-4 py-2.5 text-sm outline-none transition focus:border-[#008CB9]"
+            class="w-full rounded-xl border border-[#D9D9D9] px-4 py-2.5 text-sm outline-none transition focus:border-primary"
             :class="errors.contact ? 'border-red-400' : ''"
           />
           <p v-if="errors.contact" class="text-xs text-red-500">{{ errors.contact }}</p>
@@ -295,7 +295,7 @@ async function submit() {
             type="button"
             :disabled="uploading"
             @click="submit"
-            class="rounded-xl bg-[#008CB9] px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-[#006B9C] disabled:opacity-60 cursor-pointer"
+            class="rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-[#006B9C] disabled:opacity-60 cursor-pointer"
           >
             <span v-if="uploading" class="flex items-center gap-2">
               <svg class="h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24">

@@ -41,8 +41,9 @@ const initials = computed(() =>
   `${form.first_name?.[0] ?? ''}${form.last_name?.[0] ?? ''}`.toUpperCase() || '?',
 )
 
-// English & French are common courses every student takes, not selectable majors.
-const HIDDEN_MAJORS = ['english', 'french']
+// The Department of Foreign Languages runs courses every student takes; it's
+// not a department anyone belongs to.
+const HIDDEN_MAJORS = ['dfl']
 const selectableMajors = computed(() =>
   majorsStore.majors.filter(
     (m) => !HIDDEN_MAJORS.includes(String(m.acronym ?? '').toLowerCase()),
@@ -193,18 +194,18 @@ async function save() {
       <div class="flex items-center gap-5">
         <div class="relative">
           <div
-            class="h-28 w-28 rounded-full ring-4 ring-gray-100 overflow-hidden bg-[#008CB9]/10 flex items-center justify-center"
+            class="h-28 w-28 rounded-full ring-4 ring-gray-100 overflow-hidden bg-primary/10 flex items-center justify-center"
             :class="displayAvatar ? 'cursor-pointer' : ''"
             @click="openFullImage"
           >
             <img v-if="displayAvatar" :src="displayAvatar" alt="" class="h-full w-full object-cover" />
-            <span v-else class="text-3xl font-bold text-[#008CB9]">{{ initials }}</span>
+            <span v-else class="text-3xl font-bold text-primary">{{ initials }}</span>
           </div>
           <button
             v-if="editing"
             type="button"
             @click="pickPhoto"
-            class="absolute bottom-1 right-1 h-8 w-8 rounded-full bg-white ring-1 ring-gray-200 shadow flex items-center justify-center text-[#008CB9] hover:bg-gray-50 cursor-pointer"
+            class="absolute bottom-1 right-1 h-8 w-8 rounded-full bg-white ring-1 ring-gray-200 shadow flex items-center justify-center text-primary hover:bg-gray-50 cursor-pointer"
             :aria-label="t('common.profilePage.updateProfile')"
           >
             <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
@@ -269,7 +270,7 @@ async function save() {
             type="text"
             :disabled="!editing"
             @blur="validateName('first_name')"
-            class="mt-1.5 w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#008CB9] disabled:bg-gray-100 disabled:text-gray-500 disabled:cursor-not-allowed"
+            class="mt-1.5 w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-gray-900 focus:outline-none focus:ring-2 focus:ring-primary disabled:bg-gray-100 disabled:text-gray-500 disabled:cursor-not-allowed"
           />
           <p v-if="errors.first_name" class="mt-1 text-sm text-red-500">
             {{ t(errors.first_name, { max: NAME_MAX }) }}
@@ -282,7 +283,7 @@ async function save() {
             type="text"
             :disabled="!editing"
             @blur="validateName('last_name')"
-            class="mt-1.5 w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#008CB9] disabled:bg-gray-100 disabled:text-gray-500 disabled:cursor-not-allowed"
+            class="mt-1.5 w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-gray-900 focus:outline-none focus:ring-2 focus:ring-primary disabled:bg-gray-100 disabled:text-gray-500 disabled:cursor-not-allowed"
           />
           <p v-if="errors.last_name" class="mt-1 text-sm text-red-500">
             {{ t(errors.last_name, { max: NAME_MAX }) }}
@@ -307,7 +308,7 @@ async function save() {
           <select
             v-model="form.major_id"
             :disabled="!editing"
-            class="mt-1.5 w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#008CB9] disabled:bg-gray-100 disabled:cursor-not-allowed"
+            class="mt-1.5 w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 focus:outline-none focus:ring-2 focus:ring-primary disabled:bg-gray-100 disabled:cursor-not-allowed"
             :class="form.major_id === '' ? 'text-gray-400' : 'text-gray-900'"
           >
             <option disabled value="">{{ t('auth.register.chooseDepartment') }}</option>
@@ -322,7 +323,7 @@ async function save() {
             v-model="form.year_level"
             :disabled="!editing || !form.major_id"
             @change="validateYear"
-            class="mt-1.5 w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#008CB9] disabled:bg-gray-100 disabled:cursor-not-allowed"
+            class="mt-1.5 w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 focus:outline-none focus:ring-2 focus:ring-primary disabled:bg-gray-100 disabled:cursor-not-allowed"
             :class="form.year_level === '' ? 'text-gray-400' : 'text-gray-900'"
           >
             <option disabled value="">{{ t('auth.register.chooseYear') }}</option>

@@ -13,6 +13,12 @@ export type UploadStatus = 'pending' | 'active' | 'rejected'
 export interface UploadFile {
   id: string
   file_url: string
+  /**
+   * PDF rendition of an office file (pptx/docx/xlsx), generated on upload for
+   * in-browser preview. Null for files needing none (pdf/images) or when
+   * server-side conversion was unavailable.
+   */
+  preview_url: string | null
   /** Null on legacy rows written before the size was recorded. */
   file_size_kb: number | null
   original_name: string | null
@@ -34,14 +40,17 @@ export interface MajorRef {
   acronym: string
 }
 
+/** One department + year that may see an upload. */
+export interface AudienceEntry {
+  major_id: string
+  year_level: number
+}
+
 export interface SubjectRef {
   id: string
   name: string
-  slug: string
-}
-
-export interface DocumentTag {
-  tag: string
+  /** Short display code — initials of `name`, uppercased. */
+  acronym: string
 }
 
 /**
@@ -51,25 +60,31 @@ export interface DocumentTag {
 export interface Upload {
   id: string
   title: string
+  /** Optional free-text description (replaced tags). */
+  description: string | null
   doc_type: string
   year_level: number
   academic_year: string | null
+  /** Audience restriction (multi-select). Empty array = no restriction on that axis. */
+  audience: AudienceEntry[]
+  /** Soft expiry (ISO). null = never. Once past, hidden from all but the uploader/admins. */
+  expires_at: string | null
   uploaded_at: string
   users: UserRef | null
   majors: MajorRef | null
   subjects: SubjectRef | null
-  document_tags: DocumentTag[]
   documents: UploadFile[]
 }
 
 /**
  * An upload as returned by `GET /documents/mine`. Distinct from `Upload`: it
  * carries moderation fields the public feed never exposes, and its nested
- * `subjects` has no slug and its `documents` have no `file_url`.
+ * `subjects` has no acronym and its `documents` have no `file_url`.
  */
 export interface MyUpload {
   id: string
   title: string
+  description: string | null
   doc_type: string
   year_level: number
   academic_year: string | null
@@ -78,9 +93,11 @@ export interface MyUpload {
   rejection_reason: string | null
   rejected_at: string | null
   uploaded_at: string
-  subjects: Omit<SubjectRef, 'slug'> | null
+  /** Carried for the dashboard's edit form, which writes these back. */
+  audience: AudienceEntry[]
+  expires_at: string | null
+  subjects: Omit<SubjectRef, 'acronym'> | null
   majors: MajorRef | null
-  document_tags: DocumentTag[]
   documents: MyUploadFile[]
 }
 
@@ -125,7 +142,8 @@ export type SubjectStatus = 'pending' | 'active' | 'rejected'
 export interface Subject {
   id: string
   name: string
-  slug: string
+  /** Short display code — initials of `name`, uppercased. */
+  acronym: string
   year_level: number
   semester: number | null
   subject_url: string | null

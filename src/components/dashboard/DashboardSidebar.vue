@@ -60,7 +60,7 @@ function onFilterClick(value: string) {
   <aside class="w-full md:w-60 shrink-0 md:sticky md:top-[100px] flex flex-col gap-4">
     <!-- Profile card -->
     <div class="bg-white rounded-2xl border border-gray-100 p-4 flex items-center gap-3">
-      <div class="h-11 w-11 rounded-full bg-[#008CB9] flex items-center justify-center shrink-0 overflow-hidden">
+      <div class="h-11 w-11 rounded-full bg-primary flex items-center justify-center shrink-0 overflow-hidden">
         <img v-if="auth.user?.avatar_url" :src="auth.user.avatar_url" class="h-full w-full object-cover" />
         <span v-else class="text-white text-sm font-bold">{{ userInitials }}</span>
       </div>
@@ -78,7 +78,7 @@ function onFilterClick(value: string) {
           :class="[
             'w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all text-left',
             route.name === item.name
-              ? 'bg-[#008CB9] text-white shadow-sm'
+              ? 'bg-primary text-white shadow-sm'
               : 'text-gray-500 hover:bg-gray-50 hover:text-gray-700',
           ]"
         >
@@ -161,7 +161,7 @@ function onFilterClick(value: string) {
             :class="[
               'w-full flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium text-left transition-colors',
               currentBookFilter === filter.value
-                ? 'bg-[#008CB9]/10 text-[#008CB9] font-semibold'
+                ? 'bg-primary/10 text-primary font-semibold'
                 : 'text-gray-500 hover:bg-gray-50 hover:text-gray-700',
             ]"
           >
@@ -170,7 +170,7 @@ function onFilterClick(value: string) {
               v-if="filter.value === 'request' && pendingIncomingCount"
               :class="[
                 'h-4.5 min-w-4.5 px-1 rounded-full text-[9px] font-bold flex items-center justify-center',
-                currentBookFilter === 'request' ? 'bg-[#008CB9] text-white' : 'bg-red-500 text-white',
+                currentBookFilter === 'request' ? 'bg-primary text-white' : 'bg-red-500 text-white',
               ]"
               >{{ pendingIncomingCount }}</span
             >

@@ -191,7 +191,7 @@ async function confirmDeleteBook() {
         :class="[
           'inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-all border',
           bookFilter === f.value
-            ? 'bg-[#008CB9] text-white border-[#008CB9]'
+            ? 'bg-primary text-white border-primary'
             : 'bg-white text-gray-500 border-gray-200 hover:border-gray-300',
         ]"
       >
@@ -288,10 +288,10 @@ async function confirmDeleteBook() {
                   :href="telegramHref(req.contact)!"
                   target="_blank"
                   rel="noopener noreferrer"
-                  class="text-sm font-semibold text-[#008CB9] hover:underline truncate block"
+                  class="text-sm font-semibold text-primary hover:underline truncate block"
                   >{{ req.contact }}</a
                 >
-                <span v-else class="text-sm font-semibold text-[#008CB9] truncate block">{{
+                <span v-else class="text-sm font-semibold text-primary truncate block">{{
                   req.contact
                 }}</span>
               </BookInfoRow>
@@ -392,7 +392,7 @@ async function confirmDeleteBook() {
           <template v-if="book.request && book.request.status === 'pending'">
             <div class="flex items-center gap-2">
               <div
-                class="h-6 w-6 rounded-full overflow-hidden bg-[#008CB9] flex items-center justify-center shrink-0"
+                class="h-6 w-6 rounded-full overflow-hidden bg-primary flex items-center justify-center shrink-0"
               >
                 <img
                   v-if="book.request.requester.avatar_url"
@@ -454,10 +454,10 @@ async function confirmDeleteBook() {
                 :href="telegramHref(book.request.contact)!"
                 target="_blank"
                 rel="noopener noreferrer"
-                class="text-sm font-semibold text-[#008CB9] hover:underline truncate block"
+                class="text-sm font-semibold text-primary hover:underline truncate block"
                 >{{ book.request.contact }}</a
               >
-              <span v-else class="text-sm font-semibold text-[#008CB9] truncate block">{{
+              <span v-else class="text-sm font-semibold text-primary truncate block">{{
                 book.request.contact
               }}</span>
             </BookInfoRow>
@@ -480,7 +480,7 @@ async function confirmDeleteBook() {
             <button
               :disabled="requestAction === book.request.id"
               @click="onAcceptRequest(book.id, book.request.id)"
-              class="flex-1 px-4 py-1.5 rounded-lg bg-[#008CB9] text-xs font-semibold text-white hover:bg-[#006B9C] disabled:opacity-60 transition-colors cursor-pointer"
+              class="flex-1 px-4 py-1.5 rounded-lg bg-primary text-xs font-semibold text-white hover:bg-[#006B9C] disabled:opacity-60 transition-colors cursor-pointer"
             >
               {{ requestAction === book.request.id ? '…' : t('dashboard.books.accept') }}
             </button>
@@ -516,7 +516,7 @@ async function confirmDeleteBook() {
           <div v-if="book.status === 'available'" class="mt-auto pt-2 flex gap-2">
             <button
               @click="onEditBook(book)"
-              class="flex-1 px-4 py-1.5 rounded-lg text-xs bg-[#008CB9] font-semibold text-white hover:bg-[#006B9C] transition-colors cursor-pointer"
+              class="flex-1 px-4 py-1.5 rounded-lg text-xs bg-primary font-semibold text-white hover:bg-[#006B9C] transition-colors cursor-pointer"
             >
               {{ t('dashboard.books.edit') }}
             </button>
@@ -598,7 +598,7 @@ async function confirmDeleteBook() {
           v-model="declineReason"
           rows="3"
           :placeholder="t('dashboard.books.declinePlaceholder')"
-          class="mt-3 w-full rounded-xl border border-[#D9D9D9] px-4 py-2.5 text-sm outline-none focus:border-[#008CB9] resize-none"
+          class="mt-3 w-full rounded-xl border border-[#D9D9D9] px-4 py-2.5 text-sm outline-none focus:border-primary resize-none"
         />
         <div class="mt-4 grid grid-cols-2 gap-3">
           <button

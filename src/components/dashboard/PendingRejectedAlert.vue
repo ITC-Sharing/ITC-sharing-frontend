@@ -15,7 +15,7 @@ type PendingDoc = {
   academic_year?: string | null
   subjects?: { id: string; name: string } | null
   majors?: { id: string; acronym: string } | null
-  document_tags?: { tag: string }[]
+  description?: string | null
 }
 
 defineProps<{ docs: PendingDoc[] }>()
@@ -24,7 +24,7 @@ defineEmits<{ (e: 'edit', doc: PendingDoc): void; (e: 'remove', doc: PendingDoc)
 const typeColorMap: Record<string, string> = {
   Note: 'bg-blue-100 text-blue-700',
   TD: 'bg-yellow-100 text-yellow-700',
-  'Examination paper': 'bg-red-100 text-red-700',
+  'Exam Preparation': 'bg-red-100 text-red-700',
   TP: 'bg-green-100 text-green-700',
   Project: 'bg-purple-100 text-purple-700',
   Lesson: 'bg-orange-100 text-orange-700',
@@ -82,7 +82,7 @@ const typeColorMap: Record<string, string> = {
           >
           <button
             @click="$emit('edit', doc)"
-            class="p-1.5 text-gray-400 hover:text-[#008CB9] hover:bg-gray-100 rounded-lg transition-colors cursor-pointer"
+            class="p-1.5 text-gray-400 hover:text-primary hover:bg-gray-100 rounded-lg transition-colors cursor-pointer"
             :title="t('dashboard.pendingRejected.edit')"
           >
             <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">

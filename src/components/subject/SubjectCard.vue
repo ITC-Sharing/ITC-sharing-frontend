@@ -12,8 +12,8 @@ const props = withDefaults(
     subjectId: string
     /** Department slug — the route param, not the subject's own slug. */
     departmentSlug: string
-    /** The subject's slug, shown in place of a missing cover. */
-    subjectSlug: string
+    /** The subject's acronym, shown in place of a missing cover. */
+    subjectAcronym: string
     year: number
   }>(),
   { title: '', img: '' },
@@ -40,27 +40,27 @@ function goToDocuments() {
        frame — drives the border and text colour together. -->
   <div class="group w-70 h-auto rounded-xl cursor-pointer" @click="goToDocuments">
     <div
-      class="overflow-hidden h-48 rounded-lg border border-[#D9D9D9] bg-white group-hover:border-[#008CB9] transition-colors"
+      class="overflow-hidden h-48 rounded-lg border border-[#D9D9D9] bg-white group-hover:border-primary transition-colors"
     >
       <div class="flex h-full w-full items-center justify-center p-3">
         <img
           v-if="hasImage"
           :src="img ?? ''"
-          :alt="title || subjectSlug"
+          :alt="title || subjectAcronym"
           class="block max-h-full max-w-full object-contain"
         />
-        <!-- No cover uploaded — show the subject's slug rather than a
+        <!-- No cover uploaded — show the subject's acronym rather than a
              placeholder image, so the card still says something useful. -->
         <span
           v-else
-          class="block max-w-full px-2 text-center text-4xl font-bold uppercase tracking-widest text-black transition-colors group-hover:text-[#008CB9]"
+          class="block max-w-full px-2 text-center text-4xl font-bold uppercase tracking-widest text-black transition-colors group-hover:text-primary"
         >
-          {{ subjectSlug }}
+          {{ subjectAcronym }}
         </span>
       </div>
     </div>
     <h2
-      class="mt-3 min-h-13 overflow-hidden text-center text-xl font-normal leading-tight text-black capitalize transition-colors group-hover:text-[#008CB9]"
+      class="mt-3 min-h-13 overflow-hidden text-center text-xl font-normal leading-tight text-black capitalize transition-colors group-hover:text-primary"
       style="
         display: -webkit-box;
         line-clamp: 2;

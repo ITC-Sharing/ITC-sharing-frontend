@@ -38,7 +38,7 @@ const clearSearch = () => {
 
 <template>
   <form
-    class="flex w-full items-center gap-3 rounded-xl border border-gray-200 bg-white px-4 py-0.5 transition focus-within:border-[#008CB9] focus-within:shadow-md"
+    class="flex w-full items-center gap-3 rounded-xl border border-gray-200 bg-white px-4 py-0.5 transition focus-within:border-primary focus-within:shadow-md"
     @submit.prevent="handleSubmit"
   >
     <input

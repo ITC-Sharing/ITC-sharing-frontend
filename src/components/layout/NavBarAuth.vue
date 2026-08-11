@@ -12,7 +12,7 @@
         <button
           type="button"
           @click="toggleLang"
-          class="flex items-center gap-1.5 px-1 text-gray-800 hover:text-[#008CB9] transition-colors cursor-pointer"
+          class="flex items-center gap-1.5 px-1 text-gray-800 hover:text-primary transition-colors cursor-pointer"
           :aria-label="isKm ? 'Switch to English' : 'Switch to Khmer'"
         >
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640" class="w-5 h-5 shrink-0" fill="currentColor">

@@ -127,7 +127,7 @@ async function submitRequest() {
             <div class="flex items-center gap-3">
               <!-- Avatar -->
               <div
-                class="h-10 w-10 rounded-full overflow-hidden bg-[#008CB9] flex items-center justify-center shrink-0"
+                class="h-10 w-10 rounded-full overflow-hidden bg-primary flex items-center justify-center shrink-0"
                 :class="book.users?.avatar_url ? 'cursor-pointer' : ''"
                 @click="book.users?.avatar_url && openFullImage(book.users.avatar_url)"
               >
@@ -262,7 +262,7 @@ async function submitRequest() {
           v-model="requestContact"
           type="text"
           placeholder="t.me/user123 or @yourusername"
-          class="mt-1 w-full rounded-xl border border-[#D9D9D9] px-4 py-2.5 text-sm outline-none focus:border-[#008CB9]"
+          class="mt-1 w-full rounded-xl border border-[#D9D9D9] px-4 py-2.5 text-sm outline-none focus:border-primary"
         />
 
         <label class="mt-3 block text-xs font-medium text-gray-600"
@@ -272,7 +272,7 @@ async function submitRequest() {
           v-model="requestMessage"
           rows="3"
           placeholder="Message to the donor…"
-          class="mt-1 w-full rounded-xl border border-[#D9D9D9] px-4 py-2.5 text-sm outline-none focus:border-[#008CB9] resize-none"
+          class="mt-1 w-full rounded-xl border border-[#D9D9D9] px-4 py-2.5 text-sm outline-none focus:border-primary resize-none"
         />
 
         <div class="mt-4 grid grid-cols-2 gap-3">
@@ -286,7 +286,7 @@ async function submitRequest() {
           <button
             type="button"
             :disabled="requesting"
-            class="rounded-xl bg-[#008CB9] py-2 text-sm font-semibold text-white hover:bg-[#006B9C] disabled:opacity-60"
+            class="rounded-xl bg-primary py-2 text-sm font-semibold text-white hover:bg-[#006B9C] disabled:opacity-60"
             @click="submitRequest"
           >
             {{ requesting ? 'Sending…' : 'Send Request' }}

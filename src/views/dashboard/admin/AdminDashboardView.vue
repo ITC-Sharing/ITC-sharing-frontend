@@ -75,7 +75,7 @@ const docTypes = [
   { label: 'All', value: '' },
   { label: 'Note', value: 'Note' },
   { label: 'TD', value: 'TD' },
-  { label: 'Examination paper', value: 'Examination paper' },
+  { label: 'Exam Preparation', value: 'Exam Preparation' },
   { label: 'TP', value: 'TP' },
   { label: 'Project', value: 'Project' },
   { label: 'Lesson', value: 'Lesson' },
@@ -86,7 +86,7 @@ const docTypes = [
 const typeColorMap: Record<string, string> = {
   Note: 'bg-blue-100 text-blue-700',
   TD: 'bg-yellow-100 text-yellow-700',
-  'Examination paper': 'bg-red-100 text-red-700',
+  'Exam Preparation': 'bg-red-100 text-red-700',
   TP: 'bg-green-100 text-green-700',
   Project: 'bg-purple-100 text-purple-700',
   Lesson: 'bg-orange-100 text-orange-700',
@@ -279,7 +279,7 @@ async function confirmReject() {
 interface AdminSubject {
   id: string
   name: string
-  slug: string
+  acronym: string
   year_level: number
   semester: string | number
   subject_url: string | null
@@ -292,16 +292,18 @@ const subjectsLoading = ref(false)
 const subjectSearch = ref('')
 const editingAdminSubjectId = ref<string | null>(null)
 const editAdminName = ref('')
-const editAdminSlug = ref('')
+const editAdminAcronym = ref('')
 const editAdminSemester = ref('')
 const editAdminNameError = ref('')
-const editAdminSlugError = ref('')
+const editAdminAcronymError = ref('')
 const savingAdminSubjectId = ref<string | null>(null)
 
-// Match the subject create rules: name letters/numbers/spaces/hyphens (any
-// language), slug lowercase kebab-case. Limits: name ≤ 20, slug ≤ 10.
+// Match the subject rules: name letters/numbers/spaces/hyphens (any language),
+// acronym letters/numbers with no lowercase. Limits: name ≤ 20, acronym ≤ 10.
+// Everyone else gets the acronym derived from the name — this form is the only
+// place it can be overridden.
 const ADMIN_NAME_PATTERN = /^(?=.*[\p{L}\p{N}])[\p{L}\p{M}\p{N}\s-]+$/u
-const ADMIN_SLUG_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/
+const ADMIN_ACRONYM_PATTERN = /^(?!.*\p{Ll})[\p{L}\p{M}\p{N}]+$/u
 const deletingAdminSubjectId = ref<string | null>(null)
 let subjectSearchTimer: ReturnType<typeof setTimeout>
 
@@ -331,15 +333,15 @@ async function loadAllSubjects() {
 function openAdminSubjectEdit(subject: {
   id: string
   name: string
-  slug?: string
+  acronym?: string
   semester?: string | number
 }) {
   editingAdminSubjectId.value = subject.id
   editAdminName.value = subject.name
-  editAdminSlug.value = subject.slug ?? ''
+  editAdminAcronym.value = subject.acronym ?? ''
   editAdminSemester.value = String(subject.semester ?? '')
   editAdminNameError.value = ''
-  editAdminSlugError.value = ''
+  editAdminAcronymError.value = ''
 }
 
 function closeAdminSubjectEdit() {
@@ -348,7 +350,7 @@ function closeAdminSubjectEdit() {
 
 function validateAdminSubjectEdit(): boolean {
   const name = editAdminName.value.trim()
-  const slug = editAdminSlug.value.trim()
+  const acronym = editAdminAcronym.value.trim()
 
   editAdminNameError.value = !name
     ? 'Please enter subject name'
@@ -358,35 +360,35 @@ function validateAdminSubjectEdit(): boolean {
         ? 'Subject name must not contain special characters'
         : ''
 
-  editAdminSlugError.value = !slug
-    ? 'Please enter slug'
-    : slug.length > 10
+  editAdminAcronymError.value = !acronym
+    ? 'Please enter an acronym'
+    : acronym.length > 10
       ? 'You can only enter up to 10 characters'
-      : !ADMIN_SLUG_PATTERN.test(slug)
-        ? 'Slug can only contain lowercase letters, numbers and single hyphens'
+      : !ADMIN_ACRONYM_PATTERN.test(acronym)
+        ? 'Acronym can only contain letters and numbers, with no lowercase'
         : ''
 
-  return !editAdminNameError.value && !editAdminSlugError.value
+  return !editAdminNameError.value && !editAdminAcronymError.value
 }
 
 async function saveAdminSubjectEdit(subject: {
   id: string
   name: string
-  slug?: string
+  acronym?: string
   semester?: string | number
 }) {
   if (!validateAdminSubjectEdit()) return
 
   savingAdminSubjectId.value = subject.id
   try {
-    const payload: { name: string; slug: string; semester?: number } = {
+    const payload: { name: string; acronym: string; semester?: number } = {
       name: editAdminName.value.trim(),
-      slug: editAdminSlug.value.trim(),
+      acronym: editAdminAcronym.value.trim(),
     }
     if (editAdminSemester.value) payload.semester = Number(editAdminSemester.value)
     await api.patch(`/admin/subjects/${subject.id}`, payload)
     subject.name = payload.name
-    subject.slug = payload.slug
+    subject.acronym = payload.acronym
     if (payload.semester) subject.semester = payload.semester
     closeAdminSubjectEdit()
   } finally {
@@ -453,7 +455,7 @@ onMounted(async () => {
       <!-- Logo -->
       <div class="px-5 h-16 flex items-center border-b border-gray-100">
         <div class="flex items-center gap-2.5">
-          <div class="h-9 w-9 rounded-xl bg-[#008CB9] flex items-center justify-center">
+          <div class="h-9 w-9 rounded-xl bg-primary flex items-center justify-center">
             <span class="text-white text-base font-extrabold">I</span>
           </div>
           <div>
@@ -478,7 +480,7 @@ onMounted(async () => {
           :class="[
             'relative w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all text-left',
             activeTab === item.tab
-              ? 'bg-[#008CB9] text-white shadow-sm'
+              ? 'bg-primary text-white shadow-sm'
               : 'text-gray-500 hover:bg-gray-50 hover:text-gray-700',
           ]"
         >
@@ -691,7 +693,7 @@ onMounted(async () => {
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
                     viewBox="0 0 640 640"
-                    class="w-6 h-6 fill-[#008CB9]"
+                    class="w-6 h-6 fill-primary"
                   >
                     <path
                       d="M320 80C377.4 80 424 126.6 424 184C424 241.4 377.4 288 320 288C262.6 288 216 241.4 216 184C216 126.6 262.6 80 320 80zM96 152C135.8 152 168 184.2 168 224C168 263.8 135.8 296 96 296C56.2 296 24 263.8 24 224C24 184.2 56.2 152 96 152zM0 480C0 409.3 57.3 352 128 352C140.8 352 153.2 353.9 164.9 357.4C132 394.2 112 442.8 112 496L112 512C112 523.4 114.4 534.2 118.7 544L32 544C14.3 544 0 529.7 0 512L0 480zM521.3 544C525.6 534.2 528 523.4 528 512L528 496C528 442.8 508 394.2 475.1 357.4C486.8 353.9 499.2 352 512 352C582.7 352 640 409.3 640 480L640 512C640 529.7 625.7 544 608 544L521.3 544zM472 224C472 184.2 504.2 152 544 152C583.8 152 616 184.2 616 224C616 263.8 583.8 296 544 296C504.2 296 472 263.8 472 224zM160 496C160 407.6 231.6 336 320 336C408.4 336 480 407.6 480 496L480 512C480 529.7 465.7 544 448 544L192 544C174.3 544 160 529.7 160 512L160 496z"
@@ -738,7 +740,7 @@ onMounted(async () => {
                   <h2 class="font-semibold text-gray-900">Recent Uploads</h2>
                   <button
                     @click="activeTab = 'documents'"
-                    class="text-xs text-[#008CB9] font-medium hover:underline"
+                    class="text-xs text-primary font-medium hover:underline"
                   >
                     View all →
                   </button>
@@ -786,7 +788,7 @@ onMounted(async () => {
                   <h2 class="font-semibold text-gray-900">Pending Review</h2>
                   <button
                     @click="activeTab = 'approvals'"
-                    class="text-xs text-[#008CB9] font-medium hover:underline"
+                    class="text-xs text-primary font-medium hover:underline"
                   >
                     Review →
                   </button>
@@ -1303,13 +1305,13 @@ onMounted(async () => {
                     <p v-if="editAdminNameError" class="text-xs text-red-600">{{ editAdminNameError }}</p>
                   </div>
                   <div class="flex flex-col gap-1 flex-1 min-w-32">
-                    <label class="text-xs font-medium text-gray-500">Slug</label>
+                    <label class="text-xs font-medium text-gray-500">Acronym</label>
                     <input
-                      v-model="editAdminSlug"
+                      v-model="editAdminAcronym"
                       @blur="validateAdminSubjectEdit"
                       class="px-3 py-2 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0057BD] bg-white"
                     />
-                    <p v-if="editAdminSlugError" class="text-xs text-red-600">{{ editAdminSlugError }}</p>
+                    <p v-if="editAdminAcronymError" class="text-xs text-red-600">{{ editAdminAcronymError }}</p>
                   </div>
                   <div class="flex flex-col gap-1 w-36">
                     <label class="text-xs font-medium text-gray-500">Semester</label>
@@ -1368,7 +1370,7 @@ onMounted(async () => {
                 v-model="userSearch"
                 type="text"
                 placeholder="Search by name or email..."
-                class="pl-9 pr-4 py-2 text-sm border border-gray-200 rounded-xl bg-white focus:outline-none focus:ring-2 focus:ring-[#008CB9] w-64"
+                class="pl-9 pr-4 py-2 text-sm border border-gray-200 rounded-xl bg-white focus:outline-none focus:ring-2 focus:ring-primary w-64"
               />
             </div>
           </div>
@@ -1410,7 +1412,7 @@ onMounted(async () => {
             >
               <div class="col-span-4 flex items-center gap-3 min-w-0">
                 <div
-                  class="h-8 w-8 rounded-full bg-[#E8EEF8] flex items-center justify-center text-[#008CB9] text-xs font-bold shrink-0"
+                  class="h-8 w-8 rounded-full bg-[#E8EEF8] flex items-center justify-center text-primary text-xs font-bold shrink-0"
                 >
                   {{ user.first_name?.[0]?.toUpperCase() }}{{ user.last_name?.[0]?.toUpperCase() }}
                 </div>
@@ -1428,7 +1430,7 @@ onMounted(async () => {
                 <span
                   :class="[
                     'text-xs font-semibold px-2.5 py-1 rounded-full',
-                    user.role === 'admin' ? 'bg-[#008CB9] text-white' : 'bg-gray-100 text-gray-600',
+                    user.role === 'admin' ? 'bg-primary text-white' : 'bg-gray-100 text-gray-600',
                   ]"
                 >
                   {{ user.role }}
@@ -1451,7 +1453,7 @@ onMounted(async () => {
                 :class="[
                   'px-3 py-1.5 rounded-lg text-sm font-medium transition-all',
                   docTypeFilter === type.value
-                    ? 'bg-[#008CB9] text-white shadow-sm'
+                    ? 'bg-primary text-white shadow-sm'
                     : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50',
                 ]"
               >
@@ -1476,7 +1478,7 @@ onMounted(async () => {
                 v-model="docSearch"
                 type="text"
                 placeholder="Search documents..."
-                class="pl-9 pr-4 py-2 text-sm border border-gray-200 rounded-xl bg-white focus:outline-none focus:ring-2 focus:ring-[#008CB9] w-56"
+                class="pl-9 pr-4 py-2 text-sm border border-gray-200 rounded-xl bg-white focus:outline-none focus:ring-2 focus:ring-primary w-56"
               />
             </div>
           </div>
@@ -1541,7 +1543,7 @@ onMounted(async () => {
                       <p class="text-sm font-medium text-gray-900 truncate">{{ doc.title }}</p>
                       <span
                         v-if="doc.documents?.length > 1"
-                        class="shrink-0 text-[10px] font-bold bg-blue-100 text-[#008CB9] px-1.5 py-0.5 rounded-full"
+                        class="shrink-0 text-[10px] font-bold bg-blue-100 text-primary px-1.5 py-0.5 rounded-full"
                         >{{ doc.documents.length }} files</span
                       >
                     </div>

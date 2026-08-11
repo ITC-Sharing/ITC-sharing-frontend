@@ -21,7 +21,7 @@ defineEmits<{ 'update:modelValue': [value: string] }>()
       :class="[
         'px-3 py-1.5 rounded-full text-xs font-medium transition-all cursor-pointer',
         modelValue === option.value
-          ? 'bg-[#008CB9] text-white border-[#008CB9]'
+          ? 'bg-primary text-white border-primary'
           : 'bg-white text-gray-500 border-gray-200 hover:border-gray-300',
       ]"
     >

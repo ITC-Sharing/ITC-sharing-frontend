@@ -6,6 +6,7 @@ import { useAuthStore } from '@/stores/auth.store'
 import { useDocumentsStore } from '@/stores/documents.store'
 import { formatRelativeDate } from '@/utils/format'
 import type { Upload } from '@/types'
+import ConfirmDeleteModal from '@/components/common/ConfirmDeleteModal.vue'
 
 const { t } = useI18n({ useScope: 'global' })
 const auth = useAuthStore()
@@ -18,7 +19,11 @@ const props = defineProps<{
   fileCount?: number
 }>()
 
-const emit = defineEmits<{ (e: 'deleted', id: string): void }>()
+const emit = defineEmits<{
+  (e: 'deleted', id: string): void
+  /** The owner asked to edit — the parent opens the editor. */
+  (e: 'edit', doc: Upload): void
+}>()
 
 const showDeleteModal = ref(false)
 
@@ -31,8 +36,6 @@ const postBy = computed(() =>
 )
 
 const dateText = computed(() => formatRelativeDate(props.doc.uploaded_at))
-
-const tags = computed(() => props.doc.document_tags?.map((t) => t.tag) ?? [])
 
 // ── Actions ─────────────────────────────────────────────────────────────────
 
@@ -67,11 +70,40 @@ function goToDetails() {
        pinned to the bottom, keeping it aligned across cards with and without
        tags. -->
   <article
-    class="flex h-full w-full flex-col rounded-lg border bg-white border-[#B9B9B9] px-4 py-5 relative cursor-pointer hover:border-[#008CB9] transition-colors"
+    class="flex h-full w-full flex-col rounded-lg border bg-white border-[#B9B9B9] px-4 py-5 relative cursor-pointer hover:border-primary transition-colors"
     @click="goToDetails"
   >
-    <!-- Delete button (owner only), with a hover tooltip -->
-    <div v-if="isOwner" class="group absolute top-3 right-3">
+    <!-- Owner actions, each with a hover tooltip -->
+    <div v-if="isOwner" class="absolute top-3 right-3 flex items-center gap-2">
+      <div class="group relative">
+        <button
+          @click.stop="emit('edit', doc)"
+          class="text-gray-300 hover:text-primary transition-colors cursor-pointer"
+          :aria-label="t('document.DocumentCard.edit')"
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            class="h-4 w-4"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+            />
+          </svg>
+        </button>
+        <span
+          class="pointer-events-none absolute right-0 top-full mt-1 z-10 whitespace-nowrap rounded-md bg-gray-900 px-2 py-1 text-xs font-medium text-white opacity-0 shadow-md transition-opacity duration-150 group-hover:opacity-100"
+        >
+          {{ t('document.DocumentCard.edit') }}
+        </span>
+      </div>
+
+      <div class="group relative">
       <button
         @click.stop="handleDelete"
         class="text-gray-300 hover:text-red-500 transition-colors cursor-pointer"
@@ -100,38 +132,43 @@ function goToDetails() {
       >
         {{ t('document.DocumentCard.deleteConfirm') }}
       </span>
+      </div>
     </div>
 
     <!-- Thumbnail -->
-    <div class="flex flex-col items-center justify-center pb-3 gap-1">
+    <div class="flex flex-col items-center justify-center pb-2 gap-1">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640" class="h-25 w-30">
         <path
           fill="#1D92BC"
           d="M128 512L512 512C547.3 512 576 483.3 576 448L576 208C576 172.7 547.3 144 512 144L362.7 144C355.8 144 349 141.8 343.5 137.6L305.1 108.8C294 100.5 280.5 96 266.7 96L128 96C92.7 96 64 124.7 64 160L64 448C64 483.3 92.7 512 128 512z"
         />
       </svg>
-      <span class="text-sm font-semibold text-[#008CB9] capitalize">{{ doc.doc_type }}</span>
     </div>
 
     <div class="h-px bg-[#C7C7C7]"></div>
 
     <!-- Title -->
-    <h2 class="mt-3 text-lg font-semibold leading-tight text-black">{{ doc.title }}</h2>
+    <h2
+      class="mt-3 truncate text-lg font-semibold leading-tight text-black"
+      :title="doc.title"
+    >
+      {{ doc.title }}
+    </h2>
 
     <!-- Subject -->
     <p v-if="doc.subjects" class="text-[12px] text-gray-400 mt-1">
-      <span class="uppercase">{{ doc.subjects.slug }} &nbsp;•&nbsp; {{ doc.academic_year }}</span>
+      <span class="uppercase">{{ doc.subjects.acronym }} &nbsp;•&nbsp; {{ doc.academic_year }}</span>
     </p>
 
-    <!-- Tags -->
+    <!-- Description
+    <p v-if="doc.description" class="mt-2 line-clamp-2 text-sm text-[#9E9E9E]">
+      {{ doc.description }}
+    </p> -->
+    <!-- Doc type — styled like the old tags -->
     <div class="mt-2 flex flex-wrap gap-1">
       <span
-        v-for="tag in tags"
-        :key="tag"
         class="inline-flex items-center rounded-full px-4 py-1 text-xs leading-none border-[#1AA8E5] bg-[#B8EDFF] text-[#0082B8]"
-      >
-        {{ tag }}
-      </span>
+      >{{ doc.doc_type }}</span>
     </div>
 
     <!-- Author + date — mt-auto pins it to the bottom of the card. -->
@@ -140,39 +177,10 @@ function goToDetails() {
     </p>
   </article>
 
-  <Teleport to="body">
-    <div
-      v-if="showDeleteModal"
-      class="fixed inset-0 z-50 flex items-center justify-center bg-black/45 px-4 py-6"
-      @click.self="closeDeleteModal"
-    >
-      <div class="w-full max-w-sm rounded-2xl bg-white p-6 shadow-2xl ring-1 ring-black/10">
-        <div class="text-center">
-          <p class="text-lg font-semibold text-black">
-            {{ t('document.DocumentCard.deleteTitle') }} {{ doc.title }}
-          </p>
-          <p class="mt-2 text-sm text-gray-500">
-            {{ t('document.DocumentCard.deleteMessage') }}
-          </p>
-        </div>
-
-        <div class="mt-6 grid grid-cols-2 gap-3">
-          <button
-            type="button"
-            class="rounded-xl border border-[#B0B0B0] bg-white px-4 py-2 text-sm text-black"
-            @click="closeDeleteModal"
-          >
-            {{ t('document.DocumentCard.deleteCancel') }}
-          </button>
-          <button
-            type="button"
-            class="rounded-xl bg-red-500 px-4 py-2 text-sm text-white hover:bg-red-600"
-            @click="confirmDelete"
-          >
-            {{ t('document.DocumentCard.deleteConfirm') }}
-          </button>
-        </div>
-      </div>
-    </div>
-  </Teleport>
+  <ConfirmDeleteModal
+    v-if="showDeleteModal"
+    :target="doc.title"
+    @cancel="closeDeleteModal"
+    @confirm="confirmDelete"
+  />
 </template>

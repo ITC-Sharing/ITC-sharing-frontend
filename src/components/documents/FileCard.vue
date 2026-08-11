@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { getFileIcon, formatFileSize, isImageFile, fileExtension } from '@/utils/format'
+import { getFileIcon, formatFileSize, fileExtension } from '@/utils/format'
+import FilePreviewThumb from '@/components/common/FilePreviewThumb.vue'
 import type { UploadFile } from '@/types'
 
 const props = defineProps<{
@@ -17,7 +18,6 @@ const emit = defineEmits<{
 const { t } = useI18n({ useScope: 'global' })
 
 const icon = computed(() => getFileIcon(props.file.original_name))
-const isImage = computed(() => isImageFile(props.file.original_name))
 const typeLabel = computed(() => fileExtension(props.file.original_name).toUpperCase() || icon.value.label)
 const displayName = computed(() => props.file.original_name?.trim() || props.fallbackName || 'Untitled')
 
@@ -35,25 +35,21 @@ function onDownload() {
 
 <template>
   <div
-    class="flex flex-col mx-auto w-full max-w-78 sm:max-w-none rounded-2xl border border-gray-200 bg-white p-3 hover:border-[#008CB9] hover:shadow-sm transition-all"
+    class="flex flex-col mx-auto w-full max-w-78 sm:max-w-none rounded-2xl border border-gray-200 bg-white p-3 hover:border-primary hover:shadow-sm transition-all"
   >
     <!-- Thumbnail: real image preview, else file-type placeholder -->
     <div
       class="aspect-4/3 w-full overflow-hidden rounded-xl border border-gray-100 bg-gray-50 cursor-pointer"
       @click="emit('preview', file)"
     >
-      <img
-        v-if="isImage"
-        :src="file.file_url"
-        :alt="displayName"
-        class="h-full w-full object-cover"
+      <FilePreviewThumb
+        fill
+        :name="file.original_name"
+        :url="file.file_url"
+        :preview-url="file.preview_url"
+        :size="64"
+        rounded="rounded-xl"
       />
-      <div v-else class="flex h-full w-full flex-col items-center justify-center gap-2">
-        <span
-          class="rounded-md px-5 py-5 text-[15px] font-bold text-white"
-          :class="icon.bg"
-        >{{ icon.label }}</span>
-      </div>
     </div>
 
     <!-- Title + overflow menu -->

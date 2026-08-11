@@ -98,7 +98,7 @@ const routes = [
         meta: { requiresAuth: true },
       },
       {
-        // English & French have no subjects — documents live directly under a level.
+        // Every document of one level, without going through a subject.
         path: 'department/:slug/year/:year/documents',
         name: 'level-documents',
         component: () => import('@/views/documents/DocumentsView.vue'),

@@ -5,7 +5,13 @@ import YearCard from '@/components/departments/YearCard.vue'
 import Breadcrumb from '@/components/common/Breadcrumb.vue'
 import { useMajorsStore } from '@/stores/majors.store'
 import { useSubjectsStore } from '@/stores/subjects.store'
-import { isLanguageMajor, cefrLevel, LANGUAGE_LEVEL_COUNT } from '@/utils/format'
+import { isLanguageMajor, languageLabelKey, yearLevelsForMajor } from '@/utils/format'
+import englishFlag from '@/assets/images/english_flag.png'
+import frenchFlag from '@/assets/images/france_flag.png'
+
+// DFL's cards are languages, so they carry a flag instead of the department's
+// logo. Indexed by year_level (1 = English, 2 = French).
+const DFL_LANGUAGE_IMAGES = [englishFlag, frenchFlag]
 
 const props = defineProps<{ slug: string }>()
 const { t } = useI18n({ useScope: 'global' })
@@ -20,39 +26,29 @@ const currentMajor = computed(() =>
   ),
 )
 
-const years = [
-  { id: 1, title: 'common.departmentPage.year1', subtitle: 'common.departmentPage.subject' },
-  { id: 2, title: 'common.departmentPage.year2', subtitle: 'common.departmentPage.subject' },
-  { id: 3, title: 'common.departmentPage.year3', subtitle: 'common.departmentPage.subject' },
-  { id: 4, title: 'common.departmentPage.year4', subtitle: 'common.departmentPage.subject' },
-  { id: 5, title: 'common.departmentPage.year5', subtitle: 'common.departmentPage.subject' },
-]
-
 const filteredYears = computed(() => {
   // Year cards use the major's image from the server; YearCard shows its own
   // placeholder when the major has no image_url.
   const img = currentMajor.value?.image_url ?? undefined
-  // English & French: years 1–4 are CEFR levels (A1–B2), year 5 is a normal year.
-  if (isLanguageMajor(props.slug)) {
-    return Array.from({ length: LANGUAGE_LEVEL_COUNT }, (_, i) => {
-      const n = i + 1
-      return {
-        id: n,
-        label: cefrLevel(props.slug, n) ?? t(`common.departmentPage.year${n}`),
-        subtitle: t('common.departmentPage.subject'),
-        img,
-      }
-    })
-  }
-  const subset =
-    props.slug === 'foundation' ? years.filter((y) => y.id <= 2) : years.filter((y) => y.id >= 3)
-  return subset.map((y) => ({
-    id: y.id,
-    label: t(y.title),
-    subtitle: t(y.subtitle),
-    img,
-  }))
+  // Foundation covers years 1–2 and departments 3–5. DFL lists its languages
+  // (English, French) in the same slot — the levels below those are subjects.
+  return yearLevelsForMajor(props.slug).map((n) => {
+    const languageKey = languageLabelKey(props.slug, n)
+    return {
+      id: n,
+      label: languageKey ? t(languageKey) : t(`common.departmentPage.year${n}`),
+      subtitle: t('common.departmentPage.subject'),
+      img: languageKey ? DFL_LANGUAGE_IMAGES[n - 1] : img,
+    }
+  })
 })
+
+// DFL asks for a language instead of an academic year.
+const chooseHeading = computed(() =>
+  isLanguageMajor(props.slug)
+    ? t('common.departmentPage.chooseLanguage')
+    : t('common.departmentPage.chooseYear'),
+)
 
 async function loadCounts() {
   if (!majorsStore.majors.length) await majorsStore.fetchMajors()
@@ -97,7 +93,7 @@ watch(() => props.slug, loadCounts)
 
   <div class="mx-auto flex w-full max-w-6xl flex-col items-center justify-center px-4 gap-6">
     <div class="flex w-full items-start justify-start">
-      <h1 class="w-full text-xl text-black">{{ t('common.departmentPage.chooseYear') }}</h1>
+      <h1 class="w-full text-xl text-black">{{ chooseHeading }}</h1>
     </div>
 
     <div class="grid grid-cols-1 md:grid-cols-3 gap-4">

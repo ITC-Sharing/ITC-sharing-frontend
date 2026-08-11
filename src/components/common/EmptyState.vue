@@ -34,7 +34,7 @@ defineEmits<{ action: [] }>()
       v-if="actionLabel"
       type="button"
       @click="$emit('action')"
-      class="text-[#008CB9] text-sm underline cursor-pointer"
+      class="text-primary text-sm underline cursor-pointer"
     >
       {{ actionLabel }}
     </button>
