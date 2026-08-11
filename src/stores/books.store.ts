@@ -8,10 +8,14 @@ import type {
   IncomingBookRequest,
   MyBook,
   OutgoingBookRequest,
+  Paginated,
 } from '@/types'
 
 export const useBooksStore = defineStore('books', () => {
   const books = ref<Book[]>([])
+  // Full filtered count from the server, for a pager. Equals books.length until
+  // a limit is passed.
+  const booksTotal = ref(0)
   const currentBook = ref<Book | null>(null)
   const loading = ref(false)
   const error = ref<string | null>(null)
@@ -20,14 +24,17 @@ export const useBooksStore = defineStore('books', () => {
   const outgoingRequests = ref<OutgoingBookRequest[]>([])
   const bookStats = ref<BookStats>({ listed: 0, received: 0, pendingIncoming: 0 })
 
-  async function fetchAll(majorId?: string) {
+  async function fetchAll(majorId?: string, page?: number, limit?: number) {
     loading.value = true
     error.value = null
     try {
-      const { data } = await api.get<Book[]>('/books', {
-        params: majorId ? { major_id: majorId } : {},
-      })
-      books.value = data
+      const params: Record<string, string | number> = {}
+      if (majorId) params.major_id = majorId
+      if (page) params.page = page
+      if (limit) params.limit = limit
+      const { data } = await api.get<Paginated<Book>>('/books', { params })
+      books.value = data.items
+      booksTotal.value = data.total
     } catch (e: any) {
       error.value = e.response?.data?.message ?? 'Failed to load books'
     } finally {
@@ -178,6 +185,7 @@ export const useBooksStore = defineStore('books', () => {
 
   return {
     books,
+    booksTotal,
     currentBook,
     loading,
     error,

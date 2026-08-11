@@ -9,14 +9,31 @@ import UploadDocumentDashboard from '@/components/dashboard/UploadDocumentDashbo
 import IconTextButton from '@/components/common/IconTextButton.vue'
 import EmptyState from '@/components/common/EmptyState.vue'
 import Pagination from '@/components/common/Pagination.vue'
+import PageSizeSelect from '@/components/common/PageSizeSelect.vue'
+import SearchButton from '@/components/common/SearchButton.vue'
+import FilterButton from '@/components/common/FilterButton.vue'
 
 const { t } = useI18n({ useScope: 'global' })
 const docs = useDocumentsStore()
 const auth = useAuthStore()
 const showUpload = ref(false)
 
-const PAGE_SIZE = 10
 const page = ref(1)
+const pageSize = ref(10)
+const searchQuery = ref('')
+const selectedType = ref('')
+
+const docTypes = [
+  { label: 'All', value: '' },
+  { label: 'Note', value: 'Note' },
+  { label: 'TD', value: 'TD' },
+  { label: 'Examination paper', value: 'Examination paper' },
+  { label: 'TP', value: 'TP' },
+  { label: 'Project', value: 'Project' },
+  { label: 'Lesson', value: 'Lesson' },
+  { label: 'Thesis', value: 'Thesis' },
+  { label: 'Other', value: 'Other' },
+]
 
 // Supabase can return the embedded relation as an object or a single-item array
 const userMajor = computed(() => {
@@ -34,8 +51,10 @@ function load() {
   docs.fetchAll({
     major_id: majorId.value,
     year_level: yearLevel.value,
+    doc_type: selectedType.value || undefined,
+    search: searchQuery.value || undefined,
     page: page.value,
-    limit: PAGE_SIZE,
+    limit: pageSize.value,
   })
 }
 
@@ -47,6 +66,22 @@ async function onUploaded() {
 
 // Fire once now and again whenever the user (major/year) loads in or the page changes
 watch([majorId, yearLevel, page], load, { immediate: true })
+
+// A filter/search/size change narrows the result set, so go back to page 1.
+// The page watcher then reloads, unless we're already on page 1 → load directly.
+function resetAndLoad() {
+  if (page.value === 1) load()
+  else page.value = 1
+}
+
+watch([selectedType, pageSize], resetAndLoad)
+
+// Debounce search to avoid a request on every keystroke.
+let searchTimer: ReturnType<typeof setTimeout>
+watch(searchQuery, () => {
+  clearTimeout(searchTimer)
+  searchTimer = setTimeout(resetAndLoad, 300)
+})
 </script>
 
 <template>
@@ -65,18 +100,27 @@ watch([majorId, yearLevel, page], load, { immediate: true })
             }}
           </p>
         </div>
-        <IconTextButton :text="t('dashboard.documents.upload')" @click="showUpload = true">
-          <template #icon>
-            <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="2"
-                d="M12 4v16m8-8H4"
-              />
-            </svg>
-          </template>
-        </IconTextButton>
+        <div class="flex w-full md:w-auto flex-wrap items-center gap-3">
+          <!-- Fixed width so the search doesn't grow and force the row to wrap. -->
+          <div class="w-full sm:w-64">
+            <SearchButton v-model="searchQuery" :placeholder="t('common.nav.search')" />
+          </div>
+          <div class="w-40 shrink-0">
+            <FilterButton v-model="selectedType" placeholder="All" :options="docTypes" />
+          </div>
+          <IconTextButton :text="t('dashboard.documents.upload')" @click="showUpload = true">
+            <template #icon>
+              <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M12 4v16m8-8H4"
+                />
+              </svg>
+            </template>
+          </IconTextButton>
+        </div>
       </div>
 
       <!-- Loading -->
@@ -108,12 +152,27 @@ watch([majorId, yearLevel, page], load, { immediate: true })
           </div>
         </div>
 
-        <Pagination
-          v-model:page="page"
-          :total="docs.total"
-          :page-size="PAGE_SIZE"
-          scroll-to-top
-        />
+        <!-- Footer: pager centered, page size on the same row at the right.
+             Hidden entirely when the whole list fits in the smallest page size
+             (≤10) — there's nothing to paginate and no size worth choosing. -->
+        <div
+          v-if="docs.total > 10"
+          class="mt-8 grid grid-cols-[1fr_auto_1fr] items-center gap-4"
+        >
+          <Pagination
+            class="col-start-2 justify-self-center"
+            v-model:page="page"
+            :total="docs.total"
+            :page-size="pageSize"
+            scroll-to-top
+          />
+          <PageSizeSelect
+            class="col-start-3 justify-self-end"
+            v-model="pageSize"
+            :options="[10, 20, 30, 50]"
+            direction="up"
+          />
+        </div>
       </template>
     </div>
     <UploadDocumentDashboard v-if="showUpload" @close="showUpload = false" @uploaded="onUploaded" />

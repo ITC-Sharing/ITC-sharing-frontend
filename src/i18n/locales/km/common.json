@@ -40,7 +40,8 @@
     "default": "លំនាំដើម",
     "byName": "តម្រៀបតាមអក្សរ A-Z",
     "bySemester1": "តម្រៀបតាមឆមាស 1",
-    "bySemester2": "តម្រៀបតាមឆមាស 2"
+    "bySemester2": "តម្រៀបតាមឆមាស 2",
+    "perPage": "បង្ហាញក្នុងមួយទំព័រ"
   },
   "subjectCreateModal": {
     "title": "បន្ថែមមុខវិជ្ជា",
