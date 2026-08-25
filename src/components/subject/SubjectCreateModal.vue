@@ -3,6 +3,12 @@ import { computed, onBeforeUnmount, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import SelectDropdown from '@/components/common/SelectDropdown.vue'
 import { languageLabelKey } from '@/utils/format'
+import {
+  readSubjectDraft,
+  subjectDraftContext,
+  writeSubjectDraft,
+  clearSubjectDraft,
+} from '@/composables/subjectDraft'
 
 const { t } = useI18n({ useScope: 'global' })
 
@@ -52,12 +58,53 @@ const departmentOptions = computed(() => props.departments)
 const yearDisplay = computed(() => {
   const acronym = departmentOptions.value.find((d) => d.value === departmentId.value)?.label
   const languageKey = languageLabelKey(acronym, academicYear.value)
-  return languageKey ? t(languageKey) : `${t('common.subjectCreateModal.year')} ${academicYear.value}`
+  return languageKey
+    ? t(languageKey)
+    : `${t('common.subjectCreateModal.year')} ${academicYear.value}`
 })
 const semesterOptions = computed(() => [
   { label: `${t('common.subjectCreateModal.semesterLabel')} 1`, value: '1' },
   { label: `${t('common.subjectCreateModal.semesterLabel')} 2`, value: '2' },
 ])
+
+// ── Draft ──────────────────────────────────────────────────────────────────
+// Closing the modal — deliberately, with Esc, or by a stray click on the
+// backdrop — keeps what was typed, for this page session only. A draft belongs
+// to the page it was started on, since the department and year come from there.
+const draftContext = computed(() => subjectDraftContext(props.defaultDepartmentId, props.yearLevel))
+
+function saveDraft() {
+  const isBlank = !subjectName.value.trim() && !subjectImage.value
+  if (isBlank) {
+    clearSubjectDraft(draftContext.value)
+    return
+  }
+  writeSubjectDraft(draftContext.value, {
+    name: subjectName.value,
+    departmentId: departmentId.value,
+    academicYear: academicYear.value,
+    semester: semester.value,
+    image: subjectImage.value,
+  })
+}
+
+function restoreDraft() {
+  const draft = readSubjectDraft(draftContext.value)
+  if (!draft) return
+  subjectName.value = draft.name
+  departmentId.value = draft.departmentId
+  academicYear.value = draft.academicYear
+  semester.value = draft.semester
+  // Rebuilds the preview URL rather than caching one that may be revoked.
+  setSelectedFile(draft.image)
+}
+
+// Saved on every change rather than debounced: the draft is a handful of
+// strings in memory, and a pending timer could otherwise be lost when the modal
+// unmounts, or fire after a successful create had already retired the draft.
+watch([subjectName, departmentId, academicYear, semester, subjectImage], () => {
+  if (props.open) saveDraft()
+})
 
 function resetForm() {
   subjectName.value = ''
@@ -79,9 +126,13 @@ watch(
   (isOpen) => {
     if (isOpen) {
       resetForm()
+      restoreDraft()
     }
   },
 )
+
+// Mounted already-open (the parent uses v-if), so the watcher above won't run.
+restoreDraft()
 
 watch(
   () => [props.defaultDepartmentId, props.yearLevel, props.departments],
@@ -158,7 +209,6 @@ function validateSubjectName() {
   return true
 }
 
-
 function handleNameBlur() {
   nameTouched.value = true
   validateSubjectName()
@@ -169,8 +219,6 @@ function handleNameInput() {
     validateSubjectName()
   }
 }
-
-
 
 function handleDrop(event: DragEvent) {
   event.preventDefault()
@@ -303,10 +351,7 @@ onBeforeUnmount(() => {
                 >{{ t('common.subjectCreateModal.semesterLabel') }}
                 <span class="text-red-500">*</span></label
               >
-              <SelectDropdown
-                v-model="semester"
-                :options="semesterOptions"
-              />
+              <SelectDropdown v-model="semester" :options="semesterOptions" />
             </div>
           </div>
 

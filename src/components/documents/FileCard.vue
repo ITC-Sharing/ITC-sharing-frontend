@@ -8,11 +8,14 @@ import type { UploadFile } from '@/types'
 const props = defineProps<{
   file: UploadFile
   fallbackName?: string | null
+  /** Only the upload's owner gets the Delete item. */
+  canDelete?: boolean
 }>()
 
 const emit = defineEmits<{
   preview: [file: UploadFile]
   download: [file: UploadFile]
+  delete: [file: UploadFile]
 }>()
 
 const { t } = useI18n({ useScope: 'global' })
@@ -20,6 +23,10 @@ const { t } = useI18n({ useScope: 'global' })
 const icon = computed(() => getFileIcon(props.file.original_name))
 const typeLabel = computed(() => fileExtension(props.file.original_name).toUpperCase() || icon.value.label)
 const displayName = computed(() => props.file.original_name?.trim() || props.fallbackName || 'Untitled')
+
+// Only the uploader and admins are ever served a non-active file.
+const isPending = computed(() => props.file.status === 'pending')
+const isRejected = computed(() => props.file.status === 'rejected')
 
 const menuOpen = ref(false)
 
@@ -31,6 +38,10 @@ function onDownload() {
   menuOpen.value = false
   emit('download', props.file)
 }
+function onDelete() {
+  menuOpen.value = false
+  emit('delete', props.file)
+}
 </script>
 
 <template>
@@ -39,7 +50,8 @@ function onDownload() {
   >
     <!-- Thumbnail: real image preview, else file-type placeholder -->
     <div
-      class="aspect-4/3 w-full overflow-hidden rounded-xl border border-gray-100 bg-gray-50 cursor-pointer"
+      class="relative aspect-4/3 w-full overflow-hidden rounded-xl border border-gray-100 bg-gray-50 cursor-pointer"
+      :class="(isPending || isRejected) && 'opacity-60'"
       @click="emit('preview', file)"
     >
       <FilePreviewThumb
@@ -61,6 +73,14 @@ function onDownload() {
         <p class="mt-0.5 text-xs text-gray-400">
           {{ formatFileSize(file.file_size_kb ?? 0) }} · {{ typeLabel }}
         </p>
+        <span
+          v-if="isPending"
+          class="mt-1 inline-block rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-medium text-amber-700"
+        >{{ t('document.documentDetailsPage.badgePending') }}</span>
+        <span
+          v-else-if="isRejected"
+          class="mt-1 inline-block rounded-full bg-red-100 px-2 py-0.5 text-[11px] font-medium text-red-700"
+        >{{ t('document.documentDetailsPage.badgeRejected') }}</span>
       </div>
 
       <div class="relative shrink-0">
@@ -88,6 +108,11 @@ function onDownload() {
               class="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 transition-colors"
               @click.stop="onDownload"
             >{{ t('document.documentDetailsPage.download') }}</button>
+            <button
+              v-if="canDelete"
+              class="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 transition-colors"
+              @click.stop="onDelete"
+            >{{ t('document.documentDetailsPage.delete') }}</button>
           </div>
         </template>
       </div>

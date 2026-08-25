@@ -16,7 +16,15 @@ type Doc = {
   file_size_kb: number
   file_url: string | null
   original_name: string | null
+  /** The UPLOAD's status — the same on every row of a group. */
   status: string
+  /** This FILE's own status. Only meaningful when review_scope is 'file'. */
+  file_status: string
+  /**
+   * 'group' for a pending upload reviewed as a whole; 'file' for files added to
+   * an upload that was already approved, which are reviewed one at a time.
+   */
+  review_scope: 'group' | 'file'
   uploaded_at: string
   users: { id: string; first_name: string; last_name: string } | null
   majors: { id: string; acronym: string } | null
@@ -34,7 +42,17 @@ const uploader = computed(() => docs.value[0]?.users)
 const major = computed(() => docs.value[0]?.majors)
 const subject = computed(() => docs.value[0]?.subjects)
 
-const pendingCount = computed(() => docs.value.filter((d) => d.status === 'pending').length)
+// What is actually up for review here: every file of a pending upload, or just
+// the pending files of an upload that is already approved.
+const reviewScope = computed<'group' | 'file'>(() => docs.value[0]?.review_scope ?? 'group')
+const isAddedFiles = computed(() => reviewScope.value === 'file')
+
+const pendingDocs = computed(() =>
+  isAddedFiles.value
+    ? docs.value.filter((d) => d.file_status === 'pending')
+    : docs.value.filter((d) => d.status === 'pending'),
+)
+const pendingCount = computed(() => pendingDocs.value.length)
 
 async function load() {
   loading.value = true
@@ -51,10 +69,17 @@ const actioning = ref<'approve' | 'reject' | null>(null)
 async function approveAll() {
   actioning.value = 'approve'
   try {
-    await api.patch(`/admin/documents/group/${groupId}/approve`)
-    docs.value.forEach((d) => {
-      if (d.status === 'pending') d.status = 'active'
-    })
+    if (isAddedFiles.value) {
+      for (const doc of pendingDocs.value) {
+        await api.patch(`/admin/documents/files/${doc.id}/approve`)
+        doc.file_status = 'active'
+      }
+    } else {
+      await api.patch(`/admin/documents/group/${groupId}/approve`)
+      docs.value.forEach((d) => {
+        if (d.status === 'pending') d.status = 'active'
+      })
+    }
     router.push({ name: 'admin', query: { tab: 'approvals' } })
   } finally {
     actioning.value = null
@@ -71,10 +96,17 @@ async function confirmReject() {
   rejecting.value = true
   try {
     const payload = rejectReason.value.trim() ? { reason: rejectReason.value.trim() } : {}
-    await api.patch(`/admin/documents/group/${groupId}/reject`, payload)
-    docs.value.forEach((d) => {
-      if (d.status === 'pending') d.status = 'rejected'
-    })
+    if (isAddedFiles.value) {
+      for (const doc of pendingDocs.value) {
+        await api.patch(`/admin/documents/files/${doc.id}/reject`, payload)
+        doc.file_status = 'rejected'
+      }
+    } else {
+      await api.patch(`/admin/documents/group/${groupId}/reject`, payload)
+      docs.value.forEach((d) => {
+        if (d.status === 'pending') d.status = 'rejected'
+      })
+    }
     rejectModal.value = null
     rejectReason.value = ''
     router.push({ name: 'admin', query: { tab: 'approvals' } })

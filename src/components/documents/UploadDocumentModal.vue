@@ -198,9 +198,7 @@ const academicYearOptions = computed(() => {
 // upload aimed at it would match no viewer at all. A doc that BELONGS to it
 // carries no audience either: the whole field is hidden and left empty, which
 // the backend reads as visible to everyone.
-const docMajorAcronym = computed(
-  () => majors.majors.find((m) => m.id === form.major_id)?.acronym,
-)
+const docMajorAcronym = computed(() => majors.majors.find((m) => m.id === form.major_id)?.acronym)
 const isLanguageDoc = computed(() => isLanguageMajor(docMajorAcronym.value))
 
 // DFL's year_level holds the language; its CEFR levels are subjects. The field
@@ -253,8 +251,7 @@ function addAudience(choice: { everyone: true } | AudienceEntry) {
     return
   }
   const exists = form.audience.some(
-    (a: AudienceEntry) =>
-      a.major_id === choice.major_id && a.year_level === choice.year_level,
+    (a: AudienceEntry) => a.major_id === choice.major_id && a.year_level === choice.year_level,
   )
   if (!exists) form.audience.push(choice)
   // A department + year is a restriction, so it replaces "Everyone".
@@ -310,7 +307,7 @@ function saveDraft() {
     !audienceEveryone.value &&
     !expiryChosen.value
   if (isBlank) {
-    clearDraft()
+    clearDraft(draftContext.value)
     return
   }
   writeDraft(draftContext.value, {
@@ -616,10 +613,7 @@ async function submit() {
 
   // The bytes are already on the server — send the handles.
   const formData = new FormData()
-  formData.append(
-    'staged_file_ids',
-    JSON.stringify(uploadedItems.value.map((i) => i.id)),
-  )
+  formData.append('staged_file_ids', JSON.stringify(uploadedItems.value.map((i) => i.id)))
   formData.append('title', form.title)
   formData.append('doc_type', form.doc_type)
   if (form.year_level) formData.append('year_level', form.year_level)
@@ -634,7 +628,7 @@ async function submit() {
 
   try {
     await docs.upload(formData)
-    clearDraft()
+    clearDraft(draftContext.value)
     showToast(t('common.toast.uploadSuccess'))
     emit('uploaded')
     emit('close')
@@ -665,7 +659,13 @@ async function submit() {
           aria-label="Close"
           @click="emit('close')"
         >
-          <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <svg
+            class="h-5 w-5"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            viewBox="0 0 24 24"
+          >
             <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
           </svg>
         </button>
@@ -680,7 +680,11 @@ async function submit() {
 
         <!-- File drop zone -->
         <div class="space-y-3">
+          <!-- The full drop zone until the first file lands; after that it
+               shrinks to the "Add" tile at the head of the row, so the files
+               themselves get the space. -->
           <label
+            v-if="!stagedItems.length"
             class="flex cursor-pointer flex-col items-center justify-center rounded-2xl border-2 border-dashed px-5 py-6 text-center transition"
             :class="
               isDragActive
@@ -714,7 +718,11 @@ async function submit() {
                   stroke-linejoin="round"
                 />
                 <polyline points="14 2 14 8 20 8" stroke-linecap="round" stroke-linejoin="round" />
-                <path d="M12 17v-5m-2.5 2.5L12 12l2.5 2.5" stroke-linecap="round" stroke-linejoin="round" />
+                <path
+                  d="M12 17v-5m-2.5 2.5L12 12l2.5 2.5"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                />
               </svg>
             </div>
             <p class="text-sm text-gray-600">
@@ -726,12 +734,53 @@ async function submit() {
             <p class="mt-1 text-xs text-gray-400">
               {{ t('document.documentUploadModal.fileTypes') }}
             </p>
-          </label>          <!-- Attachments: one square tile each — a thumbnail for images, the
+          </label>
+
+          <!-- Attachments: one square tile each — a thumbnail for images, the
                type-coloured tile otherwise. Uploading starts when picked. -->
           <ul
             v-if="stagedItems.length"
             class="flex items-start gap-2.5 overflow-x-auto scrollbar-hide pb-2 pt-2"
+            @dragover="handleDragOver"
+            @dragleave="handleDragLeave"
+            @drop="handleDrop"
           >
+            <!-- Add more: same 64px square as a file tile. -->
+            <li class="shrink-0">
+              <label
+                class="flex h-16 w-16 cursor-pointer flex-col items-center justify-center gap-1 rounded-2xl border-2 border-dashed text-center transition"
+                :class="
+                  isDragActive
+                    ? 'border-primary bg-[#F3F8FF] text-primary'
+                    : 'border-[#D3D3D3] text-gray-400 hover:border-primary hover:bg-[#F3F8FF] hover:text-primary'
+                "
+              >
+                <input
+                  type="file"
+                  class="hidden"
+                  accept=".pdf,.doc,.docx,.ppt,.pptx,.jpg,.jpeg,.png,.zip,.rar"
+                  multiple
+                  @change="onFileChange"
+                />
+                <svg
+                  class="h-5 w-5"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.8"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    d="M12 16V4m-4 4l4-4 4 4M4 18v1a1 1 0 001 1h14a1 1 0 001-1v-1"
+                  />
+                </svg>
+                <span class="text-[11px] font-medium">
+                  {{ t('document.documentUploadModal.addMoreFiles') }}
+                </span>
+              </label>
+            </li>
+
             <li
               v-for="item in stagedItems"
               :key="`${item.name}-${item.sizeKb}`"
@@ -913,8 +962,9 @@ async function submit() {
 
         <!-- Subject -->
         <div v-if="form.major_id" class="space-y-2">
-          <label class="text-sm font-medium text-black">{{
-            t('document.documentUploadModal.subjectLabel') }} <span class="text-red-500">*</span>
+          <label class="text-sm font-medium text-black"
+            >{{ t('document.documentUploadModal.subjectLabel') }}
+            <span class="text-red-500">*</span>
           </label>
           <SelectDropdown
             v-model="form.subject_id"
@@ -1003,10 +1053,7 @@ async function submit() {
           <div class="flex gap-2 overflow-x-auto scrollbar-hide">
             <!-- Reveal the custom date picker -->
             <ChipButton :active="showCustomDate" @click="toggleCustomDate()">+</ChipButton>
-            <ChipButton
-              :active="!form.expires_at && !showCustomDate"
-              @click="chooseNever"
-            >
+            <ChipButton :active="!form.expires_at && !showCustomDate" @click="chooseNever">
               {{ t('document.documentUploadModal.expiresNever') }}
             </ChipButton>
             <ChipButton
