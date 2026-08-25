@@ -25,8 +25,25 @@ function flushQueue(error: unknown, token: string | null) {
   queue = []
 }
 
+// ─── Envelope ────────────────────────────────────────────────────────────────
+// The API wraps every success in `{ success, data, message }` (see the backend's
+// TransformInterceptor). Unwrapping it here keeps `const { data } = await
+// api.get(...)` meaning the payload, so no call site has to know the envelope
+// exists. Anything that isn't the envelope is passed through untouched.
+function isEnvelope(body: unknown): body is { success: true; data: unknown } {
+  return (
+    typeof body === 'object' &&
+    body !== null &&
+    (body as { success?: unknown }).success === true &&
+    'data' in body
+  )
+}
+
 api.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    if (isEnvelope(response.data)) response.data = response.data.data
+    return response
+  },
   async (error) => {
     const original = error.config as { _retry?: boolean; url?: string; headers: Record<string, string> }
     const status = error.response?.status
@@ -54,11 +71,13 @@ api.interceptors.response.use(
 
     isRefreshing = true
     try {
-      const { data } = await axios.post(
+      // Raw axios, so the envelope isn't unwrapped by the interceptor above.
+      const { data: body } = await axios.post(
         `${import.meta.env.VITE_API_URL}/auth/refresh`,
         {},
         { withCredentials: true },
       )
+      const data = isEnvelope(body) ? (body.data as { token: string }) : body
       const newToken = data.token as string
       localStorage.setItem('token', newToken)
       flushQueue(null, newToken)

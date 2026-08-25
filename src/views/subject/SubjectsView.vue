@@ -3,12 +3,14 @@ import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { useSubjectsStore } from '@/stores/subjects.store'
+import { useToast } from '@/composables/useToast'
 import { useMajorsStore } from '@/stores/majors.store'
 import SubjectCard from '@/components/subject/SubjectCard.vue'
 import SearchButton from '@/components/common/SearchButton.vue'
 import FilterButton from '@/components/common/FilterButton.vue'
 import AddnewSubject from '@/components/common/IconTextButton.vue'
 import SubjectCreateModal from '@/components/subject/SubjectCreateModal.vue'
+import { clearSubjectDraft, subjectDraftContext } from '@/composables/subjectDraft'
 import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
 import Breadcrumb from '@/components/common/Breadcrumb.vue'
 import { isLanguageMajor, languageLabelKey } from '@/utils/format'
@@ -16,6 +18,7 @@ import { isLanguageMajor, languageLabelKey } from '@/utils/format'
 const route = useRoute()
 const { t } = useI18n({ useScope: 'global' })
 const subjectsStore = useSubjectsStore()
+const { showToast } = useToast()
 const majorsStore = useMajorsStore()
 
 type FilterValue = 'name' | 'semester1' | 'semester2'
@@ -25,7 +28,6 @@ const yearLevel = Number(route.params.year)
 const searchQuery = ref('')
 const selectedFilter = ref<FilterValue>('name')
 const showAddSubjectModal = ref(false)
-const submitSuccess = ref(false)
 
 // Match by lowercased acronym so every major works — no hardcoded slug map to
 // keep in sync.
@@ -94,9 +96,11 @@ async function handleCreateSubject(payload: {
 }) {
   try {
     await subjectsStore.createSubject(payload)
+    // Only a successful create retires the draft — a failed one leaves it so
+    // reopening the modal still has everything that was typed.
+    clearSubjectDraft(subjectDraftContext(currentMajor.value?.id ?? '', yearLevel))
     showAddSubjectModal.value = false
-    submitSuccess.value = true
-    setTimeout(() => (submitSuccess.value = false), 4000)
+    showToast(t('common.subjectPage.submitmsg'))
   } catch {
     // error shown via subjectsStore.createError
   }
@@ -125,42 +129,9 @@ onMounted(async () => {
         />
       </div>
 
-      <!-- Submit success toast -->
-      <Transition
-        enter-active-class="transition ease-out duration-300"
-        enter-from-class="opacity-0 -translate-y-2"
-        enter-to-class="opacity-100 translate-y-0"
-        leave-active-class="transition ease-in duration-200"
-        leave-from-class="opacity-100"
-        leave-to-class="opacity-0"
-      >
-        <div
-          v-if="submitSuccess"
-          class="mb-4 flex items-center gap-3 rounded-xl bg-green-50 border border-green-200 px-4 py-3 text-sm text-green-700"
-        >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            class="h-5 w-5 shrink-0 text-green-500"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-          >
-            <path
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              stroke-width="2"
-              d="M5 13l4 4L19 7"
-            />
-          </svg>
-          {{ t('common.subjectPage.submitmsg') }}
-        </div>
-      </Transition>
-
       <!-- Header -->
       <div class="flex md:justify-between md:flex-row flex-col justify-center mb-6 gap-3 md:gap-0">
-        <h1 class="text-3xl font-bold text-black">
-          {{ yearLabel }} - {{ currentMajor?.acronym }}
-        </h1>
+        <h1 class="text-3xl font-bold text-black">{{ yearLabel }} - {{ currentMajor?.acronym }}</h1>
         <div class="flex gap-3 md:flex-row flex-col">
           <SearchButton v-model="searchQuery" placeholder="ស្វែងរក" />
 

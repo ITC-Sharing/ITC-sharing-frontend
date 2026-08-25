@@ -22,6 +22,17 @@ export interface UploadFile {
   /** Null on legacy rows written before the size was recorded. */
   file_size_kb: number | null
   original_name: string | null
+  /**
+   * Review state of this file on its own. A file added to an upload that was
+   * already approved is 'pending' until a moderator clears it — the upload
+   * stays in the feed, only the file is hidden.
+   *
+   * Always 'active' in the feed and for anyone but the uploader/admins, who are
+   * the only ones served a non-active file.
+   */
+  status: UploadStatus
+  /** Why a moderator turned this file down. Only ever set when rejected. */
+  rejection_reason: string | null
 }
 
 /** `GET /documents/mine` omits `file_url` — the dashboard only lists names and sizes. */

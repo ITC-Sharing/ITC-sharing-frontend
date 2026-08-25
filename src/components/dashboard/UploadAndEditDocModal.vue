@@ -677,25 +677,32 @@ onBeforeUnmount(() => {
 
         <!-- File drop zone (also adds files to an existing upload) -->
         <div class="space-y-3">
-          <label
+          <!-- Kept outside the drop zone: that zone disappears once files are
+               attached, and the "Add" tile still needs this input to click. -->
+          <input
+            ref="fileInput"
+            type="file"
+            class="hidden"
+            accept=".pdf,.doc,.docx,.ppt,.pptx,.jpg,.jpeg,.png,.zip,.rar"
+            multiple
+            @change="onFileChange"
+          />
+
+          <!-- The full drop zone only while nothing is attached; after that it
+               shrinks to the "Add" tile beside the files. -->
+          <div
+            v-if="!stagedItems.length && !existingFiles.length"
             class="flex cursor-pointer flex-col items-center justify-center rounded-2xl border-2 border-dashed px-5 py-6 text-center transition"
             :class="
               isDragActive
                 ? 'border-primary bg-[#F3F8FF]'
                 : 'border-[#D3D3D3] bg-[#FAFAFA] hover:border-primary hover:bg-[#F3F8FF]'
             "
+            @click="fileInput?.click()"
             @dragover="handleDragOver"
             @dragleave="handleDragLeave"
             @drop="handleDrop"
           >
-            <input
-              ref="fileInput"
-              type="file"
-              class="hidden"
-              accept=".pdf,.doc,.docx,.ppt,.pptx,.jpg,.jpeg,.png,.zip,.rar"
-              multiple
-              @change="onFileChange"
-            />
             <div
               class="mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 text-primary"
             >
@@ -728,7 +735,7 @@ onBeforeUnmount(() => {
             <p class="mt-1 text-xs text-gray-400">
               {{ t('document.documentUploadModal.fileTypes') }}
             </p>
-          </label>
+          </div>
 
           <ul
             v-if="existingFiles.length"
@@ -778,9 +785,43 @@ onBeforeUnmount(() => {
             {{ t('document.documentUploadModal.newFiles') }}
           </p>
           <ul
-            v-if="stagedItems.length"
+            v-if="stagedItems.length || existingFiles.length"
             class="flex items-start gap-2.5 overflow-x-auto scrollbar-hide px-1.5 pb-1 pt-2"
+            @dragover="handleDragOver"
+            @dragleave="handleDragLeave"
+            @drop="handleDrop"
           >
+            <!-- Add more: same 64px square as a file tile. -->
+            <li class="shrink-0">
+              <button
+                type="button"
+                class="flex h-16 w-16 flex-col items-center justify-center gap-1 rounded-2xl border-2 border-dashed text-center transition hover:cursor-pointer"
+                :class="
+                  isDragActive
+                    ? 'border-primary bg-[#F3F8FF] text-primary'
+                    : 'border-[#D3D3D3] text-gray-400 hover:border-primary hover:bg-[#F3F8FF] hover:text-primary'
+                "
+                @click="fileInput?.click()"
+              >
+                <svg
+                  class="h-5 w-5"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.8"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    d="M12 16V4m-4 4l4-4 4 4M4 18v1a1 1 0 001 1h14a1 1 0 001-1v-1"
+                  />
+                </svg>
+                <span class="text-[11px] font-medium">
+                  {{ t('document.documentUploadModal.addMoreFiles') }}
+                </span>
+              </button>
+            </li>
+
             <li
               v-for="item in stagedItems"
               :key="`${item.name}-${item.sizeKb}`"
