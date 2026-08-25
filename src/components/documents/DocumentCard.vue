@@ -7,6 +7,7 @@ import { useDocumentsStore } from '@/stores/documents.store'
 import { formatRelativeDate } from '@/utils/format'
 import type { Upload } from '@/types'
 import ConfirmDeleteModal from '@/components/common/ConfirmDeleteModal.vue'
+import FolderIcon from '@/components/common/FolderIcon.vue'
 
 const { t } = useI18n({ useScope: 'global' })
 const auth = useAuthStore()
@@ -104,60 +105,54 @@ function goToDetails() {
       </div>
 
       <div class="group relative">
-      <button
-        @click.stop="handleDelete"
-        class="text-gray-300 hover:text-red-500 transition-colors cursor-pointer"
-        :aria-label="t('document.DocumentCard.deleteConfirm')"
-      >
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          class="h-4 w-4"
-          fill="none"
-          viewBox="0 0 24 24"
-          stroke="currentColor"
+        <button
+          @click.stop="handleDelete"
+          class="text-gray-300 hover:text-red-500 transition-colors cursor-pointer"
+          :aria-label="t('document.DocumentCard.deleteConfirm')"
         >
-          <path
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            stroke-width="2"
-            d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M9 7h6m-7 0a1 1 0 01-1-1V5a1 1 0 011-1h6a1 1 0 011 1v1a1 1 0 01-1 1H9z"
-          />
-        </svg>
-      </button>
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            class="h-4 w-4"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M9 7h6m-7 0a1 1 0 01-1-1V5a1 1 0 011-1h6a1 1 0 011 1v1a1 1 0 01-1 1H9z"
+            />
+          </svg>
+        </button>
 
-      <!-- Tooltip: fades in on hover. pointer-events-none so it never blocks
+        <!-- Tooltip: fades in on hover. pointer-events-none so it never blocks
            the click; right-aligned so it can't overflow the card edge. -->
-      <span
-        class="pointer-events-none absolute right-0 top-full mt-1 z-10 whitespace-nowrap rounded-md bg-gray-900 px-2 py-1 text-xs font-medium text-white opacity-0 shadow-md transition-opacity duration-150 group-hover:opacity-100"
-      >
-        {{ t('document.DocumentCard.deleteConfirm') }}
-      </span>
+        <span
+          class="pointer-events-none absolute right-0 top-full mt-1 z-10 whitespace-nowrap rounded-md bg-gray-900 px-2 py-1 text-xs font-medium text-white opacity-0 shadow-md transition-opacity duration-150 group-hover:opacity-100"
+        >
+          {{ t('document.DocumentCard.deleteConfirm') }}
+        </span>
       </div>
     </div>
 
     <!-- Thumbnail -->
     <div class="flex flex-col items-center justify-center pb-2 gap-1">
-      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640" class="h-25 w-30">
-        <path
-          fill="#1D92BC"
-          d="M128 512L512 512C547.3 512 576 483.3 576 448L576 208C576 172.7 547.3 144 512 144L362.7 144C355.8 144 349 141.8 343.5 137.6L305.1 108.8C294 100.5 280.5 96 266.7 96L128 96C92.7 96 64 124.7 64 160L64 448C64 483.3 92.7 512 128 512z"
-        />
-      </svg>
+      <FolderIcon class="h-25 w-30 text-primary" />
     </div>
 
     <div class="h-px bg-[#C7C7C7]"></div>
 
     <!-- Title -->
-    <h2
-      class="mt-3 truncate text-lg font-semibold leading-tight text-black"
-      :title="doc.title"
-    >
+    <h2 class="mt-3 truncate text-lg font-semibold leading-tight text-black" :title="doc.title">
       {{ doc.title }}
     </h2>
 
     <!-- Subject -->
     <p v-if="doc.subjects" class="text-[12px] text-gray-400 mt-1">
-      <span class="uppercase">{{ doc.subjects.acronym }} &nbsp;•&nbsp; {{ doc.academic_year }}</span>
+      <span class="uppercase"
+        >{{ doc.subjects.acronym }} &nbsp;•&nbsp; {{ doc.academic_year }}</span
+      >
     </p>
 
     <!-- Description
@@ -168,7 +163,8 @@ function goToDetails() {
     <div class="mt-2 flex flex-wrap gap-1">
       <span
         class="inline-flex items-center rounded-full px-4 py-1 text-xs leading-none border-[#1AA8E5] bg-[#B8EDFF] text-[#0082B8]"
-      >{{ doc.doc_type }}</span>
+        >{{ doc.doc_type }}</span
+      >
     </div>
 
     <!-- Author + date — mt-auto pins it to the bottom of the card. -->

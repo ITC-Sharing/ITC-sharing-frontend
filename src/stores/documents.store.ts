@@ -166,6 +166,11 @@ export const useDocumentsStore = defineStore('documents', () => {
     }
   }
 
+  /**
+   * Attach files to an existing upload. `needs_review` comes back true when the
+   * upload was already approved: the new files land hidden until a moderator
+   * clears them, while the document itself stays in the feed.
+   */
   async function addFiles(
     uploadId: string,
     files: File[],
@@ -173,7 +178,10 @@ export const useDocumentsStore = defineStore('documents', () => {
   ) {
     const formData = new FormData()
     files.forEach((f) => formData.append('files', f))
-    const { data } = await api.post(`/documents/${uploadId}/files`, formData, {
+    const { data } = await api.post<{
+      files: unknown[]
+      needs_review: boolean
+    }>(`/documents/${uploadId}/files`, formData, {
       headers: { 'Content-Type': 'multipart/form-data' },
       onUploadProgress: (e) => {
         if (onProgress && e.total) onProgress(Math.round((e.loaded / e.total) * 100))
@@ -190,8 +198,29 @@ export const useDocumentsStore = defineStore('documents', () => {
     return data
   }
 
+  /**
+   * Remove one file from an upload. Removing the last one deletes the upload
+   * server-side, so the reply is echoed back — callers navigate away on
+   * `upload_deleted` rather than refetching an upload that is gone.
+   */
   async function removeFile(fileId: string) {
-    await api.delete(`/documents/files/${fileId}`)
+    const { data } = await api.delete<{
+      message: string
+      upload_deleted: boolean
+      upload_id: string
+    }>(`/documents/files/${fileId}`)
+
+    if (data.upload_deleted) {
+      documents.value = documents.value.filter((d) => d.id !== data.upload_id)
+      if (currentUpload.value?.id === data.upload_id) currentUpload.value = null
+    } else if (currentUpload.value?.id === data.upload_id) {
+      currentUpload.value = {
+        ...currentUpload.value,
+        documents: currentUpload.value.documents.filter((f) => f.id !== fileId),
+      }
+    }
+
+    return data
   }
 
   async function deleteDocument(uploadId: string) {
