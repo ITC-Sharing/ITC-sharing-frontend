@@ -18,6 +18,17 @@ const auth = useAuthStore()
 
 const myDocs = computed(() => docs.documents)
 
+// Time-of-day greeting, from the viewer's own clock — the server's timezone is
+// irrelevant to whether it is morning where they are sitting.
+const greeting = computed(() => {
+  const hour = new Date().getHours()
+  if (hour < 12) return t('dashboard.activity.goodMorning')
+  if (hour < 18) return t('dashboard.activity.goodAfternoon')
+  return t('dashboard.activity.goodEvening')
+})
+
+const firstName = computed(() => auth.user?.first_name || '')
+
 // Rows shown in the "recent uploads" panel — also the fetch limit.
 const RECENT_COUNT = 3
 
@@ -69,11 +80,35 @@ onMounted(() => {
 </script>
 
 <template>
+  <!-- Greeting -->
+  <div class="flex flex-wrap items-start justify-between gap-4">
+    <div>
+      <h1 class="text-2xl sm:text-3xl font-bold text-[var(--dash-text)]">
+        {{ greeting }}<template v-if="firstName">, {{ firstName }}</template>
+      </h1>
+      <p class="mt-1 text-sm text-[var(--dash-muted)]">
+        {{ t('dashboard.activity.greetingSubtitle') }}
+      </p>
+    </div>
+    <button
+      @click="goToDocuments"
+      class="flex items-center gap-2 rounded-xl border border-[var(--dash-border)] bg-[var(--dash-card)]
+             px-4 py-2.5 text-sm font-medium text-[var(--dash-text)] transition-colors
+             hover:border-[var(--dash-border-hover)] hover:bg-gray-50 cursor-pointer"
+    >
+      <svg class="h-4 w-4 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+      </svg>
+      {{ t('dashboard.activity.viewMyDocuments') }}
+    </button>
+  </div>
+
   <!-- Stats -->
   <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
     <StatCard
       :value="stats.total"
       :label="t('dashboard.activity.statFiles')"
+      :sublabel="t('dashboard.activity.statFilesSub')"
       icon-bg="bg-blue-50"
       icon-color="text-[#0057BD]"
     >
@@ -88,6 +123,7 @@ onMounted(() => {
     <StatCard
       :value="stats.books"
       :label="t('dashboard.activity.statBooksDonated')"
+      :sublabel="t('dashboard.activity.statBooksDonatedSub')"
       icon-bg="bg-teal-50"
       icon-color="text-teal-600"
     >
@@ -102,6 +138,7 @@ onMounted(() => {
     <StatCard
       :value="stats.received"
       :label="t('dashboard.activity.statBooksReceived')"
+      :sublabel="t('dashboard.activity.statBooksReceivedSub')"
       icon-bg="bg-purple-50"
       icon-color="text-purple-600"
     >
@@ -116,6 +153,7 @@ onMounted(() => {
     <StatCard
       :value="stats.size"
       :label="t('dashboard.activity.statTotalSize')"
+      :sublabel="t('dashboard.activity.statTotalSizeSub')"
       icon-bg="bg-orange-50"
       icon-color="text-orange-500"
     >
@@ -132,21 +170,31 @@ onMounted(() => {
   <PendingRejectedAlert :docs="docs.myUploads" />
 
   <!-- Two-column recent activity -->
-  <div class="grid grid-cols-1 gap-6">
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
     <!-- Recent uploads -->
-    <div class="bg-white rounded-2xl border border-gray-100 overflow-hidden">
-      <div class="flex items-center justify-between px-5 py-3.5 border-b border-gray-100">
-        <p class="text-sm font-bold text-gray-900">{{ t('dashboard.activity.recentUploads') }}</p>
+    <div class="bg-[var(--dash-card)] rounded-2xl border border-[var(--dash-border)] overflow-hidden">
+      <div class="flex items-center justify-between px-5 py-4 border-b border-[var(--dash-border)]">
+        <p class="text-base font-bold text-[var(--dash-text)]">
+          {{ t('dashboard.activity.recentUploads') }}
+        </p>
         <button
           v-if="recentDocs.length"
           @click="goToDocuments"
-          class="text-xs font-semibold text-primary hover:underline cursor-pointer"
+          class="flex items-center gap-1 text-xs font-semibold text-primary hover:underline cursor-pointer"
         >
           {{ t('dashboard.activity.viewAll') }}
+          <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M14 5l7 7m0 0l-7 7m7-7H3" />
+          </svg>
         </button>
       </div>
-      <div v-if="!recentDocs.length" class="px-5 py-10 text-center text-sm text-gray-400">
-        {{ t('dashboard.activity.noUploads') }}
+      <div v-if="!recentDocs.length" class="flex flex-col items-center justify-center px-5 py-16">
+        <div class="h-14 w-14 rounded-full bg-gray-50 flex items-center justify-center">
+          <svg class="h-6 w-6 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+          </svg>
+        </div>
+        <p class="mt-3 text-sm text-[var(--dash-muted)]">{{ t('dashboard.activity.noUploads') }}</p>
       </div>
       <div v-else class="divide-y divide-gray-50">
         <a
@@ -188,19 +236,29 @@ onMounted(() => {
     </div>
 
     <!-- My book -->
-    <div class="bg-white rounded-2xl border border-gray-100 overflow-hidden">
-      <div class="flex items-center justify-between px-5 py-3.5 border-b border-gray-100">
-        <p class="text-sm font-bold text-gray-900">{{ t('dashboard.sidebar.filters.yourBook') }}</p>
+    <div class="bg-[var(--dash-card)] rounded-2xl border border-[var(--dash-border)] overflow-hidden">
+      <div class="flex items-center justify-between px-5 py-4 border-b border-[var(--dash-border)]">
+        <p class="text-base font-bold text-[var(--dash-text)]">
+          {{ t('dashboard.sidebar.filters.yourBook') }}
+        </p>
         <button
           v-if="recentMyBooks.length"
           @click="goToMyBooks"
-          class="text-xs font-semibold text-primary hover:underline cursor-pointer"
+          class="flex items-center gap-1 text-xs font-semibold text-primary hover:underline cursor-pointer"
         >
           {{ t('dashboard.activity.viewAll') }}
+          <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M14 5l7 7m0 0l-7 7m7-7H3" />
+          </svg>
         </button>
       </div>
-      <div v-if="!recentMyBooks.length" class="px-5 py-10 text-center text-sm text-gray-400">
-        {{ t('dashboard.books.noListedYet') }}
+      <div v-if="!recentMyBooks.length" class="flex flex-col items-center justify-center px-5 py-16">
+        <div class="h-14 w-14 rounded-full bg-gray-50 flex items-center justify-center">
+          <svg class="h-6 w-6 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+          </svg>
+        </div>
+        <p class="mt-3 text-sm text-[var(--dash-muted)]">{{ t('dashboard.books.noListedYet') }}</p>
       </div>
       <div v-else class="divide-y divide-gray-50">
         <button

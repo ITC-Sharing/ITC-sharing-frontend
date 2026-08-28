@@ -2,21 +2,44 @@
 defineProps<{
   value: string | number
   label: string
-  iconBg: string
-  iconColor: string
+  /** Small line under the number, e.g. "Total uploads". */
+  sublabel?: string
+  /** Tailwind text colour for the icon, e.g. "text-sky-400". */
+  iconColor?: string
+  /** Tailwind background for the icon tile, e.g. "bg-sky-500/10". */
+  iconBg?: string
 }>()
 </script>
 
 <template>
-  <div class="bg-white rounded-2xl border border-gray-100 p-5 flex items-center gap-4">
-    <div :class="['h-11 w-11 rounded-xl flex items-center justify-center shrink-0', iconBg]">
-      <svg :class="['h-5 w-5', iconColor]" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-        <slot name="icon" />
-      </svg>
+  <!-- Label above the number, icon parked top-right: the eye lands on the
+       figure first, and the four cards read as a row of numbers rather than a
+       row of icons. -->
+  <div
+    class="rounded-2xl border border-[var(--dash-border)] bg-[var(--dash-card)] p-5
+           transition-colors hover:border-[var(--dash-border-hover)]"
+  >
+    <div class="flex items-start justify-between gap-3">
+      <p class="text-sm text-[var(--dash-muted)]">{{ label }}</p>
+      <div
+        :class="[
+          'h-10 w-10 shrink-0 rounded-xl flex items-center justify-center',
+          iconBg ?? 'bg-[var(--dash-accent)]/10',
+        ]"
+      >
+        <svg
+          :class="['h-5 w-5', iconColor ?? 'text-[var(--dash-accent)]']"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+          stroke-width="2"
+        >
+          <slot name="icon" />
+        </svg>
+      </div>
     </div>
-    <div>
-      <p class="text-2xl font-bold text-gray-900 leading-none">{{ value }}</p>
-      <p class="text-xs text-gray-400 mt-1">{{ label }}</p>
-    </div>
+
+    <p class="mt-3 text-3xl font-bold leading-none text-[var(--dash-text)]">{{ value }}</p>
+    <p v-if="sublabel" class="mt-2 text-xs text-[var(--dash-muted)]">{{ sublabel }}</p>
   </div>
 </template>

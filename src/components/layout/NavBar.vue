@@ -53,12 +53,6 @@
             class="pb-1 border-b-2 border-transparent hover:text-primary transition-colors"
             active-class="!text-primary !border-primary"
           >{{ t('common.nav.books') }}</router-link>
-          <router-link
-            v-if="authStore.isAuthenticated"
-            :to="{ name: 'dashboard' }"
-            class="pb-1 border-b-2 border-transparent hover:text-primary transition-colors"
-            active-class="!text-primary !border-primary"
-          >{{ t('common.nav.dashboard') }}</router-link>
         </ul>
 
         <!-- Right Section -->
@@ -100,20 +94,51 @@
 
             <div
               v-if="isAccountMenuOpen"
-              class="absolute right-0 mt-2 w-52 bg-white border border-gray-200 rounded-lg shadow-lg py-1"
+              class="absolute right-0 mt-2 w-60 bg-white border border-gray-200 rounded-xl shadow-lg py-1 overflow-hidden"
             >
+              <!-- Who you are signed in as. Without it the menu is three verbs
+                   with no subject, which matters once accounts are shared. -->
+              <div class="flex items-center gap-3 px-4 py-3 border-b border-gray-100">
+                <span
+                  class="h-9 w-9 shrink-0 rounded-full overflow-hidden bg-primary/10 flex items-center justify-center"
+                >
+                  <img
+                    v-if="authStore.user?.avatar_url"
+                    :src="authStore.user.avatar_url"
+                    alt=""
+                    class="h-full w-full object-cover"
+                  />
+                  <span v-else class="text-xs font-bold text-primary">{{ accountInitials }}</span>
+                </span>
+                <div class="min-w-0">
+                  <p class="truncate text-sm font-semibold text-gray-900">
+                    {{ authStore.fullName }}
+                  </p>
+                  <p class="truncate text-[11px] text-gray-400">{{ authStore.user?.email }}</p>
+                </div>
+              </div>
+
               <RouterLink
-                :to="{ name: 'profile' }"
+                :to="{ name: 'dashboard' }"
                 @click="isAccountMenuOpen = false"
-                class="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                class="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50"
               >
-                {{ t('common.profilePage.title') }}
+                <svg class="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
+                </svg>
+                {{ t('common.nav.dashboard') }}
               </RouterLink>
+
+              <div class="my-1 border-t border-gray-100" />
+
               <button
                 type="button"
                 @click="handleLogout"
-                class="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50"
+                class="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-red-600 hover:bg-red-50"
               >
+                <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                </svg>
                 Logout
               </button>
             </div>
@@ -161,13 +186,6 @@
           class="rounded-lg px-3 py-2.5 hover:bg-gray-50 hover:text-primary transition-colors"
           active-class="!text-primary bg-primary/5"
         >{{ t('common.nav.books') }}</router-link>
-        <router-link
-          v-if="authStore.isAuthenticated"
-          :to="{ name: 'dashboard' }"
-          @click="isOpen = false"
-          class="rounded-lg px-3 py-2.5 hover:bg-gray-50 hover:text-primary transition-colors"
-          active-class="!text-primary bg-primary/5"
-        >{{ t('common.nav.dashboard') }}</router-link>
       </ul>
 
       <!-- Language toggle -->

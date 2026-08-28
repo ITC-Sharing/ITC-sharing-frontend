@@ -16,7 +16,8 @@
   "mobileTitle": {
     "dashboard": "សកម្មភាពរបស់ខ្ញុំ",
     "dashboard-documents": "ឯកសាររបស់ខ្ញុំ",
-    "dashboard-books": "សៀវភៅ"
+    "dashboard-books": "សៀវភៅ",
+    "profile": "ប្រវត្តិរូប"
   },
   "activity": {
     "statFiles": "ឯកសារ",
@@ -25,7 +26,16 @@
     "statBooksReceived": "សៀវភៅទទួលបាន",
     "recentUploads": "ការបញ្ចូលថ្មីៗ",
     "viewAll": "មើលទាំងអស់",
-    "noUploads": "មិនទាន់មានការបញ្ចូលនៅឡើយទេ"
+    "noUploads": "មិនទាន់មានការបញ្ចូលនៅឡើយទេ",
+    "goodMorning": "អរុណសួស្តី",
+    "goodAfternoon": "ទិវាសួស្តី",
+    "goodEvening": "សាយ័ណ្ហសួស្តី",
+    "greetingSubtitle": "នេះជាដំណើរការនៃការបញ្ចូលឯកសាររបស់អ្នក។",
+    "viewMyDocuments": "មើលឯកសាររបស់ខ្ញុំ",
+    "statFilesSub": "ឯកសារសរុប",
+    "statBooksDonatedSub": "សៀវភៅដែលអ្នកបានផ្តល់",
+    "statBooksReceivedSub": "សៀវភៅដែលអ្នកបានទទួល",
+    "statTotalSizeSub": "លើឯកសារទាំងអស់"
   },
   "documents": {
     "searchPlaceholder": "ស្វែងរកឯកសារ...",

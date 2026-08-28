@@ -57,28 +57,21 @@ function onFilterClick(value: string) {
 </script>
 
 <template>
-  <aside class="w-full md:w-60 shrink-0 md:sticky md:top-[100px] flex flex-col gap-4">
-    <!-- Profile card -->
-    <div class="bg-white rounded-2xl border border-gray-100 p-4 flex items-center gap-3">
-      <div class="h-11 w-11 rounded-full bg-primary flex items-center justify-center shrink-0 overflow-hidden">
-        <img v-if="auth.user?.avatar_url" :src="auth.user.avatar_url" class="h-full w-full object-cover" />
-        <span v-else class="text-white text-sm font-bold">{{ userInitials }}</span>
-      </div>
-      <div class="min-w-0">
-        <p class="text-sm font-bold text-gray-900 truncate">{{ auth.fullName || greetingName }}</p>
-        <p class="text-[11px] text-gray-400 truncate">{{ auth.user?.email }}</p>
-      </div>
-    </div>
-
+  <!-- One solid panel, nav at the top and the account pinned to the bottom —
+       the account is a destination you reach for, not the first thing to read. -->
+  <aside
+    class="w-full md:w-64 shrink-0 md:sticky md:top-[100px] rounded-2xl border border-[var(--dash-border)]
+           bg-[var(--dash-sidebar)] md:min-h-[calc(100vh-140px)] p-3 flex flex-col"
+  >
     <!-- Nav -->
-    <nav class="bg-white rounded-2xl border border-gray-100 p-2 flex flex-col gap-1">
+    <nav class="flex flex-col gap-1">
       <template v-for="item in navItems" :key="item.name">
         <button
           @click="onNavClick(item.name)"
           :class="[
             'w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all text-left',
             route.name === item.name
-              ? 'bg-primary text-white shadow-sm'
+              ? 'bg-primary text-white font-semibold shadow-sm'
               : 'text-gray-500 hover:bg-gray-50 hover:text-gray-700',
           ]"
         >
@@ -152,7 +145,7 @@ function onFilterClick(value: string) {
         <!-- Books sub-nav (desktop only — mobile uses the in-page filter tabs) -->
         <div
           v-if="item.name === 'dashboard-books' && route.name === 'dashboard-books' && booksNavOpen"
-          class="hidden md:flex flex-col gap-1 pl-4 mt-0.5"
+          class="hidden md:flex flex-col gap-1 pl-3 mt-0.5"
         >
           <button
             v-for="filter in bookFilters"
@@ -177,6 +170,48 @@ function onFilterClick(value: string) {
           </button>
         </div>
       </template>
+
+      <button
+        @click="router.push({ name: 'profile' })"
+        :class="[
+          'w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all text-left',
+          route.name === 'profile'
+            ? 'bg-primary text-white font-semibold shadow-sm'
+            : 'text-gray-500 hover:bg-gray-50 hover:text-gray-700',
+        ]"
+      >
+        <svg class="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+          />
+        </svg>
+        <span class="flex-1">{{ t('common.profilePage.title') }}</span>
+      </button>
     </nav>
+
+    <!-- mt-auto pins this to the bottom on desktop; on mobile the panel is
+         short and it simply follows the nav. -->
+    <div class="mt-auto pt-4">
+      <div class="flex items-center gap-3 rounded-xl bg-gray-50 p-3">
+        <div
+          class="h-10 w-10 shrink-0 overflow-hidden rounded-full bg-primary flex items-center justify-center"
+        >
+          <img
+            v-if="auth.user?.avatar_url"
+            :src="auth.user.avatar_url"
+            class="h-full w-full object-cover"
+          />
+          <span v-else class="text-sm font-bold text-white">{{ userInitials }}</span>
+        </div>
+        <div class="min-w-0">
+          <p class="truncate text-sm font-semibold text-gray-900">
+            {{ auth.fullName || greetingName }}
+          </p>
+          <p class="truncate text-[11px] text-gray-400">{{ auth.user?.email }}</p>
+        </div>
+      </div>
+    </div>
   </aside>
 </template>

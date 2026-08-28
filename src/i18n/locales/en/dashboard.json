@@ -16,7 +16,8 @@
   "mobileTitle": {
     "dashboard": "My Activity",
     "dashboard-documents": "My Documents",
-    "dashboard-books": "Books"
+    "dashboard-books": "Books",
+    "profile": "Profile"
   },
   "activity": {
     "statFiles": "Files",
@@ -25,7 +26,16 @@
     "statBooksReceived": "Books received",
     "recentUploads": "Recent uploads",
     "viewAll": "View all",
-    "noUploads": "No uploads yet"
+    "noUploads": "No uploads yet",
+    "goodMorning": "Good morning",
+    "goodAfternoon": "Good afternoon",
+    "goodEvening": "Good evening",
+    "greetingSubtitle": "Here's what's happening with your uploads.",
+    "viewMyDocuments": "View my documents",
+    "statFilesSub": "Total uploads",
+    "statBooksDonatedSub": "Books you listed",
+    "statBooksReceivedSub": "Books you received",
+    "statTotalSizeSub": "Across all files"
   },
   "documents": {
     "searchPlaceholder": "Search documents...",

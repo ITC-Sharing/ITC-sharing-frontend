@@ -19,12 +19,6 @@ const routes = [
         meta: { requiresAuth: true },
       },
       {
-        path: 'profile',
-        name: 'profile',
-        component: () => import('@/views/ProfileView.vue'),
-        meta: { requiresAuth: true },
-      },
-      {
         path: 'documents/details',
         name: 'document-details',
         component: () => import('@/views/documents/DocumentDetailsView.vue'),
@@ -73,6 +67,13 @@ const routes = [
             path: 'books',
             name: 'dashboard-books',
             component: () => import('@/views/dashboard/user/DashboardBooks.vue'),
+          },
+          {
+            // Absolute path: the URL stays /profile, but the view renders
+            // inside the dashboard layout so the sidebar does not disappear.
+            path: '/profile',
+            name: 'profile',
+            component: () => import('@/views/ProfileView.vue'),
           },
         ],
       },
