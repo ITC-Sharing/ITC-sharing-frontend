@@ -1,8 +1,86 @@
 import { computed } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRouter, type RouteLocationRaw } from 'vue-router'
 import { useI18n } from 'vue-i18n'
+import i18n from '@/i18n'
 import { useNotificationsStore, type Notification } from '@/stores/notifications.store'
 import { useSubjectsStore } from '@/stores/subjects.store'
+
+/**
+ * Where a notification leads, for the cases that can be decided on the spot.
+ *
+ * Exported so a toast can offer the same destination as the bell item without
+ * duplicating the rules. The one case it cannot answer is an approved subject,
+ * which needs a lookup to build its route — handleNotifClick does that before
+ * falling back here, and the toast lands on the detail page instead, which
+ * handles every ref type.
+ */
+export function notificationRoute(n: Notification): RouteLocationRaw {
+  const detail: RouteLocationRaw = {
+    name: 'notification-detail',
+    query: {
+      notif_id: n.id,
+      ...(n.ref_id ? { ref_id: n.ref_id } : {}),
+      ...(n.ref_type ? { ref_type: n.ref_type } : {}),
+    },
+  }
+
+  if (n.ref_type === 'book_request') {
+    // Someone wants one of your books — answered under Book Activity, which is
+    // where a pending request now lives.
+    if (n.type === 'book_request') return { name: 'dashboard-books-approve' }
+    /**
+     * Accepted: the handover is yours to finish. ref_id is the request id (see
+     * books.service.ts), so `?request=` opens its progress panel directly
+     * rather than dropping you on the grid to find it again.
+     */
+    if (n.type === 'book_accepted') {
+      return {
+        name: 'dashboard-books-requesting',
+        ...(n.ref_id ? { query: { request: n.ref_id } } : {}),
+      }
+    }
+    // Declined stays on the detail page — the reason exists nowhere else.
+    return detail
+  }
+
+  /**
+   * A reviewer's own queue. These are the only notifications that point INTO
+   * the admin area, and they go straight to the thing needing a decision rather
+   * than to the dashboard for the reader to find it again.
+   */
+  if (n.type === 'document_pending' && n.ref_id) {
+    return { name: 'admin-review', params: { groupId: n.ref_id } }
+  }
+  if (n.type === 'subject_pending') {
+    return { name: 'admin', query: { tab: 'approvals' } }
+  }
+
+  if (n.type.includes('approved') && n.ref_type === 'document' && n.ref_id) {
+    return { name: 'document-details', query: { upload_id: n.ref_id } }
+  }
+
+  return detail
+}
+
+/**
+ * The notification's text in the reader's language.
+ *
+ * The server stores an English sentence AND the pieces to rebuild it. New rows
+ * carry a key, so they follow the language toggle; rows written before that
+ * only have the English, which is better than showing nothing.
+ */
+export function notificationMessage(n: Notification) {
+  const key = n.i18n_key ? `notification.${n.i18n_key}` : ''
+  // i18n.global, not useI18n(): a toast is raised from the store and from the
+  // socket handler, neither of which is inside a component's setup.
+  if (!key || !i18n.global.te(key)) return n.message
+  return i18n.global.t(key, (n.i18n_params ?? {}) as Record<string, unknown>)
+}
+
+/** The same text, for templates. */
+export function useNotificationText() {
+  return notificationMessage
+}
 
 // Shared notification logic used by both the desktop bell dropdown and the
 // mobile full-page list (grouping, relative time, icon, click routing).
@@ -28,12 +106,6 @@ export function useNotifications() {
       month: '2-digit',
       year: 'numeric',
     })
-  }
-
-  function iconBg(type: string) {
-    if (type.includes('approved')) return 'bg-green-100'
-    if (type.includes('rejected')) return 'bg-red-100'
-    return 'bg-blue-100'
   }
 
   const groupedNotifications = computed(() => {
@@ -69,42 +141,12 @@ export function useNotifications() {
   async function handleNotifClick(n: Notification) {
     if (!n.is_read) await notifStore.markRead(n.id)
 
-    if (n.ref_type === 'book_request') {
-      if (n.type === 'book_request') {
-        await router.push({ name: 'dashboard-books', query: { filter: 'request' } })
-        return
-      }
-      await router.push({
-        name: 'notification-detail',
-        query: {
-          notif_id: n.id,
-          ...(n.ref_id ? { ref_id: n.ref_id } : {}),
-          ref_type: n.ref_type,
-        },
-      })
-      return
-    }
-
-    const approved = n.type.includes('approved')
-
-    if (!approved) {
-      await router.push({
-        name: 'notification-detail',
-        query: {
-          notif_id: n.id,
-          ...(n.ref_id ? { ref_id: n.ref_id } : {}),
-          ...(n.ref_type ? { ref_type: n.ref_type } : {}),
-        },
-      })
-      return
-    }
-
-    if (n.ref_type === 'document' && n.ref_id) {
-      await router.push({ name: 'document-details', query: { upload_id: n.ref_id } })
-      return
-    }
-
-    if (n.ref_type === 'subject' && n.ref_id) {
+    /**
+     * An approved subject is the one destination notificationRoute cannot give:
+     * the route needs the subject's department and year, which may not be
+     * loaded yet. Resolve it here, and fall through if it cannot be found.
+     */
+    if (n.type.includes('approved') && n.ref_type === 'subject' && n.ref_id) {
       let subject = subjectsStore.mySubjects.find((s) => s.id === n.ref_id)
       if (!subject) {
         await subjectsStore.fetchMine()
@@ -123,12 +165,12 @@ export function useNotifications() {
       }
     }
 
-    await router.push({ name: 'dashboard' })
+    await router.push(notificationRoute(n))
   }
 
   async function markAllRead() {
     await notifStore.markAllRead()
   }
 
-  return { notifStore, groupedNotifications, handleNotifClick, markAllRead, iconBg, timeAgo }
+  return { notifStore, groupedNotifications, handleNotifClick, markAllRead, timeAgo }
 }

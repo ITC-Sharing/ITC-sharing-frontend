@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, ref, watch, onBeforeUnmount } from 'vue'
 import { useI18n } from 'vue-i18n'
-import type { UploadFile } from '@/types'
+import type { UploadFile } from '@/types/documents.types'
 import PdfViewer from '@/components/documents/PdfViewer.vue'
 
 // Fullscreen in-app viewer for a single file. Handles three kinds inline:
@@ -187,9 +187,12 @@ onBeforeUnmount(() => window.removeEventListener('keydown', handleKeydown))
       @mouseup="endPan"
       @mouseleave="endPan"
     >
-      <!-- Top bar -->
-      <div class="flex items-center gap-3 px-4 py-3 text-white">
-        <span class="truncate text-sm font-medium">{{ title }}</span>
+      <!-- Top bar. The controls keep their size and the filename takes what
+           is left: min-w-0 lets the span shrink below its text, which a flex
+           item will not do on its own, so on a phone the name truncates
+           instead of pushing Open and Download off the edge. -->
+      <div class="flex items-center gap-2 px-3 py-3 text-white sm:gap-3 sm:px-4">
+        <span class="min-w-0 flex-1 truncate text-sm font-medium">{{ title }}</span>
 
         <!-- Image controls -->
         <div v-if="kind === 'image'" class="ml-auto flex items-center gap-1">
@@ -260,7 +263,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', handleKeydown))
             :href="externalSrc"
             target="_blank"
             rel="noopener"
-            class="flex h-9 items-center gap-2 rounded-full bg-white/10 px-3 text-sm transition-colors hover:bg-white/20"
+            class="flex h-9 shrink-0 items-center justify-center gap-2 rounded-full bg-white/10 text-sm transition-colors hover:bg-white/20 max-sm:w-9 sm:px-3"
           >
             <svg
               class="h-4 w-4"
@@ -275,10 +278,12 @@ onBeforeUnmount(() => window.removeEventListener('keydown', handleKeydown))
                 d="M14 3h7v7m0-7L10 14M19 14v5a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h5"
               />
             </svg>
-            {{ t('document.documentDetailsPage.preview') }}
+            <span class="max-sm:sr-only">
+              {{ t('document.documentDetailsPage.preview') }}
+            </span>
           </a>
           <button
-            class="flex h-9 items-center gap-2 rounded-full bg-white/10 px-3 text-sm transition-colors hover:bg-white/20 hover:cursor-pointer"
+            class="flex h-9 shrink-0 items-center justify-center gap-2 rounded-full bg-white/10 text-sm transition-colors hover:bg-white/20 hover:cursor-pointer max-sm:w-9 sm:px-3"
             @click="emit('download', file)"
           >
             <svg
@@ -294,7 +299,9 @@ onBeforeUnmount(() => window.removeEventListener('keydown', handleKeydown))
                 d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5 5 5-5M12 15V3"
               />
             </svg>
-            {{ t('document.documentDetailsPage.download') }}
+            <span class="max-sm:sr-only">
+              {{ t('document.documentDetailsPage.download') }}
+            </span>
           </button>
           <button
             class="flex h-9 w-9 items-center justify-center rounded-full bg-white/10 text-white transition-colors hover:bg-white/20 hover:cursor-pointer"

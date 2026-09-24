@@ -1,8 +1,10 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { io, type Socket } from 'socket.io-client'
-import api from '@/lib/axios'
+import * as notificationsApi from '@/services/notifications.api'
 import { useToast, type ToastType } from '@/composables/useToast'
+import { notificationMessage, notificationRoute } from '@/composables/useNotifications'
+import { accessToken } from '@/services/access-token'
 
 export interface Notification {
   id: string
@@ -11,6 +13,14 @@ export interface Notification {
   is_read: boolean
   ref_id: string | null
   ref_type: string | null
+  /** The book's cover, for notifications about one. Null otherwise. */
+  image_url: string | null
+  /**
+   * Which phrase to show and what to put in it. Null on notifications written
+   * before translation existed — `message` is the fallback for those.
+   */
+  i18n_key: string | null
+  i18n_params: Record<string, string | number> | null
   created_at: string
 }
 
@@ -18,14 +28,12 @@ export const useNotificationsStore = defineStore('notifications', () => {
   const notifications = ref<Notification[]>([])
   const loading = ref(false)
 
-  const unreadCount = computed(() =>
-    notifications.value.filter((n) => !n.is_read).length,
-  )
+  const unreadCount = computed(() => notifications.value.filter((n) => !n.is_read).length)
 
   async function fetch() {
     loading.value = true
     try {
-      const { data } = await api.get('/notifications')
+      const data = await notificationsApi.fetchNotifications()
       notifications.value = data
     } catch {
       // silently fail — bell just shows nothing
@@ -35,13 +43,13 @@ export const useNotificationsStore = defineStore('notifications', () => {
   }
 
   async function markRead(id: string) {
-    await api.patch(`/notifications/${id}/read`)
+    await notificationsApi.markNotificationRead(id)
     const n = notifications.value.find((n) => n.id === id)
     if (n) n.is_read = true
   }
 
   async function markAllRead() {
-    await api.patch('/notifications/read-all')
+    await notificationsApi.markAllNotificationsRead()
     notifications.value.forEach((n) => (n.is_read = true))
   }
 
@@ -66,7 +74,7 @@ export const useNotificationsStore = defineStore('notifications', () => {
     if (socket) return
     socket = io(import.meta.env.VITE_API_URL, {
       // Called on every (re)connect, so a refreshed access token is always used.
-      auth: (cb) => cb({ token: localStorage.getItem('token') ?? '' }),
+      auth: (cb) => cb({ token: accessToken.value ?? '' }),
       withCredentials: true,
     })
     socket.on('notification', (n: Notification) => {
@@ -75,7 +83,14 @@ export const useNotificationsStore = defineStore('notifications', () => {
       notifications.value.unshift(n)
       // Only socket-delivered ones are toasted: those arrived while the user
       // was looking at the app. A fetch replays history and must stay silent.
-      useToast().showToast(n.message, { type: toastTypeFor(n.type) })
+      // Same destination the bell item would take, so acting on the toast and
+      // acting on the notification behave identically.
+      useToast().showToast(notificationMessage(n), {
+        type: toastTypeFor(n.type),
+        to: notificationRoute(n),
+        notifId: n.id,
+        notification: n,
+      })
     })
   }
 

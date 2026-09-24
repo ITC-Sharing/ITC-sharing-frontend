@@ -3,8 +3,9 @@ import { computed, onMounted } from 'vue'
 import { useMajorsStore } from '@/stores/majors.store'
 import { useAuthStore } from '@/stores/auth.store'
 import DepartmentCard from '@/components/departments/DepartmentCard.vue'
-import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
+import LoadingSpinner from '@/components/base/LoadingSpinner.vue'
 import noImage from '@/assets/images/no-image.png'
+import AppFooter from '@/components/layout/AppFooter.vue'
 
 const majorsStore = useMajorsStore()
 const auth = useAuthStore()
@@ -49,4 +50,7 @@ onMounted(() => {
       />
     </div>
   </div>
+
+  <!-- Home only: see the note in AppFooter for why the inner pages have none. -->
+  <AppFooter />
 </template>

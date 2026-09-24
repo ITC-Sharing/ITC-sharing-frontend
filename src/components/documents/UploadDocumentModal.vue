@@ -5,13 +5,13 @@ import { useDocumentsStore } from '@/stores/documents.store'
 import { useMajorsStore } from '@/stores/majors.store'
 import { useSubjectsStore } from '@/stores/subjects.store'
 import { useI18n } from 'vue-i18n'
-import SelectDropdown from '@/components/common/SelectDropdown.vue'
-import ChipButton from '@/components/common/ChipButton.vue'
-import AudiencePicker from '@/components/common/AudiencePicker.vue'
-import DateField from '@/components/common/DateField.vue'
-import RingSpinner from '@/components/common/RingSpinner.vue'
-import FileTypeIcon from '@/components/common/FileTypeIcon.vue'
-import type { AudienceEntry } from '@/types'
+import SelectDropdown from '@/components/base/SelectDropdown.vue'
+import ChipButton from '@/components/base/ChipButton.vue'
+import AudiencePicker from '@/components/documents/AudiencePicker.vue'
+import DateField from '@/components/base/DateField.vue'
+import RingSpinner from '@/components/base/RingSpinner.vue'
+import FileTypeIcon from '@/components/base/FileTypeIcon.vue'
+import type { AudienceEntry } from '@/types/documents.types'
 import { clearDraft, readDraft, writeDraft } from '@/composables/uploadDraft'
 import { useToast } from '@/composables/useToast'
 import {
@@ -21,6 +21,7 @@ import {
   isLanguageMajor,
   languageLabelKey,
   yearLevelsForMajor,
+  coversEveryAudiencePair,
 } from '@/utils/format'
 
 const auth = useAuthStore()
@@ -125,6 +126,7 @@ const errors = reactive({
   year_level: '',
   academic_year: '',
   major_id: '',
+  subject_id: '',
   file: '',
   audience: '',
   expires_at: '',
@@ -256,6 +258,14 @@ function addAudience(choice: { everyone: true } | AudienceEntry) {
   if (!exists) form.audience.push(choice)
   // A department + year is a restriction, so it replaces "Everyone".
   audienceEveryone.value = false
+  // Unless the pairs now add up to every one there is — that is "Everyone"
+  // spelled out a chip at a time. Collapse it, so the form says what was
+  // actually chosen and the upload is stored unrestricted rather than pinned
+  // to today's list of departments.
+  if (coversEveryAudiencePair(form.audience, audienceDepartments.value)) {
+    audienceEveryone.value = true
+    form.audience = []
+  }
 }
 
 function removeAudience(entry: AudienceEntry) {
@@ -318,22 +328,42 @@ function saveDraft() {
   } satisfies Draft)
 }
 
+/**
+ * Restores what was typed, or gives up and starts clean.
+ *
+ * This runs during setup, so anything it throws takes the whole modal with it —
+ * and because the draft lives in module scope, the same throw would repeat on
+ * every reopen, leaving the modal permanently unopenable until a reload. A
+ * draft is a convenience; it is never worth that, so a bad one is discarded.
+ */
 function restoreDraft() {
   const draft = readDraft<Draft>(draftContext.value)
   if (!draft) return
-  Object.assign(form, draft.form)
-  audienceEveryone.value = draft.audienceEveryone
-  expiryChosen.value = draft.expiryChosen
-  stagedItems.value = draft.files.map((file) =>
-    reactive<StagedItem>({
-      name: file.name,
-      sizeKb: file.sizeKb,
-      progress: 100,
-      status: 'done',
-      id: file.id,
-      previewUrl: file.previewUrl,
-    }),
-  )
+  try {
+    Object.assign(form, draft.form)
+    audienceEveryone.value = draft.audienceEveryone
+    expiryChosen.value = draft.expiryChosen
+    stagedItems.value = (draft.files ?? []).map((file) =>
+      reactive<StagedItem>({
+        name: file.name,
+        sizeKb: file.sizeKb,
+        progress: 100,
+        status: 'done',
+        id: file.id,
+        previewUrl: file.previewUrl,
+        /**
+         * stagedUrl too, not just previewUrl: saving reads `stagedUrl`, so a
+         * restored row that only carried `previewUrl` wrote the thumbnail back
+         * as undefined — the picture survived one reopen and was gone by the
+         * next.
+         */
+        stagedUrl: file.previewUrl,
+      }),
+    )
+  } catch (err) {
+    console.error('Could not restore the upload draft; starting a fresh form.', err)
+    clearDraft(draftContext.value)
+  }
 }
 
 // Save as the user types, coalesced so a keystroke isn't a write.
@@ -346,8 +376,6 @@ watch(
   },
   { deep: true },
 )
-
-restoreDraft()
 
 // ── Expiry ─────────────────────────────────────────────────────────────────
 // Local 'YYYY-MM-DD' for a date input.
@@ -526,14 +554,29 @@ function onKeydown(event: KeyboardEvent) {
   void submit()
 }
 onMounted(() => document.addEventListener('keydown', onKeydown))
-onBeforeUnmount(() => document.removeEventListener('keydown', onKeydown))
+onBeforeUnmount(() => {
+  document.removeEventListener('keydown', onKeydown)
+  // The debounced save would otherwise fire ~300ms after the modal is gone,
+  // writing a draft from a form that no longer exists.
+  clearTimeout(draftTimer)
+})
 
-// Thumbnails hold a blob alive until they're released.
+// Thumbnails hold a blob alive until they're released. Only blobs: a row
+// restored from a draft carries the staged file's own URL here, which is not
+// ours to revoke.
 onBeforeUnmount(() => {
   for (const item of stagedItems.value) {
-    if (item.previewUrl) URL.revokeObjectURL(item.previewUrl)
+    if (item.previewUrl?.startsWith('blob:')) URL.revokeObjectURL(item.previewUrl)
   }
 })
+
+/**
+ * Last, deliberately: restoreDraft() assigns to refs declared all over this
+ * file, and a `const` cannot be read before its own line has run. Called any
+ * earlier it throws — and only ever when a draft exists, since it returns early
+ * without one, which is why an untouched form always opened fine.
+ */
+restoreDraft()
 
 function onFileChange(e: Event) {
   const input = e.target as HTMLInputElement
@@ -578,6 +621,9 @@ function validate() {
   errors.year_level = form.year_level ? '' : t('document.documentUploadModal.errorSelectYear')
   errors.academic_year = validateAcademicYear(form.academic_year)
   errors.major_id = form.major_id ? '' : t('document.documentUploadModal.errorSelectMajor')
+  // Required on the server too (CreateDocumentDto.subject_id). Checked here so
+  // the form says which field is missing instead of surfacing a 400.
+  errors.subject_id = form.subject_id ? '' : t('document.documentUploadModal.errorSelectSubject')
   errors.file = isStaging.value
     ? t('document.documentUploadModal.errorFilesStillUploading')
     : uploadedItems.value.length
@@ -642,11 +688,20 @@ async function submit() {
   <!-- Backdrop — clicking it (but not the panel) closes, as does Esc. What was
        typed is kept in a draft, so neither loses the user's work. -->
   <div
-    class="fixed inset-0 z-50 flex items-center justify-center bg-black/45 px-4 py-6 backdrop-blur-sm"
+    class="fixed inset-0 z-50 flex items-center justify-center bg-black/45 px-4 py-6"
     @click.self="emit('close')"
   >
+    <!-- dvh, not vh: on a phone `vh` is the LARGE viewport — measured with the
+         URL bar retracted — so a 90vh cap can be taller than what is actually on
+         screen, and the footer buttons end up under the browser chrome. `dvh`
+         tracks the visible area as that chrome comes and goes.
+
+         65dvh on a phone matches the Create Subject modal, which is short
+         enough to size to its own content (~610px on a 932px screen); this form
+         has three times the fields, so its cap is what decides its height. The
+         body scrolls, so a smaller box hides nothing. -->
     <div
-      class="flex max-h-[90vh] w-full max-w-sm flex-col overflow-hidden rounded-3xl bg-white shadow-2xl ring-1 ring-black/10 md:max-w-md"
+      class="flex max-h-[65dvh] w-full max-w-sm flex-col sm:max-h-[90dvh] overflow-hidden rounded-3xl bg-white shadow-2xl ring-1 ring-black/10 md:max-w-md"
     >
       <!-- Header -->
       <div class="relative border-b border-black/5 px-5 py-4">
@@ -685,7 +740,7 @@ async function submit() {
                themselves get the space. -->
           <label
             v-if="!stagedItems.length"
-            class="flex cursor-pointer flex-col items-center justify-center rounded-2xl border-2 border-dashed px-5 py-6 text-center transition"
+            class="flex cursor-pointer flex-col items-center justify-center rounded-2xl border-2 border-dashed px-5 py-3 text-center transition sm:py-6"
             :class="
               isDragActive
                 ? 'border-primary bg-[#F3F8FF]'
@@ -703,7 +758,7 @@ async function submit() {
               @change="onFileChange"
             />
             <div
-              class="mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 text-primary"
+              class="mb-2 flex h-9 w-9 items-center justify-center rounded-full bg-primary/10 text-primary sm:mb-3 sm:h-12 sm:w-12"
             >
               <svg
                 viewBox="0 0 24 24"
@@ -967,11 +1022,23 @@ async function submit() {
             <span class="text-red-500">*</span>
           </label>
           <SelectDropdown
+            v-if="subjectOptions.length"
             v-model="form.subject_id"
             :placeholder="t('document.documentUploadModal.selectSubjectPlaceholder')"
             :options="subjectOptions"
             :disabled="lockMajorAndSubject"
+            @change="
+              errors.subject_id = form.subject_id
+                ? ''
+                : t('document.documentUploadModal.errorSelectSubject')
+            "
           />
+          <!-- Says what to do about it rather than just stating the absence:
+               the upload cannot proceed and only a moderator can unblock it. -->
+          <p v-else class="text-sm text-amber-600">
+            {{ t('document.documentUploadModal.noSubjects') }}
+          </p>
+          <p v-if="errors.subject_id" class="text-sm text-red-600">{{ errors.subject_id }}</p>
         </div>
 
         <!-- Audience: department, then year, one pair at a time. Everyone takes
@@ -1101,7 +1168,7 @@ async function submit() {
             type="button"
             @click="submit"
             :disabled="docs.loading || isStaging"
-            class="rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-[#006B9C] disabled:cursor-not-allowed disabled:opacity-60 hover:cursor-pointer"
+            class="rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-60 hover:cursor-pointer"
           >
             <span v-if="docs.loading" class="flex items-center gap-2">
               <RingSpinner :size="16" :stroke="2.5" />

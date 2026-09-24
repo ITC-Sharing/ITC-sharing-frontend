@@ -8,18 +8,18 @@ import { useMajorsStore } from '@/stores/majors.store'
 import DocumentCard from '@/components/documents/DocumentCard.vue'
 import DocumentListRow from '@/components/documents/DocumentListRow.vue'
 import UploadDocumentModal from '@/components/documents/UploadDocumentModal.vue'
-import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
-import Breadcrumb from '@/components/common/Breadcrumb.vue'
+import LoadingSpinner from '@/components/base/LoadingSpinner.vue'
+import Breadcrumb from '@/components/base/Breadcrumb.vue'
 import { isLanguageMajor, languageLabelKey } from '@/utils/format'
-import FilterButton from '@/components/common/FilterButton.vue'
-import SearchButton from '@/components/common/SearchButton.vue'
-import ViewToggle from '@/components/common/ViewToggle.vue'
-import IconTextButton from '@/components/common/IconTextButton.vue'
-import EmptyState from '@/components/common/EmptyState.vue'
-import UploadAndEditDocModal from '@/components/dashboard/UploadAndEditDocModal.vue'
-import type { Upload } from '@/types'
-import Pagination from '@/components/common/Pagination.vue'
-import PageSizeSelect from '@/components/common/PageSizeSelect.vue'
+import FilterButton from '@/components/base/FilterButton.vue'
+import SearchButton from '@/components/base/SearchButton.vue'
+import ViewToggle from '@/components/base/ViewToggle.vue'
+import IconTextButton from '@/components/base/IconTextButton.vue'
+import EmptyState from '@/components/base/EmptyState.vue'
+import UploadAndEditDocModal from '@/components/documents/UploadAndEditDocModal.vue'
+import type { Upload } from '@/types/documents.types'
+import Pagination from '@/components/base/Pagination.vue'
+import PageSizeSelect from '@/components/base/PageSizeSelect.vue'
 
 const { t } = useI18n({ useScope: 'global' })
 const route = useRoute()
@@ -164,48 +164,60 @@ async function onUploaded() {
 
 <template>
   <div>
-    <div class="mx-auto w-full max-w-7xl px-6 flex flex-col gap-6">
+    <div class="mx-auto w-full max-w-7xl px-6 flex flex-col gap-6 mb-9">
       <!-- Breadcrumb -->
       <Breadcrumb :items="breadcrumbItems" />
 
       <!-- Header -->
       <div class="flex md:flex-row flex-col items-start md:items-center md:justify-between gap-4">
-        <div class="flex flex-col w-full">
-          <h1 class="text-3xl font-bold text-black capitalize">
+        <!-- Centred on a phone, where the title sits alone above the toolbar;
+             back to the left edge from md up, where it shares the row. -->
+        <div class="flex flex-col w-full text-center md:w-auto md:text-left">
+          <h1 class="md:text-3xl text-xl font-bold text-black capitalize">
             {{ pageTitle }}
           </h1>
-          <p class="text-sm text-gray-400 mt-1">
+          <p class="md:text-sm text-xs text-gray-400">
             <!-- docs.total is every match, not just this page's slice. -->
             {{ t('document.documentsPage.documentsCount', docs.total) }}
           </p>
         </div>
-        <div class="flex w-full md:items-center justify-between md:justify-end gap-3">
-          <SearchButton v-model="searchQuery" class="flex-1 sm:flex-none sm:w-62" />
-
-          <div class="w-40">
-            <FilterButton v-model="selectedType" placeholder="All" :options="docTypes" />
+        <!-- Same shape as the subjects toolbar: search on the left, controls
+             grouped on the right, one row at every width. -->
+        <div class="flex w-full md:w-auto md:shrink-0 flex-wrap items-center justify-between gap-3">
+          <!-- The width goes on a wrapper, not on SearchButton. Its own root is
+               `w-full`, and Tailwind emits .w-full after .w-36, so a w-* passed
+               in from outside loses on source order and the box stretched to
+               fill the row. -->
+          <div class="w-36">
+            <SearchButton v-model="searchQuery" />
           </div>
 
-          <ViewToggle v-model="viewMode" />
+          <div class="flex items-center gap-3">
+            <div class="shrink-0">
+              <FilterButton v-model="selectedType" placeholder="All" :options="docTypes" />
+            </div>
 
-          <IconTextButton :text="t('document.documentsPage.upload')" @click="showUpload = true">
-            <template #icon>
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                class="h-5 w-5"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  stroke-width="2"
-                  d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"
-                />
-              </svg>
-            </template>
-          </IconTextButton>
+            <ViewToggle v-model="viewMode" />
+
+            <IconTextButton :text="t('document.documentsPage.upload')" @click="showUpload = true">
+              <template #icon>
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  class="h-5 w-5"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"
+                  />
+                </svg>
+              </template>
+            </IconTextButton>
+          </div>
         </div>
       </div>
 
@@ -225,6 +237,11 @@ async function onUploaded() {
         />
 
         <!-- Card grid -->
+        <!-- Scrolls inside itself so the breadcrumb, title and toolbar stay put
+             while the shelf moves. The offset is the chrome above and below:
+             100px navbar + ~64px breadcrumb and gap + ~84px title row and gap
+             + 24px bottom padding. Desktop only — on a phone the page scroll is
+             the right behaviour. -->
         <div v-else-if="viewMode === 'card'">
           <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6">
             <DocumentCard
@@ -233,6 +250,8 @@ async function onUploaded() {
               :doc="entry.doc"
               :file-count="entry.count"
               @deleted="loadDocs()"
+              @hidden-changed="loadDocs()"
+              @pinned-changed="loadDocs()"
               @edit="openEdit"
             />
           </div>
@@ -248,21 +267,24 @@ async function onUploaded() {
             class="hidden md:grid grid-cols-[2fr_120px_100px_160px_110px_40px] gap-3 items-center border-b border-gray-100 px-4 py-3 text-sm font-medium text-black"
           >
             <span>{{ t('document.documentsPage.colName') }}</span>
-            <span>{{ t('document.documentsPage.colAcademicYear') }}</span>
-            <span>{{ t('document.documentsPage.colFileSize') }}</span>
-            <span>{{ t('document.documentsPage.colUploadBy') }}</span>
-            <span>{{ t('document.documentsPage.colDate') }}</span>
+            <span class="text-center">{{ t('document.documentsPage.colAcademicYear') }}</span>
+            <span class="text-center">{{ t('document.documentsPage.colFileSize') }}</span>
+            <span class="text-center">{{ t('document.documentsPage.colUploadBy') }}</span>
+            <span class="text-center">{{ t('document.documentsPage.colDate') }}</span>
             <span></span>
           </div>
 
-          <!-- Rows -->
-          <div class="divide-y divide-gray-100">
+          <!-- Rows scroll, the header does not: a long list should not push the
+               pager off the page, and the column names stay readable. -->
+          <div class="max-h-[60vh] divide-y divide-gray-100 overflow-y-auto scrollbar-primary">
             <DocumentListRow
               v-for="entry in groupedDocs"
               :key="entry.doc.id"
               :doc="entry.doc"
               :file-count="entry.count"
               @deleted="loadDocs()"
+              @hidden-changed="loadDocs()"
+              @pinned-changed="loadDocs()"
             />
           </div>
         </div>
@@ -271,18 +293,19 @@ async function onUploaded() {
         <!-- Hidden when the list fits the smallest page size (≤10). -->
         <div
           v-if="docs.total > 10"
-          class="mt-8 grid grid-cols-[1fr_auto_1fr] items-center gap-4"
+          class="mt-8 flex flex-col items-center gap-6 md:grid md:grid-cols-[1fr_auto_1fr]"
         >
           <Pagination
-            class="col-start-2 justify-self-center"
+            class="md:col-start-2 md:justify-self-center"
             v-model:page="page"
             :total="docs.total"
             :page-size="pageSize"
             scroll-to-top
           />
           <PageSizeSelect
-            class="col-start-3 justify-self-end"
+            class="md:col-start-3 md:justify-self-end"
             v-model="pageSize"
+            :total="docs.total"
             :options="[10, 20, 30, 50]"
             direction="up"
           />

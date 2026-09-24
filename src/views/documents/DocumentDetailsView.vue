@@ -4,23 +4,27 @@ import { useRoute, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { useAuthStore } from '@/stores/auth.store'
 import { useDocumentsStore } from '@/stores/documents.store'
+import * as documentsApi from '@/services/documents.api'
+import { useMajorsStore } from '@/stores/majors.store'
+import { yearMajorLabel } from '@/utils/format'
 import { useToast } from '@/composables/useToast'
-import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
+import LoadingSpinner from '@/components/base/LoadingSpinner.vue'
 import FileRow from '@/components/documents/FileRow.vue'
 import FileCard from '@/components/documents/FileCard.vue'
-import BackButton from '@/components/common/BackButton.vue'
-import ViewToggle from '@/components/common/ViewToggle.vue'
-import ConfirmDeleteModal from '@/components/common/ConfirmDeleteModal.vue'
-import IconTextButton from '@/components/common/IconTextButton.vue'
+import BackButton from '@/components/base/BackButton.vue'
+import ViewToggle from '@/components/base/ViewToggle.vue'
+import ConfirmDeleteModal from '@/components/base/ConfirmDeleteModal.vue'
+import IconTextButton from '@/components/base/IconTextButton.vue'
 import DocumentPreviewModal from '@/components/documents/DocumentPreviewModal.vue'
-import type { UploadFile } from '@/types'
-
+import AddFilesModal from '@/components/documents/AddFilesModal.vue'
+import type { UploadFile } from '@/types/documents.types'
 const { t } = useI18n({ useScope: 'global' })
 
 const route = useRoute()
 const router = useRouter()
 const auth = useAuthStore()
 const docs = useDocumentsStore()
+const majorsStore = useMajorsStore()
 const { showToast } = useToast()
 
 const viewMode = ref<'card' | 'list'>(
@@ -36,9 +40,63 @@ const pageTitle = computed(() => upload.value?.title || 'Document Details')
 
 const files = computed(() => upload.value?.documents ?? [])
 
+/**
+ * Who the upload reaches, as "I3-GIC, I4-GIM".
+ *
+ * An empty audience means the uploader targeted no particular cohort, which is
+ * everyone — blank would be ambiguous between that and "not loaded yet". The
+ * department list is fetched for the acronyms; without it the year alone is
+ * still worth showing.
+ */
+const audienceLabel = computed(() => {
+  const audience = upload.value?.audience ?? []
+  if (!audience.length) return t('document.documentDetailsPage.audienceEveryone')
+  return audience
+    .map((entry) => {
+      const acronym = majorsStore.majors.find((m) => m.id === entry.major_id)?.acronym
+      return acronym
+        ? yearMajorLabel(acronym, entry.year_level)
+        : `${t('document.documentDetailsPage.year')} ${entry.year_level}`
+    })
+    .join(', ')
+})
+
+const expiryLabel = computed(() => {
+  const at = upload.value?.expires_at
+  if (!at) return t('document.documentDetailsPage.expiresNever')
+  return new Date(at).toLocaleDateString('en-GB', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+  })
+})
+
 // Served only to the uploader and admins — everyone else never sees these rows.
 const pendingFiles = computed(() => files.value.filter((f) => f.status === 'pending'))
 const rejectedFiles = computed(() => files.value.filter((f) => f.status === 'rejected'))
+const hiddenFiles = computed(() => files.value.filter((f) => f.hidden_at))
+
+/**
+ * Hiding the last visible file hides the whole document, so the page has to
+ * reload rather than patch one row — the upload's own state changed too.
+ */
+async function toggleHidden(file: UploadFile) {
+  try {
+    const result = await docs.setFileHiddenState(file.id, !file.hidden_at)
+    await docs.fetchOne(uploadId.value)
+    showToast(
+      result.upload_hidden
+        ? t('document.documentDetailsPage.uploadHiddenToo')
+        : result.hidden
+          ? t('document.documentDetailsPage.fileHidden')
+          : t('document.documentDetailsPage.fileVisible'),
+      { type: 'success' },
+    )
+  } catch (e: unknown) {
+    const message = (e as { response?: { data?: { message?: string } } })?.response?.data?.message
+    showToast(message ?? t('document.documentDetailsPage.hideFailed'), { type: 'error' })
+  }
+}
 
 const isOwner = computed(() => !!auth.user?.id && auth.user.id === upload.value?.users?.id)
 
@@ -47,31 +105,25 @@ const isOwner = computed(() => !!auth.user?.id && auth.user.id === upload.value?
 // Mirrors the server's FilesInterceptor limits in documents.controller.ts —
 // checked here only so an oversized pick fails instantly with a readable
 // message instead of round-tripping into a multer error.
-const ACCEPT = '.pdf,.doc,.docx,.ppt,.pptx,.jpg,.jpeg,.png,.zip,.rar'
 const MAX_FILES_PER_REQUEST = 10
 const MAX_FILE_SIZE_BYTES = 20 * 1024 * 1024
 
-const fileInput = ref<HTMLInputElement | null>(null)
+const showAddFiles = ref(false)
 const adding = ref(false)
 const addProgress = ref(0)
 
-function pickFiles() {
-  fileInput.value?.click()
-}
-
-async function onFilesPicked(event: Event) {
-  const input = event.target as HTMLInputElement
-  const picked = Array.from(input.files ?? [])
-  // Reset immediately: picking the same file twice in a row fires no change
-  // event unless the value is cleared.
-  input.value = ''
+/**
+ * Called by AddFilesModal with the files it collected. The guards below are a
+ * second line of defence, not the user-facing ones — the modal refuses an
+ * oversized or surplus file as it is picked, so these should never fire.
+ */
+async function uploadFiles(picked: File[]) {
   if (!picked.length || adding.value) return
 
   if (picked.length > MAX_FILES_PER_REQUEST) {
-    showToast(
-      t('document.documentDetailsPage.tooManyFiles', { max: MAX_FILES_PER_REQUEST }),
-      { type: 'error' },
-    )
+    showToast(t('document.documentDetailsPage.tooManyFiles', { max: MAX_FILES_PER_REQUEST }), {
+      type: 'error',
+    })
     return
   }
 
@@ -92,6 +144,9 @@ async function onFilesPicked(event: Event) {
     // The response carries only the new rows; refetch so the list, the file
     // count and the upload's own status all come from one source.
     await docs.fetchOne(uploadId.value)
+    // Only on success: a failed batch keeps the modal open with the files still
+    // listed, so it can be retried without picking them all again.
+    showAddFiles.value = false
     // On an approved document the new files are hidden until a moderator clears
     // them — say so, or the owner wonders why nobody else can see them.
     showToast(
@@ -156,9 +211,16 @@ async function confirmDelete() {
   }
 }
 
-function getDownloadUrl(file: UploadFile) {
-  const name = file.original_name?.trim()
-  return name ? `${file.file_url}?download=${encodeURIComponent(name)}` : file.file_url
+/**
+ * Ask the API for a fresh, authorised link.
+ *
+ * Was `${file.file_url}?download=…`: the bucket is private now, so the stored
+ * URL is not reachable and the query string never set a filename anyway — the
+ * server sets Content-Disposition on the signed URL instead.
+ */
+async function getDownloadUrl(file: UploadFile) {
+  const { url } = await documentsApi.fileAccessUrl(file.id, 'download')
+  return url
 }
 
 function triggerDownload(url: string, name: string) {
@@ -170,8 +232,15 @@ function triggerDownload(url: string, name: string) {
   document.body.removeChild(a)
 }
 
-function downloadFile(file: UploadFile) {
-  triggerDownload(getDownloadUrl(file), file.original_name?.trim() || 'file')
+async function downloadFile(file: UploadFile) {
+  try {
+    const url = await getDownloadUrl(file)
+    triggerDownload(url, file.original_name?.trim() || 'file')
+  } catch {
+    // A refusal here means the file is no longer visible to this viewer —
+    // revoked audience, hidden, or deleted between render and click.
+    showToast(t('document.documentDetailsPage.downloadFailed'), { type: 'error' })
+  }
 }
 
 // Files we can render in-app: images + pdf natively, office docs via the
@@ -210,6 +279,9 @@ function previewFile(file: UploadFile) {
 
 onMounted(async () => {
   if (!canLoad.value) return
+  // Departments are only needed to name the audience, so they load alongside
+  // rather than gating the document itself.
+  if (!majorsStore.majors.length) void majorsStore.fetchMajors()
   await docs.fetchOne(uploadId.value)
 })
 
@@ -222,49 +294,89 @@ watch(uploadId, async (id) => {
 
 <template>
   <div class="w-full px-6">
-    <!-- Breadcrumb / Back — aligned with navbar logo -->
-    <div class="mx-auto w-full max-w-7xl md:px-6 mb-6 cursor-pointer">
+    <!-- Breadcrumb / Back — aligned with navbar logo. Hidden as a row, not
+         just as a button: BackButton hides itself on a phone, but the wrapper
+         kept its mb-6 and left 24px of empty space above the title. -->
+    <div class="mx-auto hidden w-full max-w-7xl mb-6 cursor-pointer md:block md:px-6">
       <BackButton />
     </div>
 
     <!-- Rest of content -->
-    <div class="mx-auto w-full max-w-6xl">
+    <div class="mx-auto w-full max-w-6xl mb-9">
       <!-- Header -->
-      <div class="flex items-start justify-between gap-4 flex-wrap mb-8">
-        <div>
-          <h1 class="text-2xl font-bold text-gray-900 capitalize">{{ pageTitle }}</h1>
-          <p class="mt-1 text-sm text-gray-400">
-            {{ t('document.documentDetailsPage.filesCount', files.length) }} &nbsp;•&nbsp;
-            {{ upload?.users?.first_name }} {{ upload?.users?.last_name }}
-          </p>
+      <div class="mb-3">
+        <!-- Title and the actions on one row, whatever the width: the actions
+             used to be a sibling of the whole left column, so once the owner's
+             Visible/Expires lines made that column full-width, flex-wrap pushed
+             the toggle and the button onto a line of their own. -->
+        <div class="flex items-center justify-between gap-4">
+          <div>
+            <h1 class="md:text-2xl text-xl font-bold text-gray-900 capitalize">{{ pageTitle }}</h1>
+            <p class="md:text-sm text-xs text-gray-400">
+              {{ upload?.users?.first_name }} {{ upload?.users?.last_name }}
+            </p>
+          </div>
+
+          <div class="flex shrink-0 items-center gap-3">
+            <ViewToggle v-if="files.length" v-model="viewMode" />
+            <IconTextButton
+              v-if="isOwner"
+              :text="
+                adding
+                  ? t('document.documentDetailsPage.adding', { percent: addProgress })
+                  : t('document.documentDetailsPage.addFiles')
+              "
+              :disabled="adding"
+              :class="adding ? 'opacity-70 cursor-not-allowed' : ''"
+              @click="showAddFiles = true"
+            >
+              <template #icon>
+                <svg
+                  class="h-4 w-4"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  viewBox="0 0 24 24"
+                >
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M12 5v14M5 12h14" />
+                </svg>
+              </template>
+            </IconTextButton>
+          </div>
         </div>
-        <div class="flex items-center gap-3">
-          <IconTextButton
-            v-if="isOwner"
-            :text="adding ? t('document.documentDetailsPage.adding', { percent: addProgress }) : t('document.documentDetailsPage.addFiles')"
-            :disabled="adding"
-            :class="adding ? 'opacity-70 cursor-not-allowed' : ''"
-            @click="pickFiles"
-          >
-            <template #icon>
-              <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M12 5v14M5 12h14" />
-              </svg>
-            </template>
-          </IconTextButton>
-          <ViewToggle v-if="files.length" v-model="viewMode" />
+
+        <!-- Uploader only, and below the row rather than inside the title
+             column. Who the document reaches and when it stops being visible
+             are decisions its owner made and may want to check; to anyone else
+             they are someone else's settings, and the audience would hint at
+             cohorts the reader is not part of. -->
+        <div
+          v-if="isOwner"
+          class="mt-2 flex flex-wrap items-center gap-x-5 gap-y-1 text-xs text-gray-500"
+        >
+          <p>
+            <span class="font-semibold text-gray-600">
+              {{ t('document.documentDetailsPage.visibleTo') }}:
+            </span>
+            {{ audienceLabel }}
+          </p>
+          <p>
+            <span class="font-semibold text-gray-600">
+              {{ t('document.documentDetailsPage.expires') }}:
+            </span>
+            {{ expiryLabel }}
+          </p>
         </div>
       </div>
 
-      <!-- Owner-only, and kept out of the tab order — pickFiles() drives it. -->
-      <input
-        v-if="isOwner"
-        ref="fileInput"
-        type="file"
-        multiple
-        class="hidden"
-        :accept="ACCEPT"
-        @change="onFilesPicked"
+      <AddFilesModal
+        v-if="isOwner && showAddFiles"
+        :max-files="MAX_FILES_PER_REQUEST"
+        :max-file-size-bytes="MAX_FILE_SIZE_BYTES"
+        :loading="adding"
+        :progress="addProgress"
+        @close="showAddFiles = false"
+        @confirm="uploadFiles"
       />
 
       <!-- Only the uploader and admins are served a non-active file, so these
@@ -274,8 +386,18 @@ watch(uploadId, async (id) => {
         v-if="pendingFiles.length"
         class="mb-4 flex items-start gap-3 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3"
       >
-        <svg class="mt-0.5 h-5 w-5 shrink-0 text-amber-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4m0 4h.01M12 3a9 9 0 100 18 9 9 0 000-18z" />
+        <svg
+          class="mt-0.5 h-5 w-5 shrink-0 text-amber-500"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          viewBox="0 0 24 24"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            d="M12 8v4m0 4h.01M12 3a9 9 0 100 18 9 9 0 000-18z"
+          />
         </svg>
         <p class="text-sm text-amber-800">
           {{ t('document.documentDetailsPage.filesPendingReview', pendingFiles.length) }}
@@ -283,11 +405,43 @@ watch(uploadId, async (id) => {
       </div>
 
       <div
+        v-if="hiddenFiles.length"
+        class="mb-4 flex items-start gap-3 rounded-2xl border border-gray-200 bg-gray-50 px-4 py-3"
+      >
+        <svg
+          class="mt-0.5 h-5 w-5 shrink-0 text-gray-400"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          viewBox="0 0 24 24"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.542-7a9.97 9.97 0 011.563-3.029M3 3l18 18"
+          />
+        </svg>
+        <p class="text-sm text-gray-700">
+          {{ t('document.documentDetailsPage.filesHidden', hiddenFiles.length) }}
+        </p>
+      </div>
+
+      <div
         v-if="rejectedFiles.length"
         class="mb-4 flex items-start gap-3 rounded-2xl border border-red-200 bg-red-50 px-4 py-3"
       >
-        <svg class="mt-0.5 h-5 w-5 shrink-0 text-red-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4m0 4h.01M12 3a9 9 0 100 18 9 9 0 000-18z" />
+        <svg
+          class="mt-0.5 h-5 w-5 shrink-0 text-red-500"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          viewBox="0 0 24 24"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            d="M12 8v4m0 4h.01M12 3a9 9 0 100 18 9 9 0 000-18z"
+          />
         </svg>
         <div class="text-sm text-red-800">
           <p>{{ t('document.documentDetailsPage.filesRejected', rejectedFiles.length) }}</p>
@@ -333,7 +487,9 @@ watch(uploadId, async (id) => {
           <!-- Table header -->
           <div
             class="hidden md:grid gap-3 items-center border-b border-gray-100 px-4 py-3 text-md font-medium text-black tracking-wide"
-            :class="isOwner ? 'grid-cols-[1fr_140px_100px_88px]' : 'grid-cols-[1fr_140px_100px_48px]'"
+            :class="
+              isOwner ? 'grid-cols-[1fr_140px_100px_88px]' : 'grid-cols-[1fr_140px_100px_48px]'
+            "
           >
             <span>{{ t('document.documentDetailsPage.colName') }}</span>
             <span class="text-center">{{ t('document.documentDetailsPage.colPostDate') }}</span>
@@ -341,19 +497,28 @@ watch(uploadId, async (id) => {
             <span></span>
           </div>
 
-          <!-- File rows -->
-          <FileRow
-            v-for="(file, idx) in files"
-            :key="file.id"
-            :file="file"
-            :uploaded-at="upload?.uploaded_at"
-            :fallback-name="upload?.title"
-            :is-last="idx === files.length - 1"
-            :can-delete="isOwner"
-            @preview="previewFile"
-            @download="downloadFile"
-            @delete="askDelete"
-          />
+          <!-- Rows scroll, the header does not: an upload with many files
+               should not push the rest of the page out of reach, and the column
+               names stay readable while you move through them.
+               Height is six whole rows rather than a share of the viewport —
+               a row is 64px (py-3 either side of a 40px thumbnail) plus its 1px
+               divider, so the list ends on a complete row instead of slicing
+               one through the middle. -->
+          <div class="max-h-[390px] overflow-y-auto scrollbar-primary">
+            <FileRow
+              v-for="(file, idx) in files"
+              :key="file.id"
+              :file="file"
+              :uploaded-at="upload?.uploaded_at"
+              :fallback-name="upload?.title"
+              :is-last="idx === files.length - 1"
+              :can-delete="isOwner"
+              @preview="previewFile"
+              @download="downloadFile"
+              @delete="askDelete"
+              @toggle-hidden="toggleHidden"
+            />
+          </div>
         </div>
 
         <!-- File grid (card view — always on mobile, desktop only in card mode) -->
@@ -370,17 +535,14 @@ watch(uploadId, async (id) => {
             @preview="previewFile"
             @download="downloadFile"
             @delete="askDelete"
+            @toggle-hidden="toggleHidden"
           />
         </div>
       </template>
     </div>
     <!-- max-w-6xl -->
 
-    <DocumentPreviewModal
-      v-model="previewOpen"
-      :file="previewTarget"
-      @download="downloadFile"
-    />
+    <DocumentPreviewModal v-model="previewOpen" :file="previewTarget" @download="downloadFile" />
 
     <ConfirmDeleteModal
       v-if="deleteTarget"

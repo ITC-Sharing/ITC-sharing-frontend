@@ -36,10 +36,27 @@ const tasks = new Map<number, RenderTask>()
 
 const dpr = Math.min(window.devicePixelRatio || 1, 2)
 const THUMB_WIDTH = 108
+/** Widest a page is ever drawn, however much room the pane has. */
 const BASE_WIDTH = 820
+
+/**
+ * True once the reader has zoomed by hand. Fit-to-width then stops chasing the
+ * pane, so rotating a phone or resizing a window no longer throws away the
+ * magnification they chose.
+ */
+let userZoomed = false
+let paneObserver: ResizeObserver | null = null
 
 let pageObserver: IntersectionObserver | null = null
 let thumbObserver: IntersectionObserver | null = null
+/**
+ * Which page you are actually looking at — a separate observer from the one
+ * that paints, because painting needs a generous rootMargin and that margin
+ * inflates intersectionRatio for pages still below the fold.
+ */
+let currentObserver: IntersectionObserver | null = null
+/** Last known ratio per page, so the most-visible one can be picked. */
+const pageRatios = new Map<number, number>()
 
 function setPageEl(num: number, el: Element | null) {
   if (el) {
@@ -111,10 +128,86 @@ function goToPage(num: number) {
   pageEls.get(num)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
 }
 
+/**
+ * Left and right step a page at a time.
+ *
+ * Deliberately NOT up/down: those already scroll the document line by line, and
+ * taking them over would cost the only way to read across a page break.
+ *
+ * currentPage is maintained by the intersection observer, so this follows
+ * wherever the reader has scrolled to rather than a separate counter.
+ */
+function onKeydown(e: KeyboardEvent) {
+  if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return
+  // Let the browser's own shortcuts through, and leave typing alone.
+  if (e.metaKey || e.ctrlKey || e.altKey || e.shiftKey) return
+  const el = document.activeElement as HTMLElement | null
+  if (el?.isContentEditable || ['INPUT', 'TEXTAREA', 'SELECT'].includes(el?.tagName ?? '')) return
+  if (!pages.value.length) return
+
+  const next = currentPage.value + (e.key === 'ArrowRight' ? 1 : -1)
+  if (next < 1 || next > pages.value.length) return
+  e.preventDefault()
+  currentPage.value = next
+  goToPage(next)
+}
+
+window.addEventListener('keydown', onKeydown)
+
 function zoomBy(factor: number) {
+  userZoomed = true
   scale.value = Math.min(3, Math.max(0.4, scale.value * factor))
   paintedAt.clear()
   for (const num of pageEls.keys()) if (isNear(num)) void paintPage(num)
+}
+
+/**
+ * How wide one page may be drawn — measured from the pane, not assumed.
+ *
+ * The scale used to come from a flat BASE_WIDTH / pageWidth, so every page was
+ * laid out for an 820px pane. On a 390px phone that painted a page twice the
+ * width of the screen and left the right-hand half unreachable.
+ *
+ * The padding is read back off the element rather than hard-coded, so the
+ * responsive `p-2 sm:p-4` on the scroller cannot drift out of sync with it.
+ */
+function availableWidth() {
+  const el = scroller.value
+  if (!el || !el.clientWidth) return BASE_WIDTH // pre-mount: no pane to measure
+  const style = getComputedStyle(el)
+  const padding = parseFloat(style.paddingLeft) + parseFloat(style.paddingRight)
+  return Math.max(200, Math.min(BASE_WIDTH, el.clientWidth - padding))
+}
+
+/** Scale the pages so one fits the pane's width. */
+function fitToWidth() {
+  const first = pages.value[0]
+  if (!first) return
+  const next = Math.min(1.6, availableWidth() / first.width)
+  // Sub-percent differences are invisible and would repaint every page.
+  if (Math.abs(next - scale.value) < 0.01) return
+  scale.value = next
+  paintedAt.clear()
+  for (const num of pageEls.keys()) if (isNear(num)) void paintPage(num)
+}
+
+/**
+ * Re-fit when the pane changes width — a rotated phone, a resized window, a
+ * modal that grew. ResizeObserver rather than a window listener: the pane can
+ * change size while the window does not.
+ */
+function watchPaneWidth() {
+  paneObserver?.disconnect()
+  if (!scroller.value) return
+  let last = scroller.value.clientWidth
+  paneObserver = new ResizeObserver(() => {
+    const width = scroller.value?.clientWidth ?? 0
+    // Height-only changes (the phone's URL bar sliding away) must not repaint.
+    if (!width || width === last) return
+    last = width
+    if (!userZoomed) fitToWidth()
+  })
+  paneObserver.observe(scroller.value)
 }
 
 /** Cheap visibility test used when re-painting after a zoom. */
@@ -129,9 +222,13 @@ function isNear(num: number) {
 function teardown() {
   for (const task of tasks.values()) task.cancel()
   tasks.clear()
+  paneObserver?.disconnect()
+  paneObserver = null
   pageObserver?.disconnect()
   thumbObserver?.disconnect()
-  pageObserver = thumbObserver = null
+  currentObserver?.disconnect()
+  pageObserver = thumbObserver = currentObserver = null
+  pageRatios.clear()
   pageEls.clear()
   pageCanvases.clear()
   thumbCanvases.clear()
@@ -149,6 +246,7 @@ async function load(src: string) {
   pages.value = []
   currentPage.value = 1
   scale.value = 1
+  userZoomed = false
 
   try {
     loadingTask = pdfjs.getDocument({ url: src })
@@ -173,6 +271,10 @@ async function load(src: string) {
     loading.value = false
 
     await nextTick()
+    // Now that the pane is in the DOM its width can be measured; this corrects
+    // the provisional scale above before the first page is painted.
+    fitToWidth()
+    watchPaneWidth()
     observe()
   } catch {
     loading.value = false
@@ -188,14 +290,33 @@ function observe() {
   pageObserver = new IntersectionObserver(
     (entries) => {
       for (const entry of entries) {
-        const num = Number((entry.target as HTMLElement).dataset.page)
-        if (entry.isIntersecting) {
-          void paintPage(num)
-          if (entry.intersectionRatio > 0.35) currentPage.value = num
-        }
+        if (entry.isIntersecting) void paintPage(Number((entry.target as HTMLElement).dataset.page))
       }
     },
-    { root, rootMargin: '100% 0px', threshold: [0, 0.35, 0.6] },
+    { root, rootMargin: '100% 0px', threshold: 0 },
+  )
+
+  /**
+   * The current page is whichever covers most of the viewport — no rootMargin
+   * here, or a page a full screen below would count as visible, which is what
+   * made the rail highlight page 2 while page 1 filled the screen.
+   */
+  currentObserver = new IntersectionObserver(
+    (entries) => {
+      for (const entry of entries) {
+        pageRatios.set(Number((entry.target as HTMLElement).dataset.page), entry.intersectionRatio)
+      }
+      let best = 0
+      let bestRatio = 0
+      for (const [num, ratio] of pageRatios) {
+        if (ratio > bestRatio) {
+          bestRatio = ratio
+          best = num
+        }
+      }
+      if (best) currentPage.value = best
+    },
+    { root, threshold: [0, 0.1, 0.25, 0.5, 0.75, 1] },
   )
   thumbObserver = new IntersectionObserver(
     (entries) => {
@@ -207,12 +328,18 @@ function observe() {
     { rootMargin: '200px' },
   )
 
-  for (const el of pageEls.values()) pageObserver.observe(el)
+  for (const el of pageEls.values()) {
+    pageObserver.observe(el)
+    currentObserver.observe(el)
+  }
   for (const el of thumbCanvases.values()) thumbObserver.observe(el)
 }
 
 watch(() => props.src, load, { immediate: true })
-onBeforeUnmount(teardown)
+onBeforeUnmount(() => {
+  window.removeEventListener('keydown', onKeydown)
+  teardown()
+})
 </script>
 
 <template>
@@ -220,7 +347,7 @@ onBeforeUnmount(teardown)
     <!-- Thumbnail rail -->
     <aside
       v-if="pages.length > 1"
-      class="hidden w-40 shrink-0 overflow-y-auto overscroll-contain border-r border-white/10 bg-black/30 py-3 sm:block"
+      class="hidden w-40 shrink-0 overflow-y-auto overscroll-contain border-r border-white/10 bg-black/30 py-3 sm:block scrollbar-primary"
     >
       <button
         v-for="page in pages"
@@ -253,7 +380,10 @@ onBeforeUnmount(teardown)
 
     <!-- Pages -->
     <div class="relative flex min-w-0 flex-1 flex-col">
-      <div ref="scroller" class="flex-1 overflow-auto overscroll-contain p-4">
+      <div
+        ref="scroller"
+        class="flex-1 overflow-auto overscroll-contain p-2 sm:p-4 scrollbar-primary"
+      >
         <p v-if="loading" class="py-16 text-center text-sm text-white/60">
           {{ t('document.documentDetailsPage.pdfLoading') }}
         </p>

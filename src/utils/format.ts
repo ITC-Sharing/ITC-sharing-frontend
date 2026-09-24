@@ -85,12 +85,6 @@ export function getFileIcon(name: string | null | undefined): { bg: string; labe
   return { bg: style.solid, label: style.label }
 }
 
-export function formatTotalFileSize(kb: number): string {
-  if (kb < 1024) return `${kb} KB`
-  if (kb < 1024 * 1024) return `${(kb / 1024).toFixed(1)} MB`
-  return `${(kb / (1024 * 1024)).toFixed(2)} GB`
-}
-
 export function telegramHref(contact: string): string | null {
   const trimmed = contact.trim()
   if (trimmed.startsWith('@')) return `https://t.me/${trimmed.slice(1)}`
@@ -102,6 +96,20 @@ export function reqStatusBadge(status: string): string {
   if (status === 'accepted') return 'bg-green-100 text-green-700'
   if (status === 'declined') return 'bg-red-100 text-red-600'
   return 'bg-yellow-100 text-yellow-700'
+}
+
+/**
+ * A person's name in title case, for display.
+ *
+ * Names are stored exactly as typed at sign-up, which is often all lowercase
+ * ("pa roth"). Capitalising in CSS is not an option where the name sits inside
+ * a translated sentence — `capitalize` would title-case the whole line.
+ */
+export function displayName(first?: string | null, last?: string | null): string {
+  return [first, last]
+    .filter(Boolean)
+    .join(' ')
+    .replace(/\S+/g, (word) => word[0]!.toUpperCase() + word.slice(1))
 }
 
 export function reqInitials(first?: string, last?: string): string {
@@ -127,7 +135,6 @@ export function sanitizeTextName(raw: string): string {
 
 // A single tag — letters/numbers (any language) joined by single hyphens.
 // No spaces and no special characters.
-export const TEXT_TAG_PATTERN = /^[\p{L}\p{M}\p{N}]+(?:-[\p{L}\p{M}\p{N}]+)*$/u
 
 // Characters never allowed in free-text fields (template-injection chars).
 export const FORBIDDEN_TEXT_PATTERN = /[${}]/
@@ -144,7 +151,10 @@ export function isLanguageMajor(acronym?: string | null): boolean {
 }
 
 // Indexed by DFL's year_level (1-based).
-const DFL_LANGUAGE_KEYS = ['common.departmentPage.languageEnglish', 'common.departmentPage.languageFrench']
+const DFL_LANGUAGE_KEYS = [
+  'common.departmentPage.languageEnglish',
+  'common.departmentPage.languageFrench',
+]
 
 /**
  * i18n key naming what a major's `year_level` stands for, or null when it's a
@@ -161,13 +171,136 @@ export function languageLabelKey(
 }
 
 /**
- * The values a major's `year_level` can take: Foundation covers years 1–2,
- * DFL holds its two languages, and every department major takes students from
- * year 3 onwards.
+ * The foundation programme — the first two years, before a student joins a
+ * department. `TC` (Tronc Commun) is the current acronym; `FOUNDATION` is the
+ * old one, still matched so an older database keeps behaving.
+ *
+ * Mirrors isFoundationMajor() in the backend's documents/utils/year-levels.ts.
+ */
+export function isFoundationMajor(acronym?: string | null): boolean {
+  const a = (acronym ?? '').toLowerCase()
+  return a === 'tc' || a === 'foundation'
+}
+
+/**
+ * How a cohort is written at ITC: the year, then the department — "I3-GIC".
+ *
+ * Falls back to the acronym alone where a year would be misleading: DFL's
+ * `year_level` holds a LANGUAGE rather than a year, so "I1-DFL" would read as a
+ * first-year cohort that does not exist.
+ */
+export function yearMajorLabel(
+  acronym?: string | null,
+  yearLevel?: number | string | null,
+): string {
+  const code = (acronym ?? '').trim()
+  if (!code) return '—'
+  if (!yearLevel || isLanguageMajor(code)) return code
+  return `I${yearLevel}-${code}`
+}
+
+/**
+ * The values a major's `year_level` can take: the foundation programme covers
+ * years 1–2, DFL holds its two languages, and every department major takes
+ * students from year 3 onwards.
  */
 export function yearLevelsForMajor(acronym?: string | null): number[] {
   const a = (acronym ?? '').toLowerCase()
   if (a === 'dfl') return [1, 2]
-  if (a === 'foundation') return [1, 2]
+  if (isFoundationMajor(a)) return [1, 2]
   return [3, 4, 5]
+}
+
+/**
+ * "I3-GIC, I4-GIC" — who an upload is visible to, from its stored audience.
+ *
+ * An empty list is the "Everyone" choice, which is also what a language course
+ * always stores. A pair whose department is not in `majors` falls back to the
+ * bare year rather than printing a raw uuid.
+ */
+export function audienceLabel(
+  audience: { major_id: string; year_level: number }[] | null | undefined,
+  majors: { id: string; acronym: string }[],
+  everyone = 'Everyone',
+): string {
+  if (!audience?.length) return everyone
+  return audience
+    .map((entry) => {
+      const acronym = majors.find((m) => m.id === entry.major_id)?.acronym
+      return acronym ? yearMajorLabel(acronym, entry.year_level) : `Year ${entry.year_level}`
+    })
+    .join(', ')
+}
+
+/**
+ * True when the pairs picked already cover every department and year on offer.
+ *
+ * Ticking all of them one by one is the same answer as "Everyone", and the
+ * upload forms collapse it to that: 35 chips say nothing 1 chip doesn't, and
+ * the server stores an unrestricted upload as no pairs at all.
+ *
+ * An empty department list returns false, not true. `every` on an empty array
+ * is vacuously true, which would read "everything is covered" while the majors
+ * are still loading and collapse a selection the user never made.
+ */
+export function coversEveryAudiencePair(
+  picked: { major_id: string; year_level: number }[],
+  departments: { id: string; years: { value: number }[] }[],
+): boolean {
+  if (!departments.length) return false
+  const chosen = new Set(picked.map((p) => `${p.major_id}:${p.year_level}`))
+  return departments.every((d) => d.years.every((y) => chosen.has(`${d.id}:${y.value}`)))
+}
+
+/**
+ * Whether an upload's soft expiry has passed.
+ *
+ * Deliberately not a status value. `expires_at` is a date and the row stays
+ * 'active' in the database — which is what keeps the upload visible to its
+ * owner on their dashboard after it has dropped out of everyone else's feed.
+ * Turning it into a stored status would need a job to flip rows and would
+ * break the server's visibility rules, which key off 'active'.
+ *
+ * Shared so the card and the list row cannot drift: two places rendering the
+ * same badge from two copies of the comparison is how one of them ends up
+ * off by a timezone.
+ */
+export function isExpired(expiresAt: string | null | undefined): boolean {
+  if (!expiresAt) return false
+  const at = Date.parse(expiresAt)
+  return Number.isFinite(at) && at <= Date.now()
+}
+
+/** What is wrong with a name, or null when nothing is. */
+export type NameProblem = 'spaces' | 'invalid' | 'lowercase' | null
+
+/**
+ * The rule for a first or last name, in one place.
+ *
+ * Registration and the profile editor both enforce it, and they used to hold
+ * two copies of the pattern with a comment on one saying it had to match the
+ * other — which is a drift waiting to happen rather than a rule.
+ *
+ * Returns which rule was broken rather than a message, because the two callers
+ * live in different i18n namespaces and would otherwise have to share message
+ * keys they do not share anything else with.
+ *
+ * ── On the capital letter ────────────────────────────────────────────────
+ * Only checked for Latin script. Khmer has no letter case at all, so a name
+ * written in Khmer has no capital to start with, and demanding one would make
+ * it impossible to register under your own name in your own language. A Khmer
+ * first character therefore passes this check rather than failing it.
+ */
+export function checkName(raw: string): NameProblem {
+  // Surrounding whitespace is stripped before the rule is applied — " Dara "
+  // is a typo, not a violation. Anything left is an internal space.
+  const value = raw.trim()
+
+  if (/\s/.test(value)) return 'spaces'
+  if (!/^[A-Za-zក-៿]+$/.test(value)) return 'invalid'
+  // Latin lower-case start. Any other first character — upper-case Latin or
+  // Khmer — is fine by the note above.
+  if (/^[a-z]/.test(value)) return 'lowercase'
+
+  return null
 }

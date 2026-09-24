@@ -1,7 +1,10 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
-import api from '@/lib/axios'
-import RingSpinner from '@/components/common/RingSpinner.vue'
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import api from '@/services/http'
+import { useI18n } from 'vue-i18n'
+import RingSpinner from '@/components/base/RingSpinner.vue'
+import ConfirmChangesModal, { type FieldChange } from '@/components/base/ConfirmChangesModal.vue'
+import { clearDraft, readDraft, writeDraft } from '@/composables/uploadDraft'
 
 /**
  * Creates a department, or edits one when `major` is passed. Sent as multipart
@@ -12,6 +15,8 @@ const props = defineProps<{
 }>()
 
 const emit = defineEmits<{ (e: 'close'): void; (e: 'created'): void }>()
+
+const { t } = useI18n({ useScope: 'global' })
 
 const isEditing = computed(() => !!props.major)
 
@@ -72,8 +77,46 @@ function validate() {
   return !errors.value.name && !errors.value.acronym
 }
 
-async function submit() {
+/**
+ * An edit is confirmed before it is saved, so an accidental change is caught
+ * while it can still be undone. Creating has nothing to compare against, and an
+ * edit that changed nothing has nothing to confirm — both go straight through.
+ *
+ * This modal's labels are hardcoded English (it is admin-only), so the change
+ * list matches them rather than inventing translated ones.
+ */
+const pendingChanges = ref<FieldChange[]>([])
+
+function collectChanges(): FieldChange[] {
+  const major = props.major
+  if (!major) return []
+  const changes: FieldChange[] = []
+  if (name.value.trim() !== major.name)
+    changes.push({ label: 'Department name', from: major.name, to: name.value.trim() })
+  if (acronym.value.trim() !== major.acronym)
+    changes.push({ label: 'Acronym', from: major.acronym, to: acronym.value.trim() })
+  if (logo.value)
+    changes.push({
+      label: 'Logo',
+      from: major.image_url ? (major.image_url.split('/').pop() ?? '') : '',
+      to: t('common.confirmChanges.coverReplaced'),
+    })
+  return changes
+}
+
+function submit() {
   if (!validate()) return
+  if (isEditing.value) {
+    const changes = collectChanges()
+    if (changes.length) {
+      pendingChanges.value = changes
+      return
+    }
+  }
+  void save()
+}
+
+async function save() {
   saving.value = true
   errors.value.form = ''
   try {
@@ -85,6 +128,9 @@ async function submit() {
     const headers = { 'Content-Type': 'multipart/form-data' }
     if (props.major) await api.patch(`/majors/${props.major.id}`, body, { headers })
     else await api.post('/majors', body, { headers })
+    // Saved: there is nothing left to come back to.
+    clearDraft(draftContext.value)
+    pendingChanges.value = []
     emit('created')
   } catch (e: unknown) {
     const message = (e as { response?: { data?: { message?: string | string[] } } })?.response?.data
@@ -100,21 +146,84 @@ async function submit() {
 function onKeydown(event: KeyboardEvent) {
   if (event.key === 'Escape' && !saving.value) emit('close')
 }
+// ── Draft ──────────────────────────────────────────────────────────────────
+// Closing this form — deliberately or by a stray click on the backdrop — keeps
+// what was typed, for this page session only. Keyed by the department being
+// edited, so a new one and an edit never overwrite each other.
+const draftContext = computed(() => `major:${props.major?.id ?? 'new'}`)
+
+type Draft = {
+  name: string
+  acronym: string
+  /** The File itself, not a URL: the draft is in memory, and keeping the file
+   *  is what lets the preview be rebuilt from it. */
+  logo: File | null
+  /** Only for an existing logo, which is a server URL rather than a blob. */
+  logoUrl: string | null
+}
+
+function saveDraft() {
+  const blank = !name.value.trim() && !acronym.value.trim() && !logo.value
+  if (blank && !isEditing.value) {
+    clearDraft(draftContext.value)
+    return
+  }
+  writeDraft(draftContext.value, {
+    name: name.value,
+    acronym: acronym.value,
+    logo: logo.value,
+    logoUrl: logo.value ? null : logoPreview.value,
+  } satisfies Draft)
+}
+
+/**
+ * Restores what was typed, or gives up and starts clean. A bad draft must never
+ * take the modal down with it: this runs during setup, and the draft outlives
+ * the component, so the same throw would repeat on every reopen.
+ */
+function restoreDraft() {
+  const draft = readDraft<Draft>(draftContext.value)
+  if (!draft) return
+  try {
+    name.value = draft.name
+    acronym.value = draft.acronym
+    logo.value = draft.logo
+    // Rebuilt from the file: the previous object URL died with the last close.
+    logoPreview.value = draft.logo ? URL.createObjectURL(draft.logo) : draft.logoUrl
+  } catch (err) {
+    console.error('Could not restore the department draft; starting a fresh form.', err)
+    clearDraft(draftContext.value)
+  }
+}
+
+// Saved as the user types, coalesced so a keystroke isn't a write.
+let draftTimer: ReturnType<typeof setTimeout>
+watch([name, acronym, logo], () => {
+  clearTimeout(draftTimer)
+  draftTimer = setTimeout(saveDraft, 300)
+})
+
 onMounted(() => document.addEventListener('keydown', onKeydown))
 onBeforeUnmount(() => {
   document.removeEventListener('keydown', onKeydown)
-  if (logo.value && logoPreview.value) URL.revokeObjectURL(logoPreview.value)
+  // Otherwise the debounced save fires ~300ms after the modal is gone.
+  clearTimeout(draftTimer)
+  if (logo.value && logoPreview.value?.startsWith('blob:')) URL.revokeObjectURL(logoPreview.value)
 })
+
+// Last, deliberately: restoreDraft() assigns to refs declared above, and a
+// `const` cannot be read before its own line has run.
+restoreDraft()
 </script>
 
 <template>
   <Teleport to="body">
     <div
-      class="fixed inset-0 z-[70] flex items-center justify-center bg-black/45 px-4 py-6 backdrop-blur-sm"
+      class="fixed inset-0 z-[70] flex items-center justify-center bg-black/45 px-4 py-6"
       @click.self="!saving && emit('close')"
     >
       <div
-        class="flex max-h-[90vh] w-full max-w-sm flex-col overflow-hidden rounded-3xl bg-white shadow-2xl ring-1 ring-black/10 md:max-w-md"
+        class="flex max-h-[80dvh] w-full max-w-sm flex-col sm:max-h-[90dvh] overflow-hidden rounded-3xl bg-white shadow-2xl ring-1 ring-black/10 md:max-w-md"
       >
         <div class="relative border-b border-black/5 px-5 py-4">
           <p class="text-center text-xl font-bold text-black">
@@ -232,7 +341,7 @@ onBeforeUnmount(() => {
           </button>
           <button
             type="button"
-            class="flex items-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-[#006B9C] hover:cursor-pointer disabled:cursor-not-allowed disabled:opacity-60"
+            class="flex items-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-primary-hover hover:cursor-pointer disabled:cursor-not-allowed disabled:opacity-60"
             :disabled="!canSubmit"
             @click="submit"
           >
@@ -243,4 +352,12 @@ onBeforeUnmount(() => {
       </div>
     </div>
   </Teleport>
+
+  <ConfirmChangesModal
+    v-if="pendingChanges.length"
+    :changes="pendingChanges"
+    :loading="saving"
+    @cancel="pendingChanges = []"
+    @confirm="save"
+  />
 </template>

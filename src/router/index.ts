@@ -1,4 +1,4 @@
-import { createRouter, createWebHistory } from 'vue-router'
+import { createRouter, createWebHistory, type RouteLocationNormalized } from 'vue-router'
 import { useAuthStore } from '@/stores/auth.store'
 
 const routes = [
@@ -50,23 +50,77 @@ const routes = [
       },
       {
         path: 'dashboard',
-        component: () => import('@/views/dashboard/user/DashboardView.vue'),
+        component: () => import('@/views/dashboard/DashboardView.vue'),
         meta: { requiresAuth: true },
         children: [
           {
             path: '',
             name: 'dashboard',
-            component: () => import('@/views/dashboard/user/DashboardActivity.vue'),
+            component: () => import('@/views/dashboard/DashboardActivityView.vue'),
           },
           {
             path: 'documents',
             name: 'dashboard-documents',
-            component: () => import('@/views/dashboard/user/DashboardDocuments.vue'),
+            component: () => import('@/views/dashboard/DashboardDocumentsView.vue'),
           },
+          // Two book views, two paths. The list they show is a different thing,
+          // not a filter of the same thing, so it belongs in the path — leaving
+          // ?status= for what is genuinely a filter.
           {
             path: 'books',
             name: 'dashboard-books',
-            component: () => import('@/views/dashboard/user/DashboardBooks.vue'),
+            component: () => import('@/views/dashboard/DashboardBooksView.vue'),
+          },
+          // Book Activity's two halves: requests others have made of you, and
+          // the ones you have made of them. Separate paths for the same reason
+          // as above — different lists, not a filter of one.
+          {
+            path: 'books/approve',
+            name: 'dashboard-books-approve',
+            component: () => import('@/views/dashboard/DashboardBooksView.vue'),
+          },
+          {
+            path: 'books/reserved',
+            name: 'dashboard-books-reserved',
+            component: () => import('@/views/dashboard/DashboardBooksView.vue'),
+          },
+          /**
+           * The review queue, for admins and department moderators.
+           *
+           * Its own page rather than a doorway into the admin dashboard: a
+           * moderator is an ordinary student who also reviews, and that screen
+           * is headed "Admin Panel" and full of tabs they cannot open. What
+           * they may review is still decided entirely by the server.
+           */
+          {
+            path: 'review/subjects',
+            name: 'dashboard-review-subjects',
+            component: () => import('@/views/dashboard/DashboardReviewView.vue'),
+            meta: { requiresReviewer: true },
+          },
+          {
+            path: 'review/documents',
+            name: 'dashboard-review-documents',
+            component: () => import('@/views/dashboard/DashboardReviewView.vue'),
+            meta: { requiresReviewer: true },
+          },
+          {
+            // One submission's files. A child of the dashboard so the sidebar
+            // and the phone's tab bar stay put while a reviewer looks through
+            // a folder. Same guard as the queue it is reached from — the
+            // server re-checks the department either way.
+            path: 'review/documents/:groupId',
+            name: 'dashboard-review-files',
+            component: () => import('@/views/dashboard/ReviewFilesView.vue'),
+            meta: { requiresReviewer: true },
+          },
+          // The bare path kept as a redirect: anything already pointing at
+          // /dashboard/review still lands somewhere useful.
+          { path: 'review', redirect: { name: 'dashboard-review-subjects' } },
+          {
+            path: 'books/requesting',
+            name: 'dashboard-books-requesting',
+            component: () => import('@/views/dashboard/DashboardBooksView.vue'),
           },
           {
             // Absolute path: the URL stays /profile, but the view renders
@@ -80,14 +134,14 @@ const routes = [
       {
         path: 'dep/:slug',
         name: 'department',
-        component: () => import('@/views/dapartment/DepartmentView.vue'),
+        component: () => import('@/views/departments/DepartmentView.vue'),
         props: true,
         meta: { requiresAuth: true },
       },
       {
         path: 'department/:slug/year/:year',
         name: 'subjects',
-        component: () => import('@/views/subject/SubjectsView.vue'),
+        component: () => import('@/views/subjects/SubjectsView.vue'),
         props: true,
         meta: { requiresAuth: true },
       },
@@ -106,6 +160,25 @@ const routes = [
         props: true,
         meta: { requiresAuth: true },
       },
+      /**
+       * Short link for notifications arriving from outside the app — Telegram,
+       * today. Deliberately terse: it is pasted into chat messages, and the
+       * view behind it resolves the real destination.
+       */
+      {
+        path: 'n/:id',
+        name: 'notification-open',
+        component: () => import('@/views/notifications/NotificationRedirectView.vue'),
+        meta: { requiresAuth: true },
+      },
+      // ── 404 ─────────────────────────────────────────────────────────────
+      // A child of the layout, not a route of its own: a wrong URL is still a
+      // page of the site, and the nav is what gets the visitor out of it.
+      {
+        path: ':pathMatch(.*)*',
+        name: 'not-found',
+        component: () => import('@/views/NotFoundView.vue'),
+      },
     ],
   },
 
@@ -113,14 +186,19 @@ const routes = [
   {
     path: '/admin/dashboard',
     name: 'admin',
-    component: () => import('@/views/dashboard/admin/AdminDashboardView.vue'),
-    meta: { requiresAdmin: true },
+    component: () => import('@/views/dashboard/AdminDashboardView.vue'),
+    /**
+     * Admins and department moderators both. The page itself shows each of
+     * them only what they can use — a moderator sees the review queue and
+     * nothing else. Access to the data behind it is settled by the server.
+     */
+    meta: { requiresReviewer: true },
   },
   {
     path: '/admin/review/:groupId',
     name: 'admin-review',
-    component: () => import('@/views/dashboard/admin/AdminDocumentReviewView.vue'),
-    meta: { requiresAdmin: true },
+    component: () => import('@/views/dashboard/AdminDocumentReviewView.vue'),
+    meta: { requiresReviewer: true },
   },
 
   // ── Auth layout ───────────────────────────────────────────────────────────
@@ -139,14 +217,33 @@ const routes = [
         name: 'register',
         component: () => import('@/views/auth/RegisterView.vue'),
       },
+      {
+        // Where the backend's Google callback drops the browser. Sits under
+        // /auth so it inherits guestOnly — it is only ever reached signed out.
+        path: 'callback',
+        name: 'auth-callback',
+        component: () => import('@/views/auth/GoogleCallbackView.vue'),
+      },
+      // The three link-driven screens. All under /auth, so they inherit
+      // guestOnly: each is reached from an email by someone who is, by
+      // definition, not signed in — and the paths must match the URLs the
+      // server builds in issueEmailToken().
+      {
+        path: 'verify-email',
+        name: 'verify-email',
+        component: () => import('@/views/auth/VerifyEmailView.vue'),
+      },
+      {
+        path: 'forgot-password',
+        name: 'forgot-password',
+        component: () => import('@/views/auth/ForgotPasswordView.vue'),
+      },
+      {
+        path: 'reset-password',
+        name: 'reset-password',
+        component: () => import('@/views/auth/ResetPasswordView.vue'),
+      },
     ],
-  },
-
-  // ── 404 ───────────────────────────────────────────────────────────────────
-  {
-    path: '/:pathMatch(.*)*',
-    name: 'not-found',
-    component: () => import('@/views/NotFoundView.vue'),
   },
 ]
 
@@ -155,16 +252,50 @@ const router = createRouter({
   routes,
 })
 
+/**
+ * The 404 rendered in place, on the URL that was asked for.
+ *
+ * Used instead of bouncing an unauthorised visitor somewhere else: a redirect
+ * answers the question "is this a real page?", and trying a handful of guesses
+ * would map the admin area out. A route you may not have looks exactly like a
+ * route that was never there.
+ *
+ * pathMatch is an array because the catch-all is repeatable (`:pathMatch(.*)*`),
+ * one entry per segment.
+ */
+function notFound(to: RouteLocationNormalized) {
+  return {
+    name: 'not-found',
+    params: { pathMatch: to.path.slice(1).split('/') },
+    query: to.query,
+    hash: to.hash,
+  }
+}
+
 router.beforeEach(async (to) => {
   const auth = useAuthStore()
   await auth.init()
 
-  if ((to.meta.requiresAuth || to.meta.requiresAdmin) && !auth.isAuthenticated) {
-    return { name: 'login' }
+  // Before the sign-in check, and covering the signed-out case itself: sending
+  // a stranger to the login page would confirm the path just as plainly.
+  const isAdmin = auth.user?.role?.toLowerCase() === 'admin'
+  if (to.meta.requiresAdmin && !isAdmin) {
+    return notFound(to)
   }
 
-  if (to.meta.requiresAdmin && auth.user?.role?.toLowerCase() !== 'admin') {
-    return { name: 'home' }
+  /**
+   * Review screens: an admin, or anyone who moderates a department. Separate
+   * from requiresAdmin because a moderator's role is still `user` — promoting
+   * them to admin to open one screen would hand them the whole admin surface.
+   */
+  if (to.meta.requiresReviewer && !isAdmin && !auth.user?.is_moderator) {
+    return notFound(to)
+  }
+
+  // The rest of the app is no secret — /dashboard exists for everyone — so the
+  // useful thing here is the login page, not a denial.
+  if (to.meta.requiresAuth && !auth.isAuthenticated) {
+    return { name: 'login' }
   }
 
   if (to.meta.guestOnly && auth.isAuthenticated) {

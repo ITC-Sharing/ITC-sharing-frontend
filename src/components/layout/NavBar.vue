@@ -1,5 +1,5 @@
 <template>
-  <nav class="bg-white shadow-sm fixed top-0 left-0 w-full z-50">
+  <nav ref="navRef" class="bg-white shadow-sm fixed top-0 left-0 w-full z-50">
     <div class="max-w-7xl mx-auto px-6">
       <div class="flex items-center justify-between py-4 relative">
         <!-- Left Section -->
@@ -42,17 +42,20 @@
             to="/"
             class="pb-1 border-b-2 border-transparent hover:text-primary transition-colors"
             exact-active-class="!text-primary !border-primary"
-          >{{ t('common.nav.home') }}</router-link>
+            >{{ t('common.nav.home') }}</router-link
+          >
           <router-link
             to="/documents"
             class="pb-1 border-b-2 border-transparent hover:text-primary transition-colors"
             active-class="!text-primary !border-primary"
-          >{{ t('common.nav.docs') }}</router-link>
+            >{{ t('common.nav.docs') }}</router-link
+          >
           <router-link
             to="/books"
             class="pb-1 border-b-2 border-transparent hover:text-primary transition-colors"
             active-class="!text-primary !border-primary"
-          >{{ t('common.nav.books') }}</router-link>
+            >{{ t('common.nav.books') }}</router-link
+          >
         </ul>
 
         <!-- Right Section -->
@@ -63,8 +66,15 @@
             class="hidden md:flex items-center gap-1.5 px-1 text-gray-800 hover:text-primary transition-colors cursor-pointer"
             :aria-label="isKm ? 'Switch to English' : 'Switch to Khmer'"
           >
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640" class="w-5 h-5 shrink-0" fill="currentColor">
-              <path d="M192 64C209.7 64 224 78.3 224 96L224 128L352 128C369.7 128 384 142.3 384 160C384 177.7 369.7 192 352 192L342.4 192L334 215.1C317.6 260.3 292.9 301.6 261.8 337.1C276 345.9 290.8 353.7 306.2 360.6L356.6 383L418.8 243C423.9 231.4 435.4 224 448 224C460.6 224 472.1 231.4 477.2 243L605.2 531C612.4 547.2 605.1 566.1 589 573.2C572.9 580.3 553.9 573.1 546.8 557L526.8 512L369.3 512L349.3 557C342.1 573.2 323.2 580.4 307.1 573.2C291 566 283.7 547.1 290.9 531L330.7 441.5L280.3 419.1C257.3 408.9 235.3 396.7 214.5 382.7C193.2 399.9 169.9 414.9 145 427.4L110.3 444.6C94.5 452.5 75.3 446.1 67.4 430.3C59.5 414.5 65.9 395.3 81.7 387.4L116.2 370.1C132.5 361.9 148 352.4 162.6 341.8C148.8 329.1 135.8 315.4 123.7 300.9L113.6 288.7C102.3 275.1 104.1 254.9 117.7 243.6C131.3 232.3 151.5 234.1 162.8 247.7L173 259.9C184.5 273.8 197.1 286.7 210.4 298.6C237.9 268.2 259.6 232.5 273.9 193.2L274.4 192L64.1 192C46.3 192 32 177.7 32 160C32 142.3 46.3 128 64 128L160 128L160 96C160 78.3 174.3 64 192 64zM448 334.8L397.7 448L498.3 448L448 334.8z" />
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 640 640"
+              class="w-5 h-5 shrink-0"
+              fill="currentColor"
+            >
+              <path
+                d="M192 64C209.7 64 224 78.3 224 96L224 128L352 128C369.7 128 384 142.3 384 160C384 177.7 369.7 192 352 192L342.4 192L334 215.1C317.6 260.3 292.9 301.6 261.8 337.1C276 345.9 290.8 353.7 306.2 360.6L356.6 383L418.8 243C423.9 231.4 435.4 224 448 224C460.6 224 472.1 231.4 477.2 243L605.2 531C612.4 547.2 605.1 566.1 589 573.2C572.9 580.3 553.9 573.1 546.8 557L526.8 512L369.3 512L349.3 557C342.1 573.2 323.2 580.4 307.1 573.2C291 566 283.7 547.1 290.9 531L330.7 441.5L280.3 419.1C257.3 408.9 235.3 396.7 214.5 382.7C193.2 399.9 169.9 414.9 145 427.4L110.3 444.6C94.5 452.5 75.3 446.1 67.4 430.3C59.5 414.5 65.9 395.3 81.7 387.4L116.2 370.1C132.5 361.9 148 352.4 162.6 341.8C148.8 329.1 135.8 315.4 123.7 300.9L113.6 288.7C102.3 275.1 104.1 254.9 117.7 243.6C131.3 232.3 151.5 234.1 162.8 247.7L173 259.9C184.5 273.8 197.1 286.7 210.4 298.6C237.9 268.2 259.6 232.5 273.9 193.2L274.4 192L64.1 192C46.3 192 32 177.7 32 160C32 142.3 46.3 128 64 128L160 128L160 96C160 78.3 174.3 64 192 64zM448 334.8L397.7 448L498.3 448L448 334.8z"
+              />
             </svg>
             <span class="text-sm font-semibold">{{ isKm ? 'ខ្មែរ' : 'English' }}</span>
           </button>
@@ -82,13 +92,7 @@
               <span
                 class="h-8 w-8 rounded-full overflow-hidden ring-1 ring-gray-200 bg-primary/10 flex items-center justify-center"
               >
-                <img
-                  v-if="authStore.user?.avatar_url"
-                  :src="authStore.user.avatar_url"
-                  alt=""
-                  class="h-full w-full object-cover"
-                />
-                <span v-else class="text-xs font-bold text-primary">{{ accountInitials }}</span>
+                <UserAvatar :src="authStore.user?.avatar_url" :initials="accountInitials" />
               </span>
             </button>
 
@@ -102,13 +106,7 @@
                 <span
                   class="h-9 w-9 shrink-0 rounded-full overflow-hidden bg-primary/10 flex items-center justify-center"
                 >
-                  <img
-                    v-if="authStore.user?.avatar_url"
-                    :src="authStore.user.avatar_url"
-                    alt=""
-                    class="h-full w-full object-cover"
-                  />
-                  <span v-else class="text-xs font-bold text-primary">{{ accountInitials }}</span>
+                  <UserAvatar :src="authStore.user?.avatar_url" :initials="accountInitials" />
                 </span>
                 <div class="min-w-0">
                   <p class="truncate text-sm font-semibold text-gray-900">
@@ -123,8 +121,18 @@
                 @click="isAccountMenuOpen = false"
                 class="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50"
               >
-                <svg class="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
+                <svg
+                  class="h-4 w-4 text-gray-400"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  stroke-width="2"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    d="M3.75 6A2.25 2.25 0 0 1 6 3.75h2.25A2.25 2.25 0 0 1 10.5 6v2.25a2.25 2.25 0 0 1-2.25 2.25H6a2.25 2.25 0 0 1-2.25-2.25V6ZM3.75 15.75A2.25 2.25 0 0 1 6 13.5h2.25a2.25 2.25 0 0 1 2.25 2.25V18a2.25 2.25 0 0 1-2.25 2.25H6A2.25 2.25 0 0 1 3.75 18v-2.25ZM13.5 6a2.25 2.25 0 0 1 2.25-2.25H18A2.25 2.25 0 0 1 20.25 6v2.25A2.25 2.25 0 0 1 18 10.5h-2.25a2.25 2.25 0 0 1-2.25-2.25V6ZM13.5 15.75a2.25 2.25 0 0 1 2.25-2.25H18a2.25 2.25 0 0 1 2.25 2.25V18A2.25 2.25 0 0 1 18 20.25h-2.25A2.25 2.25 0 0 1 13.5 18v-2.25Z"
+                  />
                 </svg>
                 {{ t('common.nav.dashboard') }}
               </RouterLink>
@@ -134,12 +142,22 @@
               <button
                 type="button"
                 @click="handleLogout"
-                class="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-red-600 hover:bg-red-50"
+                class="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 hover:cursor-pointer"
               >
-                <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                <svg
+                  class="h-4 w-4"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  stroke-width="2"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
+                  />
                 </svg>
-                Logout
+                {{ t('common.nav.logout') }}
               </button>
             </div>
           </div>
@@ -173,19 +191,22 @@
           @click="isOpen = false"
           class="rounded-lg px-3 py-2.5 hover:bg-gray-50 hover:text-primary transition-colors"
           exact-active-class="!text-primary bg-primary/5"
-        >{{ t('common.nav.home') }}</router-link>
+          >{{ t('common.nav.home') }}</router-link
+        >
         <router-link
           to="/documents"
           @click="isOpen = false"
           class="rounded-lg px-3 py-2.5 hover:bg-gray-50 hover:text-primary transition-colors"
           active-class="!text-primary bg-primary/5"
-        >{{ t('common.nav.docs') }}</router-link>
+          >{{ t('common.nav.docs') }}</router-link
+        >
         <router-link
           to="/books"
           @click="isOpen = false"
           class="rounded-lg px-3 py-2.5 hover:bg-gray-50 hover:text-primary transition-colors"
           active-class="!text-primary bg-primary/5"
-        >{{ t('common.nav.books') }}</router-link>
+          >{{ t('common.nav.books') }}</router-link
+        >
       </ul>
 
       <!-- Language toggle -->
@@ -194,8 +215,15 @@
         @click="toggleLang"
         class="mt-1 w-full flex items-center gap-2 rounded-lg border-t border-gray-100 px-3 pt-3 pb-1 text-gray-700 font-semibold hover:text-primary transition-colors"
       >
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640" class="w-5 h-5 shrink-0" fill="currentColor">
-          <path d="M192 64C209.7 64 224 78.3 224 96L224 128L352 128C369.7 128 384 142.3 384 160C384 177.7 369.7 192 352 192L342.4 192L334 215.1C317.6 260.3 292.9 301.6 261.8 337.1C276 345.9 290.8 353.7 306.2 360.6L356.6 383L418.8 243C423.9 231.4 435.4 224 448 224C460.6 224 472.1 231.4 477.2 243L605.2 531C612.4 547.2 605.1 566.1 589 573.2C572.9 580.3 553.9 573.1 546.8 557L526.8 512L369.3 512L349.3 557C342.1 573.2 323.2 580.4 307.1 573.2C291 566 283.7 547.1 290.9 531L330.7 441.5L280.3 419.1C257.3 408.9 235.3 396.7 214.5 382.7C193.2 399.9 169.9 414.9 145 427.4L110.3 444.6C94.5 452.5 75.3 446.1 67.4 430.3C59.5 414.5 65.9 395.3 81.7 387.4L116.2 370.1C132.5 361.9 148 352.4 162.6 341.8C148.8 329.1 135.8 315.4 123.7 300.9L113.6 288.7C102.3 275.1 104.1 254.9 117.7 243.6C131.3 232.3 151.5 234.1 162.8 247.7L173 259.9C184.5 273.8 197.1 286.7 210.4 298.6C237.9 268.2 259.6 232.5 273.9 193.2L274.4 192L64.1 192C46.3 192 32 177.7 32 160C32 142.3 46.3 128 64 128L160 128L160 96C160 78.3 174.3 64 192 64zM448 334.8L397.7 448L498.3 448L448 334.8z" />
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          viewBox="0 0 640 640"
+          class="w-5 h-5 shrink-0"
+          fill="currentColor"
+        >
+          <path
+            d="M192 64C209.7 64 224 78.3 224 96L224 128L352 128C369.7 128 384 142.3 384 160C384 177.7 369.7 192 352 192L342.4 192L334 215.1C317.6 260.3 292.9 301.6 261.8 337.1C276 345.9 290.8 353.7 306.2 360.6L356.6 383L418.8 243C423.9 231.4 435.4 224 448 224C460.6 224 472.1 231.4 477.2 243L605.2 531C612.4 547.2 605.1 566.1 589 573.2C572.9 580.3 553.9 573.1 546.8 557L526.8 512L369.3 512L349.3 557C342.1 573.2 323.2 580.4 307.1 573.2C291 566 283.7 547.1 290.9 531L330.7 441.5L280.3 419.1C257.3 408.9 235.3 396.7 214.5 382.7C193.2 399.9 169.9 414.9 145 427.4L110.3 444.6C94.5 452.5 75.3 446.1 67.4 430.3C59.5 414.5 65.9 395.3 81.7 387.4L116.2 370.1C132.5 361.9 148 352.4 162.6 341.8C148.8 329.1 135.8 315.4 123.7 300.9L113.6 288.7C102.3 275.1 104.1 254.9 117.7 243.6C131.3 232.3 151.5 234.1 162.8 247.7L173 259.9C184.5 273.8 197.1 286.7 210.4 298.6C237.9 268.2 259.6 232.5 273.9 193.2L274.4 192L64.1 192C46.3 192 32 177.7 32 160C32 142.3 46.3 128 64 128L160 128L160 96C160 78.3 174.3 64 192 64zM448 334.8L397.7 448L498.3 448L448 334.8z"
+          />
         </svg>
         {{ isKm ? 'ខ្មែរ' : 'English' }}
       </button>
@@ -205,9 +233,10 @@
 
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
-import ButtonPrimary from '@/components/common/ButtonPrimary.vue'
+import ButtonPrimary from '@/components/base/ButtonPrimary.vue'
 import NotificationBell from '@/components/notifications/NotificationBell.vue'
 import { useAuthStore } from '@/stores/auth.store'
+import UserAvatar from '@/components/base/UserAvatar.vue'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 
@@ -237,6 +266,7 @@ watch(locale, (val) => {
 })
 
 const isOpen = ref(false)
+const navRef = ref<HTMLElement | null>(null)
 
 const toggleMenu = () => {
   isOpen.value = !isOpen.value
@@ -255,8 +285,18 @@ const closeAccountMenu = () => {
 
 // ── Click-outside ─────────────────────────────────────────────────────────────
 const handleClickOutside = (event: MouseEvent) => {
-  if (accountMenuRef.value && !accountMenuRef.value.contains(event.target as Node)) {
+  const target = event.target as Node
+
+  if (accountMenuRef.value && !accountMenuRef.value.contains(target)) {
     closeAccountMenu()
+  }
+
+  // The mobile menu closes on anything outside the navbar. Measured against the
+  // whole <nav>, not the panel alone: the hamburger lives in the bar above the
+  // panel, so a narrower test would count pressing it as "outside" and close
+  // the menu in the same click that toggleMenu just opened it.
+  if (isOpen.value && navRef.value && !navRef.value.contains(target)) {
+    isOpen.value = false
   }
 }
 
