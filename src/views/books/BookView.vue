@@ -2,39 +2,43 @@
 import { computed, onMounted, ref, watch } from 'vue'
 import { useBooksStore } from '@/stores/books.store'
 import { useMajorsStore } from '@/stores/majors.store'
-import { useAuthStore } from '@/stores/auth.store'
 import BookCard from '@/components/books/BookCard.vue'
 import DonateBookModal from '@/components/books/DonateBookModal.vue'
-import IconTextButton from '@/components/common/IconTextButton.vue'
-import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
-import SearchableSelect from '@/components/common/SearchableSelect.vue'
-import Pagination from '@/components/common/Pagination.vue'
-import PageSizeSelect from '@/components/common/PageSizeSelect.vue'
+import IconTextButton from '@/components/base/IconTextButton.vue'
+import LoadingSpinner from '@/components/base/LoadingSpinner.vue'
+import SearchableSelect from '@/components/base/SearchableSelect.vue'
+import Pagination from '@/components/base/Pagination.vue'
+import PageSizeSelect from '@/components/base/PageSizeSelect.vue'
 import { useI18n } from 'vue-i18n'
 
 const books = useBooksStore()
 const majors = useMajorsStore()
-const auth = useAuthStore()
 const { t } = useI18n({ useScope: 'global' })
 
 const showDonateModal = ref(false)
+/** Non-null puts DonateBookModal into edit mode; null is "list a book". */
+const editBook = ref<InstanceType<typeof BookCard>['$props']['book'] | null>(null)
+
+function onEditBook(book: NonNullable<typeof editBook.value>) {
+  editBook.value = book
+  showDonateModal.value = true
+}
+
+function closeDonateModal() {
+  showDonateModal.value = false
+  editBook.value = null
+}
 const selectedMajor = ref('')
 const page = ref(1)
 const pageSize = ref(10)
 
 const majorOptions = computed(() => [
-  { value: '', label: 'All Departments' },
+  // 'All', not the full phrase — every other filter in the app labels its
+  // unfiltered option that way, and the dropdown sits beside a heading that
+  // already says what is being filtered.
+  { value: '', label: 'All' },
   ...majors.majors.map((m) => ({ value: m.id, label: m.acronym })),
 ])
-
-const myRequestedBookIds = computed(
-  () =>
-    new Set(
-      books.outgoingRequests
-        .filter((r) => r.status === 'pending' || r.status === 'accepted')
-        .map((r) => r.book.id),
-    ),
-)
 
 function fetchBooks() {
   return books.fetchAll(selectedMajor.value || undefined, page.value, pageSize.value)
@@ -50,7 +54,6 @@ function resetAndFetch() {
 
 onMounted(async () => {
   const tasks: Promise<unknown>[] = [majors.fetchMajors(), fetchBooks()]
-  if (auth.isAuthenticated) tasks.push(books.fetchOutgoingRequests())
   await Promise.all(tasks)
 })
 
@@ -75,16 +78,21 @@ function onDonated() {
 
 <template>
   <div class="w-full">
-    <div class="mx-auto w-full max-w-7xl px-6">
+    <div class="mx-auto w-full max-w-7xl px-6 mb-9">
       <!-- Header -->
       <div class="flex items-center justify-between gap-4 flex-wrap mb-6">
-        <div>
-          <h1 class="text-2xl font-bold text-gray-900">{{ t('common.nav.books') }}</h1>
-          <p class="mt-1 text-sm text-gray-400">{{ t('common.donateBookModal.bookSubtitle') }}</p>
+        <div class="w-full text-center md:w-auto md:text-left">
+          <h1 class="md:text-2xl text-xl font-bold text-gray-900">{{ t('common.nav.books') }}</h1>
+          <p class="md:text-sm text-xs text-gray-400">
+            {{ t('common.donateBookModal.bookSubtitle') }}
+          </p>
         </div>
 
-        <div class="flex w-full items-center justify-between gap-4 md:w-auto">
-          <div class="w-48 shrink-0">
+        <div class="flex w-full items-center md:justify-between justify-end gap-4 md:w-auto">
+          <!-- w-36, not w-48: the box was sized for the old 'All Departments'
+               label. Every option is now at most three characters — 'All' or a
+               department acronym — so the old width left it mostly empty. -->
+          <div class="shrink-0">
             <SearchableSelect
               v-model="selectedMajor"
               :options="majorOptions"
@@ -117,19 +125,40 @@ function onDonated() {
       </div>
 
       <!-- Empty -->
-      <div v-else-if="!books.books.length" class="py-16 text-center text-sm text-gray-400">
-        {{ t('common.donateBookModal.noBooksAvailable') }}
+      <!-- Same shape as the document empty states: circled icon, then the
+           message. -->
+      <div v-else-if="!books.books.length" class="flex flex-col items-center justify-center py-16">
+        <div class="h-14 w-14 rounded-full bg-gray-50 flex items-center justify-center">
+          <svg
+            class="h-6 w-6 text-gray-300"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+            stroke-width="1.8"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H19a1 1 0 0 1 1 1v18a1 1 0 0 1-1 1H6.5a2.5 2.5 0 0 1 0-5H20"
+            />
+          </svg>
+        </div>
+        <p class="mt-3 text-sm text-gray-400">
+          {{ t('common.donateBookModal.noBooksAvailable') }}
+        </p>
       </div>
 
       <!--Grid -->
       <div v-else class="flex md:justify-start justify-center items-center">
-        <div class="grid grid-cols-1 gap-5 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+        <!-- w-full so the columns divide the row; without it the grid shrank to
+             its content and the cards never used the space available. -->
+        <div class="grid w-full grid-cols-1 gap-5 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5">
           <BookCard
             v-for="book in books.books"
             :key="book.id"
             :book="book"
-            :is-my-request="myRequestedBookIds.has(book.id)"
             @deleted="onDeleted"
+            @edit="onEditBook"
           />
         </div>
       </div>
@@ -138,18 +167,19 @@ function onDonated() {
       <!-- Hidden when the list fits the smallest page size (≤10). -->
       <div
         v-if="!books.loading && !books.error && books.booksTotal > 10"
-        class="mt-8 grid grid-cols-[1fr_auto_1fr] items-center gap-4"
+        class="mt-8 flex flex-col items-center gap-4 md:grid md:grid-cols-[1fr_auto_1fr]"
       >
         <Pagination
-          class="col-start-2 justify-self-center"
+          class="md:col-start-2 md:justify-self-center"
           v-model:page="page"
           :total="books.booksTotal"
           :page-size="pageSize"
           scroll-to-top
         />
         <PageSizeSelect
-          class="col-start-3 justify-self-end"
+          class="md:col-start-3 md:justify-self-end"
           v-model="pageSize"
+          :total="books.booksTotal"
           :options="[10, 20, 30, 50]"
           direction="up"
         />
@@ -159,6 +189,11 @@ function onDonated() {
 
   <!-- Donate modal -->
   <Teleport to="body">
-    <DonateBookModal v-if="showDonateModal" @close="showDonateModal = false" @donated="onDonated" />
+    <DonateBookModal
+      v-if="showDonateModal"
+      :edit-book="editBook"
+      @close="closeDonateModal"
+      @donated="onDonated"
+    />
   </Teleport>
 </template>

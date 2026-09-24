@@ -2,9 +2,8 @@
 import { ref, computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { getFileIcon, formatFileSize, fileExtension } from '@/utils/format'
-import FilePreviewThumb from '@/components/common/FilePreviewThumb.vue'
-import type { UploadFile } from '@/types'
-
+import FilePreviewThumb from '@/components/documents/FilePreviewThumb.vue'
+import type { UploadFile } from '@/types/documents.types'
 const props = defineProps<{
   file: UploadFile
   fallbackName?: string | null
@@ -16,17 +15,23 @@ const emit = defineEmits<{
   preview: [file: UploadFile]
   download: [file: UploadFile]
   delete: [file: UploadFile]
+  'toggle-hidden': [file: UploadFile]
 }>()
 
 const { t } = useI18n({ useScope: 'global' })
 
 const icon = computed(() => getFileIcon(props.file.original_name))
-const typeLabel = computed(() => fileExtension(props.file.original_name).toUpperCase() || icon.value.label)
-const displayName = computed(() => props.file.original_name?.trim() || props.fallbackName || 'Untitled')
+const typeLabel = computed(
+  () => fileExtension(props.file.original_name).toUpperCase() || icon.value.label,
+)
+const displayName = computed(
+  () => props.file.original_name?.trim() || props.fallbackName || 'Untitled',
+)
 
 // Only the uploader and admins are ever served a non-active file.
 const isPending = computed(() => props.file.status === 'pending')
 const isRejected = computed(() => props.file.status === 'rejected')
+const isHidden = computed(() => !!props.file.hidden_at)
 
 const menuOpen = ref(false)
 
@@ -42,6 +47,10 @@ function onDelete() {
   menuOpen.value = false
   emit('delete', props.file)
 }
+function onToggleHidden() {
+  menuOpen.value = false
+  emit('toggle-hidden', props.file)
+}
 </script>
 
 <template>
@@ -51,7 +60,7 @@ function onDelete() {
     <!-- Thumbnail: real image preview, else file-type placeholder -->
     <div
       class="relative aspect-4/3 w-full overflow-hidden rounded-xl border border-gray-100 bg-gray-50 cursor-pointer"
-      :class="(isPending || isRejected) && 'opacity-60'"
+      :class="(isPending || isRejected || isHidden) && 'opacity-60'"
       @click="emit('preview', file)"
     >
       <FilePreviewThumb
@@ -76,21 +85,30 @@ function onDelete() {
         <span
           v-if="isPending"
           class="mt-1 inline-block rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-medium text-amber-700"
-        >{{ t('document.documentDetailsPage.badgePending') }}</span>
+          >{{ t('document.documentDetailsPage.badgePending') }}</span
+        >
+        <span
+          v-else-if="isHidden"
+          class="mt-1 inline-block rounded-full bg-gray-200 px-2 py-0.5 text-[11px] font-medium text-gray-600"
+          >{{ t('document.documentDetailsPage.badgeHidden') }}</span
+        >
         <span
           v-else-if="isRejected"
           class="mt-1 inline-block rounded-full bg-red-100 px-2 py-0.5 text-[11px] font-medium text-red-700"
-        >{{ t('document.documentDetailsPage.badgeRejected') }}</span>
+          >{{ t('document.documentDetailsPage.badgeRejected') }}</span
+        >
       </div>
 
       <div class="relative shrink-0">
         <button
-          class="flex h-7 w-7 items-center justify-center rounded-full text-gray-400 hover:bg-gray-100 hover:text-gray-700 transition-colors"
+          class="flex h-7 w-7 items-center justify-center rounded-full text-gray-400 hover:bg-gray-100 hover:text-gray-700 transition-colors hover:cursor-pointer"
           :aria-label="displayName"
           @click.stop="menuOpen = !menuOpen"
         >
           <svg class="h-5 w-5" fill="currentColor" viewBox="0 0 24 24">
-            <path d="M12 6a2 2 0 100-4 2 2 0 000 4zm0 8a2 2 0 100-4 2 2 0 000 4zm0 8a2 2 0 100-4 2 2 0 000 4z" />
+            <path
+              d="M12 6a2 2 0 100-4 2 2 0 000 4zm0 8a2 2 0 100-4 2 2 0 000 4zm0 8a2 2 0 100-4 2 2 0 000 4z"
+            />
           </svg>
         </button>
 
@@ -101,18 +119,35 @@ function onDelete() {
             class="absolute right-0 top-full z-20 mt-1 w-40 overflow-hidden rounded-xl border border-gray-100 bg-white py-1 shadow-xl"
           >
             <button
-              class="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+              class="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 transition-colors hover:cursor-pointer"
               @click.stop="onPreview"
-            >{{ t('document.documentDetailsPage.preview') }}</button>
+            >
+              {{ t('document.documentDetailsPage.preview') }}
+            </button>
             <button
-              class="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+              class="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 transition-colors hover:cursor-pointer"
               @click.stop="onDownload"
-            >{{ t('document.documentDetailsPage.download') }}</button>
+            >
+              {{ t('document.documentDetailsPage.download') }}
+            </button>
             <button
               v-if="canDelete"
-              class="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 transition-colors"
+              class="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 transition-colors hover:cursor-pointer"
+              @click.stop="onToggleHidden"
+            >
+              {{
+                isHidden
+                  ? t('document.documentDetailsPage.unhide')
+                  : t('document.documentDetailsPage.hide')
+              }}
+            </button>
+            <button
+              v-if="canDelete"
+              class="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 transition-colors hover:cursor-pointer"
               @click.stop="onDelete"
-            >{{ t('document.documentDetailsPage.delete') }}</button>
+            >
+              {{ t('document.documentDetailsPage.delete') }}
+            </button>
           </div>
         </template>
       </div>

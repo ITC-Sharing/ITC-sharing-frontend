@@ -1,325 +1,342 @@
 <script setup lang="ts">
-import { computed, reactive, onMounted, watch } from 'vue'
-import { useI18n } from 'vue-i18n'
+import { reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import { useAuthStore } from '../../stores/auth.store'
-import { useMajorsStore } from '../../stores/majors.store'
+import GoogleSignInButton from '@/components/base/GoogleSignInButton.vue'
+import { checkName } from '@/utils/format'
+import CodeInput from '@/components/base/CodeInput.vue'
+import { useCountdown } from '@/composables/useCountdown'
 
 const { t } = useI18n()
-const router = useRouter()
 const authStore = useAuthStore()
-const majorsStore = useMajorsStore()
+const router = useRouter()
 
-interface Form {
-  firstName: string
-  lastName: string
-  major_id: string
-  year_level: string
-  email: string
-  password: string
-  confirmPassword: string
-}
+/**
+ * One form, one request: submitting creates the account and signs the student
+ * in. There is no email-ownership check, so the address is simply typed like
+ * any other field. Student ID, department and year are all collected later by
+ * the complete-profile prompt, which is also what a Google sign-up sees.
+ *
+ * Department and year are not asked for here — students set them on their
+ * profile. Until they do, audience-restricted documents stay hidden from them.
+ */
 
-interface Errors {
-  firstName: string
-  lastName: string
-  major_id: string   // ← was "skill"
-  year_level: string
-  email: string
-  password: string
-  confirmPassword: string
-}
-
-const form = reactive<Form>({
+const form = reactive({
   firstName: '',
   lastName: '',
-  major_id: '',
-  year_level: '',
   email: '',
   password: '',
   confirmPassword: '',
 })
 
-const errors = reactive<Errors>({
+const errors = reactive({
   firstName: '',
   lastName: '',
-  major_id: '',
-  year_level: '',
   email: '',
   password: '',
   confirmPassword: '',
 })
 
-// The Department of Foreign Languages isn't a department anyone registers
-// into — every student takes its courses alongside their own major.
-const HIDDEN_MAJORS = ['dfl']
-const selectableMajors = computed(() =>
-  majorsStore.majors.filter(
-    (m) => !HIDDEN_MAJORS.includes(String(m.acronym ?? '').toLowerCase()),
-  ),
-)
-
-// Foundation students are years 1–2; department students are years 3–5.
-const isFoundation = computed(() => {
-  const major = majorsStore.majors.find((m) => m.id === form.major_id)
-  return major?.acronym?.toLowerCase() === 'foundation'
-})
-
-const yearOptions = computed(() =>
-  isFoundation.value ? [1, 2] : [3, 4, 5],
-)
-
-// Reset the chosen year when the major changes (valid range differs)
-watch(
-  () => form.major_id,
-  () => {
-    form.year_level = ''
-  },
-)
-
-// Load majors from API when page mounts
-onMounted(() => {
-  majorsStore.fetchMajors()
-})
-
-const nameRegex = /^[A-Za-z\u1780-\u17FF\s]+$/
+// The rule itself lives in utils/format — the profile editor enforces the
+// same one, and two copies of a pattern is how they stop agreeing.
+const NAME_PROBLEM_KEYS = {
+  spaces: 'auth.register.nameNoSpace',
+  invalid: 'auth.register.invaildName',
+  lowercase: 'auth.register.nameCapital',
+} as const
+// Deliberately loose: the server's IsEmail is the authority, and an overly
+// strict client pattern only rejects addresses that are actually fine.
 const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
 function validateFirstName() {
-  if (!form.firstName) {
-    errors.firstName = 'auth.register.enterFirstName'
-  } else if (!nameRegex.test(form.firstName)) {
-    errors.firstName = 'auth.register.invaildName'
-  } else {
-    errors.firstName = ''
-  }
+  const problem = checkName(form.firstName)
+  errors.firstName = !form.firstName.trim()
+    ? 'auth.register.enterFirstName'
+    : problem
+      ? NAME_PROBLEM_KEYS[problem]
+      : ''
 }
-
 function validateLastName() {
-  if (!form.lastName) {
-    errors.lastName = 'auth.register.enterLastName'
-  } else if (!nameRegex.test(form.lastName)) {
-    errors.lastName = 'auth.register.invaildName'
-  } else {
-    errors.lastName = ''
-  }
+  const problem = checkName(form.lastName)
+  errors.lastName = !form.lastName.trim()
+    ? 'auth.register.enterLastName'
+    : problem
+      ? NAME_PROBLEM_KEYS[problem]
+      : ''
 }
-
 function validateEmail() {
-  if (!form.email) {
-    errors.email = 'auth.register.emptyEmail'
-  } else if (!emailRegex.test(form.email)) {
-    errors.email = 'auth.register.invaildEmail'
-  } else {
-    errors.email = ''
-  }
+  errors.email = !form.email
+    ? 'auth.register.enterEmail'
+    : !emailRegex.test(form.email.trim())
+      ? 'auth.register.invalidEmail'
+      : ''
 }
-
 function validatePassword() {
-  if (!form.password) {
-    errors.password = 'auth.register.emptyPassword'
-  } else if (form.password.length < 8) {
-    errors.password = 'auth.register.shortPassword'
-  } else {
-    errors.password = ''
-  }
+  errors.password = !form.password
+    ? 'auth.register.emptyPassword'
+    : form.password.length < 8
+      ? 'auth.register.shortPassword'
+      : ''
 }
-
 function validateConfirmPassword() {
-  if (!form.confirmPassword) {
-    errors.confirmPassword = 'auth.register.emptyConfirmPassword'
-  } else if (form.password !== form.confirmPassword) {
-    errors.confirmPassword = 'auth.register.notMatchPassword'
-  } else {
-    errors.confirmPassword = ''
-  }
+  errors.confirmPassword = !form.confirmPassword
+    ? 'auth.register.emptyConfirmPassword'
+    : form.password !== form.confirmPassword
+      ? 'auth.register.notMatchPassword'
+      : ''
 }
 
-function validateMajor() {
-  if (!form.major_id) {
-    errors.major_id = 'auth.register.enterDepartment'
-  } else {
-    errors.major_id = ''
-  }
-}
-
-function validateYear() {
-  if (!form.year_level) {
-    errors.year_level = 'auth.register.enterYear'
-  } else {
-    errors.year_level = ''
-  }
-}
-
-async function submitForm(e: Event) {
+async function submit(e: Event) {
   e.preventDefault()
-
   validateFirstName()
   validateLastName()
   validateEmail()
   validatePassword()
   validateConfirmPassword()
-  validateMajor()
-  validateYear()
-
-  const hasError = Object.values(errors).some((error) => error !== '')
-  if (hasError) return
+  if (Object.values(errors).some(Boolean)) return
 
   try {
-    await authStore.register({
-      first_name: form.firstName,
-      last_name: form.lastName,
-      email: form.email,
+    const expiresIn = await authStore.register({
+      first_name: form.firstName.trim(),
+      last_name: form.lastName.trim(),
+      email: form.email.trim().toLowerCase(),
       password: form.password,
-      major_id: form.major_id,
-      year_level: Number(form.year_level),
     })
-
-    // Success — go to login
-    router.push('/auth/login')
-
+    // No longer signed in by the time this resolves — the account exists but
+    // the address is unproven, so there is nowhere to navigate to. The screen
+    // swaps for a "check your inbox" panel instead.
+    sentTo.value = form.email.trim().toLowerCase()
+    startCodeTimer(expiresIn)
   } catch {
-    // authStore.error is already set, shown in template below
+    // authStore.error is shown in the banner
+  }
+}
+
+/** Non-empty once the account is created: the address the code went to. */
+const sentTo = ref('')
+const resent = ref('')
+const code = ref('')
+
+/**
+ * Destructured so the template can read `codeLeft` and `codeExpired` directly
+ * — Vue only auto-unwraps refs at the top level of setup state, not ones
+ * reached through an object.
+ */
+const { formatted: codeLeft, expired: codeExpired, start: startCodeTimer } = useCountdown()
+
+/**
+ * The code is entered here rather than on a separate screen.
+ *
+ * It arrives within seconds of submitting this form, and the address it was
+ * sent to is already known — sending someone to another route to type six
+ * digits would lose that and gain nothing. The standalone screen exists for
+ * the person who closed the tab.
+ */
+async function submitCode() {
+  if (code.value.length !== 6) return
+  resent.value = ''
+  try {
+    await authStore.verifyEmail(sentTo.value, code.value)
+    // Signed in by the time this resolves, so go straight into the app. The
+    // complete-profile prompt on the home screen collects department and year,
+    // exactly as it does after a Google sign-up.
+    router.push('/')
+  } catch {
+    // Clear the boxes so the next code can just be typed; authStore.error
+    // says whether it was wrong, expired, or one too many.
+    code.value = ''
+  }
+}
+
+async function resend() {
+  resent.value = ''
+  code.value = ''
+  try {
+    const again = await authStore.resendVerification(sentTo.value)
+    resent.value = again.message
+    startCodeTimer(again.expires_in)
+  } catch {
+    // authStore.error is shown in the banner
   }
 }
 </script>
 
 <template>
   <div class="md:w-180 w-80 h-fit bg-white border border-gray-200 rounded-2xl shadow-sm px-8 py-8">
-    <h1 class="text-3xl font-bold text-gray-900 text-center">
-      {{ t('auth.register.register') }}
-    </h1>
+    <!-- Done: the account exists and the link is in flight. Deliberately the
+         whole card rather than a banner above the form — leaving the fields
+         on screen invites someone to submit them again, which is a second
+         account attempt and a second email. -->
+    <!-- Account created, code in flight. The whole card swaps rather than a
+         banner appearing above the form: leaving the fields on screen invites
+         someone to submit them again, which is a second account attempt. -->
+    <template v-if="sentTo">
+      <h1 class="text-3xl font-bold text-gray-900 text-center">
+        {{ t('auth.register.checkInbox') }}
+      </h1>
+      <p class="mt-4 text-center text-gray-600">
+        {{ t('auth.register.codeSentTo') }}
+        <span class="font-semibold text-gray-900">{{ sentTo }}</span>
+      </p>
 
-    <!-- Server error banner -->
-    <div v-if="authStore.error" class="mt-5 p-3 bg-red-50 border border-red-200 rounded-xl">
-      <p class="text-red-600 text-sm text-center">{{ authStore.error }}</p>
-    </div>
-
-    <form @submit="submitForm" class="mt-6 grid grid-cols-1 md:grid-cols-2 gap-x-5 gap-y-4">
-      <div>
-        <label class="text-sm font-semibold text-gray-600">{{ t('auth.register.firstName') }}</label>
-        <input
-          @blur="validateFirstName"
-          v-model="form.firstName"
-          type="text"
-          class="mt-1.5 w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-gray-900 focus:outline-none focus:ring-2 focus:ring-primary"
-          :placeholder="$t('auth.register.yourFirstName')"
-        />
-        <p v-if="errors.firstName" class="mt-1 text-sm text-red-500">{{ t(errors.firstName) }}</p>
+      <div v-if="authStore.error" class="mt-5 rounded-xl border border-red-200 bg-red-50 p-3">
+        <p class="text-center text-sm text-red-600">{{ authStore.error }}</p>
       </div>
+      <p v-if="resent" class="mt-5 rounded-xl bg-green-50 p-3 text-center text-sm text-green-700">
+        {{ resent }}
+      </p>
 
-      <div>
-        <label class="text-sm font-semibold text-gray-600">{{ t('auth.register.lastName') }}</label>
-        <input
-          @blur="validateLastName"
-          v-model="form.lastName"
-          type="text"
-          class="mt-1.5 w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-gray-900 focus:outline-none focus:ring-2 focus:ring-primary"
-          :placeholder="$t('auth.register.yourLastName')"
-        />
-        <p v-if="errors.lastName" class="mt-1 text-sm text-red-500">{{ t(errors.lastName) }}</p>
-      </div>
-
-      <!-- Major select — loaded dynamically from API -->
-      <div>
-        <label class="text-sm font-semibold text-gray-600">{{ t('auth.register.department') }}</label>
-        <select
-          v-model="form.major_id"
-          @blur="validateMajor"
-          class="mt-1.5 w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 focus:outline-none focus:ring-2 focus:ring-primary"
-          :class="form.major_id === '' ? 'text-gray-400' : 'text-gray-900'"
-        >
-          <option disabled value="">{{ t('auth.register.chooseDepartment') }}</option>
-          <option
-            v-for="major in selectableMajors"
-            :key="major.id"
-            :value="major.id"
-          >
-            {{ major.acronym }}
-          </option>
-        </select>
-        <p v-if="errors.major_id" class="mt-1 text-sm text-red-500">{{ t(errors.major_id) }}</p>
-      </div>
-
-      <!-- Academic year — range depends on the chosen department -->
-      <div>
-        <label class="text-sm font-semibold text-gray-600">{{ t('auth.register.year') }}</label>
-        <select
-          v-model="form.year_level"
-          @blur="validateYear"
-          :disabled="!form.major_id"
-          class="mt-1.5 w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 focus:outline-none focus:ring-2 focus:ring-primary disabled:bg-gray-100 disabled:cursor-not-allowed"
-          :class="form.year_level === '' ? 'text-gray-400' : 'text-gray-900'"
-        >
-          <option disabled value="">{{ t('auth.register.chooseYear') }}</option>
-          <option v-for="y in yearOptions" :key="y" :value="String(y)">
-            {{ t('auth.register.yearN', { year: y }) }}
-          </option>
-        </select>
-        <p v-if="errors.year_level" class="mt-1 text-sm text-red-500">{{ t(errors.year_level) }}</p>
-      </div>
-
-      <div>
-        <label class="text-sm font-semibold text-gray-600">{{ t('auth.register.email') }}</label>
-        <input
-          @blur="validateEmail"
-          v-model="form.email"
-          class="mt-1.5 w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-gray-900 focus:outline-none focus:ring-2 focus:ring-primary"
-          placeholder="e20220886@itc.edu.kh"
-        />
-        <p v-if="errors.email" class="mt-1 text-sm text-red-500">{{ t(errors.email) }}</p>
-      </div>
-
-      <div>
-        <label class="text-sm font-semibold text-gray-600">{{ t('auth.register.password') }}</label>
-        <input
-          @blur="validatePassword"
-          v-model="form.password"
-          type="password"
-          class="mt-1.5 w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-gray-900 focus:outline-none focus:ring-2 focus:ring-primary"
-          :placeholder="t('auth.register.enterPassword')"
-        />
-        <p v-if="errors.password" class="mt-1 text-sm text-red-500">{{ t(errors.password) }}</p>
-      </div>
-
-      <div>
-        <label class="text-sm font-semibold text-gray-600">{{ t('auth.register.confirmPassword') }}</label>
-        <input
-          @blur="validateConfirmPassword"
-          v-model="form.confirmPassword"
-          type="password"
-          class="mt-1.5 w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-gray-900 focus:outline-none focus:ring-2 focus:ring-primary"
-          :placeholder="t('auth.register.enterConfirmPassword')"
-        />
-        <p v-if="errors.confirmPassword" class="mt-1 text-sm text-red-500">
-          {{ t(errors.confirmPassword) }}
-        </p>
-      </div>
-
-      <div class="md:col-span-2 mt-2">
+      <form @submit.prevent="submitCode" class="mt-6 flex flex-col items-center gap-4">
+        <CodeInput v-model="code" :disabled="authStore.loading" @complete="submitCode" />
         <button
-          class="w-full bg-primary text-white py-3 rounded-xl font-semibold hover:bg-[#00749b] active:scale-[0.99] transition cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+          type="submit"
+          :disabled="authStore.loading || code.length !== 6 || codeExpired"
+          class="w-md rounded-xl bg-primary py-3 font-semibold text-white disabled:opacity-50 hover:cursor-pointer"
+        >
+          {{ authStore.loading ? t('auth.verify.checking') : t('auth.verify.confirm') }}
+        </button>
+      </form>
+
+      <!-- The window, ticking. Turns into a plain "expired" line at zero so
+           the reader is told the code is dead rather than left to infer it
+           from a timer that has stopped. -->
+      <p v-if="codeExpired" class="mt-5 text-center text-sm text-red-500">
+        {{ t('auth.verify.codeExpired') }}
+      </p>
+      <p v-else class="mt-5 text-center text-sm text-gray-500">
+        {{ t('auth.verify.expiresIn') }}
+        <span class="font-semibold tabular-nums text-gray-700">{{ codeLeft }}</span>
+      </p>
+
+      <div class="mt-4 flex flex-col items-center gap-3">
+        <button
+          type="button"
+          class="text-sm font-semibold text-primary hover:underline disabled:opacity-50 hover:cursor-pointer"
+          :disabled="authStore.loading"
+          @click="resend"
+        >
+          {{ t('auth.register.resendCode') }}
+        </button>
+        <RouterLink to="/auth/login" class="text-sm text-gray-500 hover:underline">
+          {{ t('auth.register.backToLogin') }}
+        </RouterLink>
+      </div>
+    </template>
+
+    <template v-else>
+      <h1 class="text-3xl font-bold text-gray-900 text-center">
+        {{ t('auth.register.register') }}
+      </h1>
+
+      <!-- Server error banner -->
+      <div v-if="authStore.error" class="mt-5 p-3 bg-red-50 rounded-xl">
+        <p class="text-red-600 text-sm text-center">{{ authStore.error }}</p>
+      </div>
+
+      <form @submit="submit" class="mt-6 grid grid-cols-1 md:grid-cols-2 gap-x-5 gap-y-4">
+        <div>
+          <label class="text-sm font-semibold text-gray-600">{{
+            t('auth.register.firstName')
+          }}</label>
+          <input
+            v-model="form.firstName"
+            @blur="validateFirstName"
+            type="text"
+            class="mt-1.5 w-full border border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:border-primary"
+            :placeholder="t('auth.register.yourFirstName')"
+          />
+          <p v-if="errors.firstName" class="mt-1.5 text-sm text-red-500">
+            {{ t(errors.firstName) }}
+          </p>
+        </div>
+
+        <div>
+          <label class="text-sm font-semibold text-gray-600">{{
+            t('auth.register.lastName')
+          }}</label>
+          <input
+            v-model="form.lastName"
+            @blur="validateLastName"
+            type="text"
+            class="mt-1.5 w-full border border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:border-primary"
+            :placeholder="t('auth.register.yourLastName')"
+          />
+          <p v-if="errors.lastName" class="mt-1.5 text-sm text-red-500">{{ t(errors.lastName) }}</p>
+        </div>
+
+        <!-- Its own row: an address is long, and pairing it with a password
+             field left the grid with a stranded gap underneath. -->
+        <div class="md:col-span-2">
+          <label class="text-sm font-semibold text-gray-600">{{ t('auth.register.email') }}</label>
+          <input
+            v-model="form.email"
+            @blur="validateEmail"
+            type="email"
+            autocomplete="email"
+            class="mt-1.5 w-full border border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:border-primary"
+            :placeholder="t('auth.register.yourEmail')"
+          />
+          <p v-if="errors.email" class="mt-1.5 text-sm text-red-500">{{ t(errors.email) }}</p>
+        </div>
+
+        <div>
+          <label class="text-sm font-semibold text-gray-600">{{
+            t('auth.register.password')
+          }}</label>
+          <input
+            v-model="form.password"
+            @blur="validatePassword"
+            type="password"
+            autocomplete="new-password"
+            class="mt-1.5 w-full border border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:border-primary"
+            :placeholder="t('auth.register.enterPassword')"
+          />
+          <p v-if="errors.password" class="mt-1.5 text-sm text-red-500">{{ t(errors.password) }}</p>
+        </div>
+
+        <div>
+          <label class="text-sm font-semibold text-gray-600">{{
+            t('auth.register.confirmPassword')
+          }}</label>
+          <input
+            v-model="form.confirmPassword"
+            @blur="validateConfirmPassword"
+            type="password"
+            autocomplete="new-password"
+            class="mt-1.5 w-full border border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:border-primary"
+            :placeholder="t('auth.register.enterConfirmPassword')"
+          />
+          <p v-if="errors.confirmPassword" class="mt-1.5 text-sm text-red-500">
+            {{ t(errors.confirmPassword) }}
+          </p>
+        </div>
+
+        <button
+          class="md:col-span-2 mt-2 w-full bg-primary text-white py-3 rounded-xl font-semibold hover:bg-primary-hover active:scale-[0.99] transition cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
           type="submit"
           :disabled="authStore.loading"
         >
-          <!-- Loading spinner while waiting for server -->
-          <span v-if="authStore.loading" class="flex items-center justify-center gap-2">
-            <svg class="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
-              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/>
-            </svg>
-            {{ t('auth.register.register') }}...
-          </span>
-          <span v-else>{{ t('auth.register.register') }}</span>
+          {{ authStore.loading ? t('auth.register.creating') : t('auth.register.createAccount') }}
         </button>
-      </div>
-    </form>
+      </form>
 
-    <div class="flex justify-center gap-2 mt-6 text-sm text-gray-600">
-      <span>{{ t('auth.register.haveAccount') }}</span>
-      <RouterLink to="/auth/login" class="font-semibold text-primary hover:underline">
-        {{ t('auth.register.login') }}
-      </RouterLink>
-    </div>
+      <div class="mt-6 flex items-center gap-3">
+        <span class="h-px flex-1 bg-gray-200" />
+        <span class="text-sm font-medium text-gray-400">{{ t('auth.login.or') }}</span>
+        <span class="h-px flex-1 bg-gray-200" />
+      </div>
+
+      <div class="mt-4">
+        <GoogleSignInButton />
+      </div>
+
+      <div class="flex justify-center gap-2 mt-6 text-sm text-gray-600">
+        <span>{{ t('auth.register.haveAccount') }}</span>
+        <RouterLink to="/auth/login" class="font-semibold text-primary hover:underline">
+          {{ t('auth.register.login') }}
+        </RouterLink>
+      </div>
+    </template>
   </div>
 </template>

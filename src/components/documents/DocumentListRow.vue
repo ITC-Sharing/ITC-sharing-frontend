@@ -4,7 +4,9 @@ import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth.store'
 import { useDocumentsStore } from '@/stores/documents.store'
-import ConfirmDeleteModal from '@/components/common/ConfirmDeleteModal.vue'
+import { isExpired } from '@/utils/format'
+import ConfirmDeleteModal from '@/components/base/ConfirmDeleteModal.vue'
+import RowActionsMenu, { type RowAction } from '@/components/base/RowActionsMenu.vue'
 
 const { t } = useI18n({ useScope: 'global' })
 const auth = useAuthStore()
@@ -21,11 +23,78 @@ const props = defineProps<{
     uploaded_at: string
     users: { id: string; first_name: string; last_name: string } | null
     documents?: { file_size_kb?: number | null }[]
+    status?: string
+    hidden_at?: string | null
+    /** Soft expiry (ISO). null/absent = never. */
+    expires_at?: string | null
+    pinned_at?: string | null
+    majors?: { acronym: string } | null
+    subjects?: { name: string; acronym?: string; semester?: number | null } | null
   }
+  /**
+   * Render the columns that only make sense on your own dashboard: review
+   * status (instead of "Upload by", which is always you), plus department,
+   * subject and semester. On the public feed the uploader matters and status
+   * is always 'active', so it stays off there.
+   */
+  showOwnerColumns?: boolean
   fileCount?: number
 }>()
 
-const emit = defineEmits<{ (e: 'deleted', id: string): void }>()
+const emit = defineEmits<{
+  (e: 'deleted', id: string): void
+  /** Owner toggled visibility — the parent reloads. */
+  (e: 'hidden-changed', id: string): void
+}>()
+
+const isHidden = computed(() => !!props.doc.hidden_at)
+const togglingHidden = ref(false)
+
+/**
+ * The one badge in the status column, as a computed rather than the nested
+ * ternary this used to be in the template — a fourth state made that
+ * unreadable, and the precedence is the part worth being able to see.
+ *
+ * Hidden first: it is the owner's own switch and outranks anything the
+ * document did on its own. Then the review states. Expiry comes last because
+ * it only ever replaces "published" — a pending or rejected upload was never
+ * in anyone's feed, so calling it expired answers a question nobody asked.
+ */
+const statusBadge = computed(() => {
+  if (isHidden.value)
+    return { label: t('dashboard.documents.statusHidden'), tone: 'bg-gray-200 text-gray-600' }
+  if (props.doc.status === 'rejected')
+    return { label: t('dashboard.documents.statusRejected'), tone: 'bg-red-100 text-red-700' }
+  if (props.doc.status === 'pending')
+    return { label: t('dashboard.documents.statusPending'), tone: 'bg-amber-100 text-amber-700' }
+  if (isExpired(props.doc.expires_at))
+    return { label: t('dashboard.documents.statusExpired'), tone: 'bg-gray-200 text-gray-600' }
+  return { label: t('dashboard.documents.statusActive'), tone: 'bg-primary/10 text-primary' }
+})
+
+/** Both are owner actions, available wherever your row appears. */
+const rowActions = computed<RowAction[]>(() => [
+  {
+    key: isHidden.value ? 'unhidden' : 'hidden',
+    label: isHidden.value ? t('dashboard.documents.unhide') : t('dashboard.documents.hide'),
+  },
+  { key: 'delete', label: t('dashboard.documents.delete'), tone: 'danger' as const },
+])
+
+function onAction(key: string) {
+  if (key === 'delete') showDeleteModal.value = true
+  else if (key === 'hidden' || key === 'unhidden') void toggleHidden()
+}
+
+async function toggleHidden() {
+  togglingHidden.value = true
+  try {
+    await docs.setHidden(props.doc.id, !isHidden.value)
+    emit('hidden-changed', props.doc.id)
+  } finally {
+    togglingHidden.value = false
+  }
+}
 
 const showDeleteModal = ref(false)
 
@@ -35,9 +104,7 @@ const postBy = computed(() =>
   `${props.doc.users?.first_name ?? ''} ${props.doc.users?.last_name ?? ''}`.trim(),
 )
 
-const dateText = computed(() =>
-  new Date(props.doc.uploaded_at).toLocaleDateString('en-GB'),
-)
+const dateText = computed(() => new Date(props.doc.uploaded_at).toLocaleDateString('en-GB'))
 
 const sizeText = computed(() => {
   const kb = (props.doc.documents ?? []).reduce((s, f) => s + (f.file_size_kb ?? 0), 0)
@@ -57,13 +124,24 @@ async function confirmDelete() {
 
 <template>
   <div
-    class="grid grid-cols-1 md:grid-cols-[2fr_120px_100px_160px_110px_40px] gap-3 items-center px-4 py-3 hover:bg-gray-50 cursor-pointer transition-colors"
+    class="grid grid-cols-1 gap-3 items-start px-4 py-3 hover:bg-gray-50 cursor-pointer transition-colors"
+    :class="
+      showOwnerColumns
+        ? 'md:grid-cols-[2fr_90px_100px_90px_120px_110px_40px]'
+        : 'md:grid-cols-[2fr_120px_100px_160px_110px_40px]'
+    "
     @click="goToDetails"
   >
     <!-- Name col: icon + title + type -->
+    <!-- items-center INSIDE the cell: the icon centres against the two-line
+         title+type block. The outer grid stays items-start so the other columns
+         still line up with the title. -->
     <div class="flex items-center gap-3 min-w-0">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640" class="shrink-0 w-8 h-8">
-        <path fill="#008CB9" d="M128 512L512 512C547.3 512 576 483.3 576 448L576 208C576 172.7 547.3 144 512 144L362.7 144C355.8 144 349 141.8 343.5 137.6L305.1 108.8C294 100.5 280.5 96 266.7 96L128 96C92.7 96 64 124.7 64 160L64 448C64 483.3 92.7 512 128 512z"/>
+        <path
+          fill="#008CB9"
+          d="M128 512L512 512C547.3 512 576 483.3 576 448L576 208C576 172.7 547.3 144 512 144L362.7 144C355.8 144 349 141.8 343.5 137.6L305.1 108.8C294 100.5 280.5 96 266.7 96L128 96C92.7 96 64 124.7 64 160L64 448C64 483.3 92.7 512 128 512z"
+        />
       </svg>
       <div class="min-w-0">
         <p class="text-sm font-semibold text-gray-900 truncate">{{ doc.title }}</p>
@@ -71,32 +149,57 @@ async function confirmDelete() {
       </div>
     </div>
 
-    <!-- Academic year -->
-    <span class="text-sm text-gray-500">{{ doc.academic_year || '—' }}</span>
+    <!-- Department / subject / semester — dashboard only -->
+    <template v-if="showOwnerColumns">
+      <span class="text-sm text-gray-500 pt-0.5 text-center">{{ doc.majors?.acronym || '—' }}</span>
+      <span
+        class="text-sm text-gray-500 truncate pt-0.5 text-center"
+        :title="doc.subjects?.name ?? ''"
+        >{{ doc.subjects?.acronym || doc.subjects?.name || '—' }}</span
+      >
+      <span class="text-sm text-gray-500 pt-0.5 text-center">{{
+        doc.subjects?.semester ?? '—'
+      }}</span>
+    </template>
 
-    <!-- File size -->
-    <div class="text-sm text-gray-500">
+    <!-- Academic year — public feed only, like file size above. -->
+    <span v-if="!showOwnerColumns" class="text-sm text-gray-500 text-center">{{
+      doc.academic_year || '—'
+    }}</span>
+
+    <!-- File size — public feed only; the dashboard trades it for the
+         department/subject/semester columns rather than carrying both. -->
+    <div v-if="!showOwnerColumns" class="text-sm text-gray-500 text-center">
       {{ sizeText }}
-      <span class="block text-xs text-gray-400">{{ t('document.documentDetailsPage.filesCount', fileCount ?? 0) }}</span>
+      <span class="block text-xs text-gray-400">{{
+        t('document.documentDetailsPage.filesCount', fileCount ?? 0)
+      }}</span>
     </div>
 
-    <!-- Upload by -->
-    <span class="text-sm text-gray-500">{{ postBy }}</span>
+    <!-- Upload by, or review status when the list is your own uploads -->
+    <span v-if="!showOwnerColumns" class="text-sm text-gray-500 pt-0.5 text-center">{{
+      postBy
+    }}</span>
+    <span v-else class="block pt-0.5 text-center">
+      <span
+        :class="['inline-block rounded-full px-2 py-0.5 text-xs font-medium', statusBadge.tone]"
+        >{{ statusBadge.label }}</span
+      >
+    </span>
 
     <!-- Date -->
-    <span class="text-sm text-gray-500">{{ dateText }}</span>
+    <span class="text-sm text-gray-500 pt-0.5 text-center">{{ dateText }}</span>
 
-    <!-- Delete (owner only) -->
-    <div class="flex justify-center" @click.stop>
-      <button
+    <!-- Owner actions. RowActionsMenu teleports its dropdown to <body>: this
+         panel scrolls horizontally, which would clip an absolutely positioned
+         menu. -->
+    <div class="flex items-center justify-center -mt-1" @click.stop>
+      <RowActionsMenu
         v-if="isOwner"
-        @click="showDeleteModal = true"
-        class="w-8 h-8 flex items-center justify-center rounded-full text-gray-300 hover:text-red-500 hover:bg-red-50 transition-colors hover:cursor-pointer"
-      >
-        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M9 7h6m-7 0a1 1 0 01-1-1V5a1 1 0 011-1h6a1 1 0 011 1v1a1 1 0 01-1 1H9z"/>
-        </svg>
-      </button>
+        :items="rowActions"
+        :disabled="togglingHidden"
+        @select="onAction"
+      />
     </div>
   </div>
 

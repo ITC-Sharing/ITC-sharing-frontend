@@ -1,8 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
-import api from '@/lib/axios'
-import type { MySubject, Subject } from '@/types'
-
+import * as subjectsApi from '@/services/subjects.api'
+import type { MySubject, Subject } from '@/types/subjects.types'
 export const useSubjectsStore = defineStore('subjects', () => {
   const subjects = ref<Subject[]>([])
   const mySubjects = ref<MySubject[]>([])
@@ -24,7 +23,7 @@ export const useSubjectsStore = defineStore('subjects', () => {
       const params: Record<string, string | number> = { major_id: majorId, year_level: yearLevel }
       if (options.semester) params.semester = options.semester
       if (options.search?.trim()) params.search = options.search.trim()
-      const { data } = await api.get<Subject[]>('/subjects', { params })
+      const data = await subjectsApi.fetchSubjects(params)
       subjects.value = data
     } catch (e: any) {
       error.value = e.response?.data?.message ?? 'Failed to load subjects'
@@ -38,9 +37,7 @@ export const useSubjectsStore = defineStore('subjects', () => {
     loading.value = true
     error.value = null
     try {
-      const { data } = await api.get<Record<number, number>>('/subjects/counts', {
-        params: { major_id: majorId },
-      })
+      const data = await subjectsApi.fetchSubjectCounts(majorId)
       countsByYear.value = data
     } catch (e: any) {
       error.value = e.response?.data?.message ?? 'Failed to load subject counts'
@@ -54,7 +51,7 @@ export const useSubjectsStore = defineStore('subjects', () => {
     loading.value = true
     error.value = null
     try {
-      const { data } = await api.get<MySubject[]>('/subjects/mine')
+      const data = await subjectsApi.fetchMySubjects()
       mySubjects.value = data
     } catch (e: any) {
       error.value = e.response?.data?.message ?? 'Failed to load your subjects'
@@ -84,9 +81,7 @@ export const useSubjectsStore = defineStore('subjects', () => {
         formData.append('image', payload.image)
       }
 
-      const { data } = await api.post('/subjects', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' },
-      })
+      const data = await subjectsApi.createSubject(formData)
 
       return data
     } catch (e: any) {

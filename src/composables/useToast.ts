@@ -1,4 +1,6 @@
 import { ref } from 'vue'
+import type { RouteLocationRaw } from 'vue-router'
+import type { Notification } from '@/stores/notifications.store'
 
 /**
  * Transient messages that slide in at the top-right and dismiss themselves.
@@ -14,6 +16,38 @@ export type Toast = {
   type: ToastType
   title?: string
   message: string
+  /** Where clicking the toast leads. Absent means it is not clickable. */
+  to?: RouteLocationRaw
+  /** The notification it came from, so opening it also marks it read. */
+  notifId?: string
+  /**
+   * The notification itself, when there is one — the toast then shows the same
+   * marker the bell does: the book's cover, or the icon standing in for it.
+   * Absent on toasts raised by the app ("Saved", "Upload failed"), which keep
+   * the plain success/error glyphs.
+   */
+  notification?: Notification
+}
+
+/**
+ * How long a toast stays up, scaled to how much there is to read.
+ *
+ *   min(max(characters × 50, 2000), 7000)
+ *
+ * 50 ms per character is a deliberately unhurried pace: a toast is caught in
+ * peripheral vision mid-task, not read the way a paragraph is. The floor keeps
+ * a one-word message ("Saved") on screen long enough to register at all; the
+ * ceiling stops a long error from parking itself over the interface.
+ *
+ * Counts the title as well as the message — both are rendered, so both have to
+ * be read.
+ */
+const MS_PER_CHARACTER = 50
+const MIN_DURATION_MS = 2_000
+const MAX_DURATION_MS = 7_000
+
+export function toastDuration(text: string): number {
+  return Math.min(Math.max(text.length * MS_PER_CHARACTER, MIN_DURATION_MS), MAX_DURATION_MS)
 }
 
 const toasts = ref<Toast[]>([])
@@ -25,15 +59,24 @@ function dismissToast(id: number) {
 
 function showToast(
   message: string,
-  options: { type?: ToastType; title?: string; duration?: number } = {},
+  options: {
+    type?: ToastType
+    title?: string
+    duration?: number
+    to?: RouteLocationRaw
+    notifId?: string
+    notification?: Notification
+  } = {},
 ) {
-  // A minute: long enough to read, notice which document it refers to, and act
-  // on it. Pass `duration` to override, or 0 to keep it up until dismissed.
-  const { type = 'success', title, duration = 60_000 } = options
+  const { type = 'success', title, duration, to, notifId, notification } = options
   const id = nextId++
-  toasts.value.push({ id, type, title, message })
-  // 0 keeps it up until something dismisses it.
-  if (duration > 0) setTimeout(() => dismissToast(id), duration)
+  toasts.value.push({ id, type, title, message, to, notifId, notification })
+
+  // `??` rather than a default parameter, so an explicit `duration: 0` still
+  // means "keep it up until something dismisses it" instead of falling through
+  // to the computed value.
+  const timeout = duration ?? toastDuration(`${title ?? ''}${message}`)
+  if (timeout > 0) setTimeout(() => dismissToast(id), timeout)
   return id
 }
 

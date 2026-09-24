@@ -8,6 +8,8 @@ import enDashboard from './locales/en/dashboard.json'
 import kmDashboard from './locales/km/dashboard.json'
 import enDocument from './locales/en/document.json'
 import kmDocument from './locales/km/document.json'
+import enNotification from './locales/en/notification.json'
+import kmNotification from './locales/km/notification.json'
 
 // ✅ get saved language from browser
 const savedLang = localStorage.getItem('lang')
@@ -21,18 +23,20 @@ const messages = {
     common: enCommon,
     dashboard: enDashboard,
     document: enDocument,
+    notification: enNotification,
   },
   km: {
     auth: kmAuth,
     common: kmCommon,
     dashboard: kmDashboard,
     document: kmDocument,
+    notification: kmNotification,
   },
 }
 
 const i18n = createI18n({
   legacy: false,
-  locale, 
+  locale,
   fallbackLocale: 'en',
   messages,
 })

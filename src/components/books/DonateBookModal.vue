@@ -1,15 +1,15 @@
 <script setup lang="ts">
-import { reactive, ref } from 'vue'
-import { useAuthStore } from '@/stores/auth.store'
+import { onBeforeUnmount, reactive, ref, watch } from 'vue'
 import { useBooksStore } from '@/stores/books.store'
 import { useMajorsStore } from '@/stores/majors.store'
-import SelectDropdown from '@/components/common/SelectDropdown.vue'
+import SelectDropdown from '@/components/base/SelectDropdown.vue'
+import ConfirmChangesModal, { type FieldChange } from '@/components/base/ConfirmChangesModal.vue'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { TEXT_NAME_PATTERN, FORBIDDEN_TEXT_PATTERN } from '@/utils/format'
+import { clearDraft, readDraft, writeDraft } from '@/composables/uploadDraft'
 
 const { t } = useI18n({ useScope: 'global' })
-const auth = useAuthStore()
 const books = useBooksStore()
 const majors = useMajorsStore()
 
@@ -18,7 +18,6 @@ const props = defineProps<{
     id: string
     title: string
     description?: string | null
-    contact?: string | null
     cover_image_url?: string | null
     majors?: { id: string } | null
   } | null
@@ -36,20 +35,38 @@ const uploading = ref(false)
 
 const form = reactive({
   title: props.editBook?.title ?? '',
-  department: props.editBook?.majors?.id ?? auth.user?.majors?.id ?? '',
+  // '' is "nothing picked yet", which is what shows the placeholder. Choosing
+  // None is a different thing and carries its own value — see NO_DEPARTMENT.
+  department: props.editBook?.majors?.id ?? '',
   description: props.editBook?.description ?? '',
-  contact: props.editBook?.contact ?? '',
 })
 
 const errors = reactive({
   title: '',
   department: '',
   description: '',
-  contact: '',
   cover: '',
 })
 
-const majorOptions = computed(() => majors.majors.map((m) => ({ value: m.id, label: m.acronym })))
+/**
+ * "None" first and empty-valued: not every donated book is coursework, and
+ * making people pick a department they do not mean is worse than none. The
+ * empty string is what the API reads as "no department" — books.major_id is
+ * nullable, and majors stays free of a placeholder row that would otherwise
+ * show up in the profile and complete-profile pickers.
+ */
+/**
+ * A value of its own, not '': the empty string means "not chosen yet" and is
+ * what makes the dropdown show its placeholder. Deliberately picking None has
+ * to be distinguishable from never having touched the field, so it carries a
+ * sentinel that submit() maps back to '' for the API.
+ */
+const NO_DEPARTMENT = 'none'
+
+const majorOptions = computed(() => [
+  { value: NO_DEPARTMENT, label: t('common.donateBookModal.departmentNone') },
+  ...majors.majors.map((m) => ({ value: m.id, label: m.acronym })),
+])
 
 function onCoverChange(e: Event) {
   const file = (e.target as HTMLInputElement).files?.[0]
@@ -57,6 +74,14 @@ function onCoverChange(e: Event) {
   coverFile.value = file
   coverPreview.value = URL.createObjectURL(file)
 }
+
+/**
+ * The name shown on hover. A freshly picked file has one; an existing cover is
+ * only a URL, so its filename is taken from the end of the path.
+ */
+const coverName = computed(
+  () => coverFile.value?.name ?? coverPreview.value?.split('/').pop() ?? '',
+)
 
 function removeCover() {
   coverFile.value = null
@@ -74,16 +99,7 @@ function validateTitle() {
   }
 }
 
-function validateContact() {
-  const contact = form.contact.trim()
-  if (!contact) {
-    errors.contact = t('common.donateBookModal.errorContactRequired')
-  } else if (FORBIDDEN_TEXT_PATTERN.test(contact)) {
-    errors.contact = t('common.donateBookModal.errorContactInvalid')
-  } else {
-    errors.contact = ''
-  }
-}
+function validateContact() {}
 
 function validateDescription() {
   errors.description = FORBIDDEN_TEXT_PATTERN.test(form.description)
@@ -95,16 +111,79 @@ function validate() {
   validateTitle()
   validateContact()
   validateDescription()
-  errors.department = form.department ? '' : t('common.donateBookModal.errorDepartmentRequired')
+  // Editing is checked too: removeCover() clears the preview, and a save from
+  // there sent no cover_image_url at all, so the server quietly kept the old
+  // image — the book looked unchanged and the delete appeared to do nothing.
   errors.cover =
-    !isEditing.value && !coverFile.value ? t('common.donateBookModal.errorCoverRequired') : ''
-  return (
-    !errors.title && !errors.department && !errors.description && !errors.contact && !errors.cover
-  )
+    coverFile.value || coverPreview.value ? '' : t('common.donateBookModal.errorCoverRequired')
+  return !errors.title && !errors.description && !errors.cover
 }
 
-async function submit() {
+/**
+ * An edit is confirmed before it is saved, so an accidental change is caught
+ * while it can still be undone. A new listing has nothing to compare against,
+ * and an edit that changed nothing has nothing to confirm — both go straight
+ * through.
+ */
+const pendingChanges = ref<FieldChange[]>([])
+
+function departmentLabel(id: string) {
+  if (!id || id === NO_DEPARTMENT) return t('common.donateBookModal.departmentNone')
+  return majors.majors.find((m) => m.id === id)?.acronym ?? id
+}
+
+function collectChanges(): FieldChange[] {
+  const book = props.editBook
+  if (!book) return []
+  const changes: FieldChange[] = []
+
+  if (form.title.trim() !== book.title)
+    changes.push({
+      label: t('common.donateBookModal.titleLabel'),
+      from: book.title,
+      to: form.title.trim(),
+    })
+
+  const fromDept = departmentLabel(book.majors?.id ?? '')
+  const toDept = departmentLabel(form.department)
+  if (fromDept !== toDept)
+    changes.push({
+      label: t('common.donateBookModal.departmentLabel'),
+      from: fromDept,
+      to: toDept,
+    })
+
+  if (form.description.trim() !== (book.description ?? ''))
+    changes.push({
+      label: t('common.donateBookModal.descriptionLabel'),
+      from: book.description ?? '',
+      to: form.description.trim(),
+    })
+
+  // The image itself cannot be shown side by side here, so say that it changed.
+  if (coverFile.value)
+    changes.push({
+      label: t('common.confirmChanges.coverImage'),
+      from: book.cover_image_url ? (book.cover_image_url.split('/').pop() ?? '') : '',
+      to: t('common.confirmChanges.coverReplaced'),
+    })
+
+  return changes
+}
+
+function submit() {
   if (!validate()) return
+  if (isEditing.value) {
+    const changes = collectChanges()
+    if (changes.length) {
+      pendingChanges.value = changes
+      return
+    }
+  }
+  void save()
+}
+
+async function save() {
   uploading.value = true
   try {
     let cover_image_url: string | undefined
@@ -113,9 +192,9 @@ async function submit() {
     }
     const payload = {
       title: form.title.trim(),
-      department: form.department,
+      // '' either way: the API reads an empty department as none at all.
+      department: form.department === NO_DEPARTMENT ? '' : form.department,
       description: form.description.trim() || undefined,
-      contact: form.contact.trim(),
       cover_image_url,
     }
     if (isEditing.value) {
@@ -125,6 +204,9 @@ async function submit() {
       await books.donate(payload)
       emit('donated')
     }
+    // Saved: there is nothing left to come back to.
+    clearDraft(draftContext.value)
+    pendingChanges.value = []
     emit('close')
   } catch {
     // books.error is set by store
@@ -132,15 +214,80 @@ async function submit() {
     uploading.value = false
   }
 }
+
+// ── Draft ──────────────────────────────────────────────────────────────────
+// Closing this form — deliberately or by a stray click on the backdrop — keeps
+// what was typed, for this page session only. Keyed by the book being edited,
+// so a new listing and an edit never overwrite each other.
+const draftContext = computed(() => `book:${props.editBook?.id ?? 'new'}`)
+
+type Draft = {
+  form: Partial<typeof form>
+  /** The File itself, not a URL: the draft is in memory, and keeping the file
+   *  is what lets the preview be rebuilt from it. */
+  coverFile: File | null
+  /** Only for an existing cover, which is a server URL rather than a blob. */
+  coverUrl: string | null
+}
+
+function saveDraft() {
+  const blank = !form.title.trim() && !form.description.trim() && !coverFile.value
+  if (blank && !isEditing.value) {
+    clearDraft(draftContext.value)
+    return
+  }
+  writeDraft(draftContext.value, {
+    form: { ...form },
+    coverFile: coverFile.value,
+    coverUrl: coverFile.value ? null : coverPreview.value,
+  } satisfies Draft)
+}
+
+/**
+ * Restores what was typed, or gives up and starts clean. A bad draft must never
+ * take the modal down with it: this runs during setup, and the draft outlives
+ * the component, so the same throw would repeat on every reopen.
+ */
+function restoreDraft() {
+  const draft = readDraft<Draft>(draftContext.value)
+  if (!draft) return
+  try {
+    Object.assign(form, draft.form)
+    coverFile.value = draft.coverFile
+    // Rebuilt from the file: the previous object URL died with the last close.
+    coverPreview.value = draft.coverFile ? URL.createObjectURL(draft.coverFile) : draft.coverUrl
+  } catch (err) {
+    console.error('Could not restore the book draft; starting a fresh form.', err)
+    clearDraft(draftContext.value)
+  }
+}
+
+// Saved as the user types, coalesced so a keystroke isn't a write.
+let draftTimer: ReturnType<typeof setTimeout>
+watch(
+  [form, coverFile],
+  () => {
+    clearTimeout(draftTimer)
+    draftTimer = setTimeout(saveDraft, 300)
+  },
+  { deep: true },
+)
+
+// Otherwise the debounced save fires ~300ms after the modal is gone.
+onBeforeUnmount(() => clearTimeout(draftTimer))
+
+// Last, deliberately: restoreDraft() assigns to refs declared above, and a
+// `const` cannot be read before its own line has run.
+restoreDraft()
 </script>
 
 <template>
   <div
-    class="fixed inset-0 z-50 flex items-center justify-center bg-black/45 px-4 py-6 backdrop-blur-sm"
+    class="fixed inset-0 z-50 flex items-center justify-center bg-black/45 px-4 py-6"
     @click.self="emit('close')"
   >
     <div
-      class="flex max-h-[90vh] w-full max-w-sm flex-col overflow-hidden rounded-3xl bg-white shadow-2xl ring-1 ring-black/10 md:max-w-md"
+      class="flex max-h-[80dvh] w-full max-w-sm flex-col sm:max-h-[90dvh] overflow-hidden rounded-3xl bg-white shadow-2xl ring-1 ring-black/10 md:max-w-md"
     >
       <!-- Header -->
       <div class="border-b border-black/5 px-5 py-4">
@@ -154,7 +301,7 @@ async function submit() {
       </div>
 
       <!-- Body -->
-      <div class="min-h-0 flex-1 space-y-4 overflow-y-auto px-5 py-4">
+      <div class="min-h-0 flex-1 space-y-4 overflow-y-auto px-5 py-4 scrollbar-primary">
         <!-- Server error -->
         <p v-if="books.error" class="rounded-xl bg-red-50 px-3 py-2 text-sm text-red-600">
           {{ books.error }}
@@ -166,14 +313,28 @@ async function submit() {
             >{{ t('common.donateBookModal.coverLabel') }}
             <span v-if="!isEditing" class="text-red-500">*</span></label
           >
-          <div v-if="coverPreview" class="relative w-fit">
-            <img :src="coverPreview" class="h-32 w-24 rounded-xl object-cover shadow" />
+          <!-- Same tile as a staged file in the document upload: the picture
+               fills a rounded square, and the remove button shows on hover — or
+               on keyboard focus, so it stays reachable without a pointer. -->
+          <div v-if="coverPreview" class="group relative w-fit">
+            <div class="h-16 w-16 overflow-hidden rounded-2xl border border-[#E5E7EB]">
+              <img :src="coverPreview" :alt="coverName" class="h-full w-full object-cover" />
+            </div>
             <button
               type="button"
+              class="absolute right-1 top-1 flex h-5 w-5 items-center justify-center rounded-full bg-white text-primary opacity-0 shadow-sm transition hover:cursor-pointer hover:bg-white group-hover:opacity-100 focus:opacity-100"
+              :aria-label="`Remove ${coverName}`"
               @click="removeCover"
-              class="absolute -right-2 -top-2 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-xs text-white hover:bg-red-600"
             >
-              ✕
+              <svg
+                class="h-3 w-3"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="3"
+                viewBox="0 0 24 24"
+              >
+                <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+              </svg>
             </button>
           </div>
           <label
@@ -246,10 +407,7 @@ async function submit() {
         <div class="space-y-1">
           <label class="text-sm font-medium text-black"
             >{{ t('common.donateBookModal.descriptionLabel') }}
-            <span class="font-normal text-gray-400">{{
-              t('common.donateBookModal.optional')
-            }}</span></label
-          >
+          </label>
 
           <textarea
             v-model="form.description"
@@ -261,24 +419,6 @@ async function submit() {
             :class="errors.description ? 'border-red-400' : ''"
           />
           <p v-if="errors.description" class="text-xs text-red-500">{{ errors.description }}</p>
-        </div>
-
-        <!-- Contact -->
-        <div class="space-y-1">
-          <label class="text-sm font-medium text-black"
-            >{{ t('common.donateBookModal.contactLabel') }}
-            <span class="text-red-500">*</span></label
-          >
-          <input
-            v-model="form.contact"
-            type="text"
-            :placeholder="t('common.donateBookModal.contactPlaceholder')"
-            @blur="validateContact"
-            @input="errors.contact = ''"
-            class="w-full rounded-xl border border-[#D9D9D9] px-4 py-2.5 text-sm outline-none transition focus:border-primary"
-            :class="errors.contact ? 'border-red-400' : ''"
-          />
-          <p v-if="errors.contact" class="text-xs text-red-500">{{ errors.contact }}</p>
         </div>
 
         <!-- Actions -->
@@ -295,7 +435,7 @@ async function submit() {
             type="button"
             :disabled="uploading"
             @click="submit"
-            class="rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-[#006B9C] disabled:opacity-60 cursor-pointer"
+            class="rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-primary-hover disabled:opacity-60 cursor-pointer"
           >
             <span v-if="uploading" class="flex items-center gap-2">
               <svg class="h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24">
@@ -321,4 +461,12 @@ async function submit() {
       </div>
     </div>
   </div>
+
+  <ConfirmChangesModal
+    v-if="pendingChanges.length"
+    :changes="pendingChanges"
+    :loading="uploading"
+    @cancel="pendingChanges = []"
+    @confirm="save"
+  />
 </template>

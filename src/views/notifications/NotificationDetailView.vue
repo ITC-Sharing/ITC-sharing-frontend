@@ -5,13 +5,15 @@ import { useNotificationsStore } from '@/stores/notifications.store'
 import { useDocumentsStore } from '@/stores/documents.store'
 import { useSubjectsStore } from '@/stores/subjects.store'
 import { useBooksStore } from '@/stores/books.store'
-import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
-import BackButton from '@/components/common/BackButton.vue'
-import { formatRelativeDate, formatFileSize } from '@/utils/format'
+import LoadingSpinner from '@/components/base/LoadingSpinner.vue'
+import BackButton from '@/components/base/BackButton.vue'
+import { formatFileSize, formatRelativeDate } from '@/utils/format'
 import noImage from '@/assets/images/no-image.png'
-import FileTypeIcon from '@/components/common/FileTypeIcon.vue'
-import type { BookRequestDetail } from '@/types'
-
+import FileTypeIcon from '@/components/base/FileTypeIcon.vue'
+import type { BookRequestDetail } from '@/types/books.types'
+import UserAvatar from '@/components/base/UserAvatar.vue'
+import AcceptRequestModal from '@/components/books/AcceptRequestModal.vue'
+import DeclineRequestModal from '@/components/books/DeclineRequestModal.vue'
 const route = useRoute()
 const router = useRouter()
 const notifStore = useNotificationsStore()
@@ -24,7 +26,6 @@ const refId = computed(() => String(route.query.ref_id ?? ''))
 const refType = computed(() => String(route.query.ref_type ?? ''))
 
 const notification = computed(() => notifStore.notifications.find((n) => n.id === notifId.value))
-const isRejected = computed(() => notification.value?.type?.includes('rejected') ?? false)
 
 const upload = computed(() => docs.myUploads.find((u) => u.id === refId.value) ?? null)
 const subject = computed(() => subjectsStore.mySubjects.find((s) => s.id === refId.value) ?? null)
@@ -70,22 +71,28 @@ async function loadBookRequest() {
   }
 }
 
+const showAccept = ref(false)
+
 async function onAccept() {
   if (!bookRequest.value) return
   reqAction.value = 'accept'
   try {
     await booksStore.acceptRequest(bookRequest.value.book.id, bookRequest.value.id)
+    showAccept.value = false
     await loadBookRequest()
   } finally {
     reqAction.value = null
   }
 }
 
-async function onDecline() {
+const showDecline = ref(false)
+
+async function onDecline(reason: string) {
   if (!bookRequest.value) return
   reqAction.value = 'decline'
   try {
-    await booksStore.declineRequest(bookRequest.value.book.id, bookRequest.value.id)
+    await booksStore.declineRequest(bookRequest.value.book.id, bookRequest.value.id, reason)
+    showDecline.value = false
     await loadBookRequest()
   } finally {
     reqAction.value = null
@@ -110,8 +117,9 @@ onMounted(async () => {
 
 <template>
   <div class="mx-auto w-full max-w-6xl px-6">
-    <!-- Back -->
-    <div class="mb-6">
+    <!-- Back. Hidden as a row so its mb-6 goes with it on a phone, where
+         BackButton itself renders nothing. -->
+    <div class="mb-6 hidden md:block">
       <BackButton />
     </div>
 
@@ -214,6 +222,18 @@ onMounted(async () => {
             </span>
           </div>
         </div>
+        <DeclineRequestModal
+          v-if="showDecline && bookRequest"
+          :loading="reqAction === 'decline'"
+          @cancel="showDecline = false"
+          @confirm="onDecline"
+        />
+        <AcceptRequestModal
+          v-if="showAccept && bookRequest"
+          :loading="reqAction === 'accept'"
+          @cancel="showAccept = false"
+          @confirm="onAccept"
+        />
       </template>
 
       <!-- ── Rejected subject ───────────────────────────────────────────────── -->
@@ -317,24 +337,25 @@ onMounted(async () => {
                   class="h-9 w-9 rounded-full overflow-hidden bg-primary flex items-center justify-center shrink-0"
                 >
                   <template v-if="bookRequest.role === 'donor'">
-                    <img
-                      v-if="bookRequest.requester.avatar_url"
+                    <UserAvatar
                       :src="bookRequest.requester.avatar_url"
-                      class="h-full w-full object-cover"
+                      :initials="
+                        reqInitials(
+                          bookRequest.requester.first_name,
+                          bookRequest.requester.last_name,
+                        )
+                      "
+                      text-class="text-[11px] !text-white"
                     />
-                    <span v-else class="text-[11px] font-bold text-white">{{
-                      reqInitials(bookRequest.requester.first_name, bookRequest.requester.last_name)
-                    }}</span>
                   </template>
                   <template v-else>
-                    <img
-                      v-if="bookRequest.donor.avatar_url"
+                    <UserAvatar
                       :src="bookRequest.donor.avatar_url"
-                      class="h-full w-full object-cover"
+                      :initials="
+                        reqInitials(bookRequest.donor.first_name, bookRequest.donor.last_name)
+                      "
+                      text-class="text-[11px] !text-white"
                     />
-                    <span v-else class="text-[11px] font-bold text-white">{{
-                      reqInitials(bookRequest.donor.first_name, bookRequest.donor.last_name)
-                    }}</span>
                   </template>
                 </div>
                 <span class="text-sm font-medium text-gray-800">
@@ -410,15 +431,15 @@ onMounted(async () => {
               >
                 <button
                   :disabled="reqAction !== null"
-                  @click="onDecline"
+                  @click="showDecline = true"
                   class="flex-1 rounded-xl border border-gray-300 py-2.5 text-sm font-semibold text-gray-700 hover:bg-gray-50 disabled:opacity-60 transition-colors"
                 >
                   {{ reqAction === 'decline' ? '…' : 'Decline' }}
                 </button>
                 <button
                   :disabled="reqAction !== null"
-                  @click="onAccept"
-                  class="flex-1 rounded-xl bg-primary py-2.5 text-sm font-semibold text-white hover:bg-[#006B9C] disabled:opacity-60 transition-colors"
+                  @click="showAccept = true"
+                  class="flex-1 rounded-xl bg-primary py-2.5 text-sm font-semibold text-white hover:bg-primary-hover disabled:opacity-60 transition-colors"
                 >
                   {{ reqAction === 'accept' ? '…' : 'Accept' }}
                 </button>

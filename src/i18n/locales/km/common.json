@@ -11,20 +11,14 @@
     "invalidMonth": "ខែត្រូវនៅចន្លោះ ១ ដល់ ១២",
     "past": "កាលបរិច្ឆេទមិនអាចនៅអតីតកាលបានទេ"
   },
-  "documentUploadModal": {
-    "errorTitleRequired": "ចំណងជើងត្រូវការ",
-    "errorTitleInvalid": "ចំណងជើងមិនត្រូវមានតួអក្សរពិសេសទេ",
-    "errorTitleTooLong": "អ្នកអាចបញ្ចូលបានត្រឹមតែ ២០ តួអក្សរ",
-    "errorTagInvalid": "ស្លាកអាចមានតែអក្សរ លេខ និងសហសញ្ញា",
-    "errorTagTooLong": "អ្នកអាចបញ្ចូលបានត្រឹមតែ ១០ តួអក្សរ"
-  },
   "nav": {
     "home": "ទំព័រដើម",
     "docs": "ឯកសារ",
     "books": "សៀវភៅ",
     "dashboard": "ផ្ទាំងគ្រប់គ្រង",
     "login": "ចូលគណនី",
-    "search": "ស្វែងរក"
+    "search": "ស្វែងរក",
+    "logout": "ចាកចេញ"
   },
   "departmentPage": {
     "year1": "ឆ្នាំទី១",
@@ -42,14 +36,11 @@
   "subjectPage": {
     "addSubject": "បន្ថែមមុខវិជ្ជា",
     "submitmsg": "មុខវិជ្ជាត្រូវបានដាក់ស្នើសម្រាប់ពិនិត្យ វានឹងបង្ហាញនៅពេលដែលបានអនុម័តដោយអ្នកគ្រប់គ្រង",
-    "noSubjects": "មិនទាន់មានមុខវិជ្ជា",
-    "searchPlaceholder": "ស្វែងរក",
-    "loadError": "មិនអាចផ្ទុកមុខវិជ្ជាបាន។ សូមព្យាយាមម្តងទៀត។"
+    "noSubjects": "មិនទាន់មានមុខវិជ្ជា"
   },
   "filterButton": {
     "sortBy": "តម្រៀបតាម",
-    "default": "លំនាំដើម",
-    "byName": "តម្រៀបតាមអក្សរ A-Z",
+    "default": "ទាំងអស់",
     "bySemester1": "តម្រៀបតាមឆមាស 1",
     "bySemester2": "តម្រៀបតាមឆមាស 2",
     "perPage": "បង្ហាញក្នុងមួយទំព័រ"
@@ -73,7 +64,7 @@
   },
   "donateBookModal": {
     "editTitle": "កែសម្រួលសៀវភៅ",
-    "createTitle": "បរិច្ចាគសៀវភៅ",
+    "createTitle": "ឲ្យសៀវភៅ",
     "coverLabel": "រូបភាពគម្រប",
     "coverUpload": "ចុចដើម្បីបញ្ចូល (JPG, PNG, WebP)",
     "titleLabel": "ចំណងជើង",
@@ -81,28 +72,21 @@
     "departmentLabel": "ដេប៉ាតឺម៉ង់",
     "selectDepartment": "ជ្រើសរើសដេប៉ាតឺម៉ង់",
     "descriptionLabel": "ការពិពណ៌នា",
-    "optional": "(ស្រេចចិត្ត)",
     "descriptionPlaceholder": "ស្ថានភាព ការបោះពុម្ព កំណត់ចំណាំ…",
-    "contactLabel": "ទំនាក់ទំនង",
-    "contactPlaceholder": "ឧ. Telegram: {'@'}username",
     "cancel": "បោះបង់",
     "submitting": "កំពុងដាក់ស្នើ…",
     "saveChanges": "រក្សាទុកការផ្លាស់ប្ដូរ",
-    "donateButton": "បរិច្ចាគសៀវភៅ",
+    "donateButton": "ឲ្យសៀវភៅ",
     "errorTitleRequired": "ចំណងជើងត្រូវការ",
     "errorTitleInvalid": "ចំណងជើងមិនត្រូវមានតួអក្សរពិសេសទេ",
-    "errorDepartmentRequired": "សូមជ្រើសរើសដេប៉ាតឺម៉ង់",
-    "errorContactRequired": "ទំនាក់ទំនងត្រូវការ",
-    "errorContactInvalid": "ទំនាក់ទំនងមិនត្រូវមាន $, {'{'} ឬ {'}'}",
     "errorDescriptionInvalid": "ការពិពណ៌នាមិនត្រូវមាន $, {'{'} ឬ {'}'}",
     "errorCoverRequired": "រូបភាពគម្របត្រូវការ",
-    "noBooksAvailable": "មិនទាន់មានសៀវភៅសម្រាប់បរិច្ចាគទេ, ធ្វើជាអ្នកដំបូងគេដែលបរិច្ចាគ!",
-    "bookSubtitle": "ស្វែងរក និងបរិច្ចាគសៀវភៅអ្នក"
+    "noBooksAvailable": "មិនទាន់មានសៀវភៅទេ, ធ្វើជាអ្នកដំបូងគេដែលឲ្យ!",
+    "bookSubtitle": "សៀវភៅចាស់របស់អ្នកអាចជាចំណុចចាប់ផ្តើមថ្មីសម្រាប់អ្នកដទៃ",
+    "departmentNone": "គ្មាន"
   },
   "profilePage": {
     "title": "គណនី",
-    "subtitle": "គ្រប់គ្រងជំនាញ និងឆ្នាំសិក្សារបស់អ្នក",
-    "name": "ឈ្មោះ",
     "firstName": "នាមខ្លួន",
     "lastName": "នាមត្រកូល",
     "email": "អ៊ីមែល",
@@ -118,13 +102,17 @@
     "errorLastName": "សូមបញ្ចូលនាមត្រកូល",
     "errorNameInvalid": "ឈ្មោះមិនអាចមានលេខ ឬតួអក្សរពិសេស",
     "errorNameTooLong": "ឈ្មោះត្រូវមានយ៉ាងច្រើន {max} តួអក្សរ",
-    "errorYear": "សូមជ្រើសរើសឆ្នាំសិក្សា"
+    "telegram": "តេលេក្រាម",
+    "errorTelegram": "សូមបញ្ចូលឈ្មោះតេលេក្រាម ដូចជា {'@'}student ឬតំណ t.me",
+    "departmentLocked": "ដេប៉ាតឺម៉ង់ និងឆ្នាំសិក្សាមិនអាចកែនៅទីនេះបានទេ — សូមទាក់ទងអ្នកគ្រប់គ្រង ប្រសិនបើវាមិនត្រឹមត្រូវ។",
+    "errorNameNoSpace": "ឈ្មោះមិនអាចមានចន្លោះបានទេ",
+    "errorNameCapital": "ឈ្មោះត្រូវចាប់ផ្ដើមដោយអក្សរធំ"
   },
   "notifications": {
     "title": "ការជូនដំណឹង",
     "markAllRead": "សម្គាល់ថាបានអានទាំងអស់",
     "empty": "មិនទាន់មានការជូនដំណឹង",
-    "back": "ត្រឡប់",
+    "emptyHint": "អ្នកបានមើលគ្រប់ទាំងអស់ហើយ!",
     "today": "ថ្ងៃនេះ",
     "yesterday": "ម្សិលមិញ",
     "justNow": "ឥឡូវនេះ",
@@ -133,7 +121,6 @@
     "daysAgo": "{n} ថ្ងៃមុន"
   },
   "confirmDelete": {
-    "title": "លុប",
     "message": "តើអ្នកប្រាកដថាចង់លុប {target} មែនទេ?",
     "messageGeneric": "តើអ្នកប្រាកដថាចង់លុបមែនទេ?",
     "cancel": "បោះបង់",
@@ -141,5 +128,74 @@
   },
   "toast": {
     "uploadSuccess": "បានបញ្ចូលឯកសារ។ វានឹងបង្ហាញនៅពេលអ្នកគ្រប់គ្រងអនុម័ត។"
+  },
+  "completeProfile": {
+    "title": "នៅសល់មួយទៀត",
+    "message": "សូមប្រាប់ដេប៉ាតឺម៉ង់ និងឆ្នាំសិក្សារបស់អ្នក ដើម្បីឲ្យយើងបង្ហាញឯកសារដែលសមស្របនឹងអ្នក។",
+    "save": "រក្សាទុក",
+    "later": "មិនទាន់",
+    "promotionTitle": "អបអរសាទរ",
+    "promotionMessage": "អ្នកបានបញ្ចប់ថ្នាក់មូលដ្ឋានហើយ។ សូមប្រាប់ដេប៉ាតឺម៉ង់ថ្មីរបស់អ្នក ដើម្បីឲ្យយើងបង្ហាញឯកសារដែលត្រឹមត្រូវ។",
+    "warning": "អ្នកមិនអាចផ្លាស់ប្តូរវាបានទេនៅពេលក្រោយ។"
+  },
+  "time": {
+    "justNow": "អម្បាញ់មិញ",
+    "minutesAgo": "{n} នាទីមុន",
+    "hoursAgo": "{n} ម៉ោងមុន",
+    "daysAgo": "{n} ថ្ងៃមុន"
+  },
+  "bookCard": {
+    "owner": "ម្ចាស់៖ {name}",
+    "you": "អ្នក"
+  },
+  "bookDetail": {
+    "alreadyRequested": "សៀវភៅនេះមានអ្នកស្នើសុំរួចហើយ",
+    "ownerPendingTitle": "មានសំណើកំពុងរង់ចាំ",
+    "ownerPendingBody": "{name} កំពុងស្នើសុំសៀវភៅរបស់អ្នក។ សូមពិនិត្យវានៅក្នុង",
+    "dashboardLink": "ផ្ទាំងគ្រប់គ្រង",
+    "noDescription": "មិនមានការពិពណ៌នាសម្រាប់សៀវភៅនេះទេ។"
+  },
+  "confirmChanges": {
+    "title": "រក្សាទុកការផ្លាស់ប្តូរនេះមែនទេ?",
+    "message": "សូមពិនិត្យអ្វីដែលនឹងផ្លាស់ប្តូរ។",
+    "cancel": "បោះបង់",
+    "confirm": "រក្សាទុក",
+    "coverImage": "រូបគម្រប",
+    "coverReplaced": "បានជ្រើសរូបថ្មី",
+    "never": "មិនផុតកំណត់",
+    "filesRemoved": "ឯកសារ",
+    "filesAdded": "ឯកសារបន្ថែម"
+  },
+  "notFound": {
+    "title": "រកមិនឃើញទំព័រ",
+    "backHome": "ត្រឡប់ទៅទំព័រដើម"
+  },
+  "telegramNotifications": {
+    "title": "ការជូនដំណឹងតាម Telegram",
+    "description": "ទទួលដំណឹងសំខាន់ៗពី ITC Sharing ដោយផ្ទាល់តាម Telegram។",
+    "connected": "បានភ្ជាប់",
+    "notConnected": "មិនទាន់ភ្ជាប់",
+    "connectedDescription": "អ្នកនឹងទទួលការជូនដំណឹងតាម Telegram។",
+    "connect": "ភ្ជាប់ Telegram",
+    "disconnect": "ផ្ដាច់ Telegram",
+    "waiting": "កំពុងរង់ចាំអ្នកចាប់ផ្ដើមបូតនៅក្នុង Telegram…",
+    "openAgain": "បើក Telegram ម្ដងទៀត",
+    "unavailable": "ការជូនដំណឹងតាម Telegram មិនទាន់បានរៀបចំនៅលើប្រព័ន្ធនេះទេ។",
+    "connectedToast": "បានភ្ជាប់ Telegram។ ការជូនដំណឹងនឹងទៅដល់ទីនោះផងដែរ។",
+    "disconnectedToast": "បានផ្ដាច់ Telegram។ ការជូនដំណឹងនៅតែមាននៅក្នុងកម្មវិធី។",
+    "failed": "មានបញ្ហាបន្តិច។ សូមព្យាយាមម្ដងទៀត។",
+    "promptTitle": "ទទួលការជូនដំណឹងតាម Telegram",
+    "promptBody": "ភ្ជាប់គណនី Telegram របស់អ្នក ដើម្បីទទួលដំណឹងពី ITC Sharing នៅទីនោះផងដែរ។ ការជូនដំណឹងរបស់អ្នកនៅតែមាននៅទីនេះដដែល។",
+    "notNow": "មិនទាន់ទេ"
+  },
+  "footer": {
+    "copyright": "© {year} ITC Sharing",
+    "rights": "រក្សាសិទ្ធិគ្រប់យ៉ាង។",
+    "about": "អំពីយើង",
+    "support": "ជំនួយ",
+    "feedback": "មតិយោបល់",
+    "facebook": "ITC Sharing នៅលើ Facebook",
+    "instagram": "ITC Sharing នៅលើ Instagram",
+    "x": "ITC Sharing នៅលើ X"
   }
 }

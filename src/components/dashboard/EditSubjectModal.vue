@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
-import RingSpinner from '@/components/common/RingSpinner.vue'
+import ConfirmChangesModal, { type FieldChange } from '@/components/base/ConfirmChangesModal.vue'
+import RingSpinner from '@/components/base/RingSpinner.vue'
 
 /**
  * Edits a subject's name, acronym and semester. Validation mirrors the API's
@@ -50,8 +51,46 @@ function validate(): boolean {
   return !errors.value.name && !errors.value.acronym
 }
 
+/**
+ * The edit is confirmed before it is saved, so an accidental change is caught
+ * while it can still be undone. Nothing changed means nothing to confirm.
+ *
+ * This modal's labels are hardcoded English (it is admin-only), so the change
+ * list matches them rather than inventing translated ones.
+ */
+const pendingChanges = ref<FieldChange[]>([])
+
+function collectChanges(): FieldChange[] {
+  const changes: FieldChange[] = []
+  if (name.value.trim() !== props.subject.name)
+    changes.push({ label: 'Subject name', from: props.subject.name, to: name.value.trim() })
+  if (acronym.value.trim() !== (props.subject.acronym ?? ''))
+    changes.push({
+      label: 'Acronym',
+      from: props.subject.acronym ?? '',
+      to: acronym.value.trim(),
+    })
+  if (semester.value !== String(props.subject.semester ?? ''))
+    changes.push({
+      label: 'Semester',
+      from: String(props.subject.semester ?? ''),
+      to: semester.value,
+    })
+  return changes
+}
+
 function submit() {
   if (!validate()) return
+  const changes = collectChanges()
+  if (changes.length) {
+    pendingChanges.value = changes
+    return
+  }
+  save()
+}
+
+function save() {
+  pendingChanges.value = []
   emit('save', {
     name: name.value.trim(),
     acronym: acronym.value.trim(),
@@ -74,11 +113,11 @@ const INPUT_CLASS =
 <template>
   <Teleport to="body">
     <div
-      class="fixed inset-0 z-[70] flex items-center justify-center bg-black/45 px-4 py-6 backdrop-blur-sm"
+      class="fixed inset-0 z-[70] flex items-center justify-center bg-black/45 px-4 py-6"
       @click.self="!saving && emit('close')"
     >
       <div
-        class="flex max-h-[90vh] w-full max-w-sm flex-col overflow-hidden rounded-3xl bg-white shadow-2xl ring-1 ring-black/10 md:max-w-md"
+        class="flex max-h-[80dvh] w-full max-w-sm flex-col sm:max-h-[90dvh] overflow-hidden rounded-3xl bg-white shadow-2xl ring-1 ring-black/10 md:max-w-md"
       >
         <div class="relative border-b border-black/5 px-5 py-4">
           <p class="text-center text-xl font-bold text-black">Edit Subject</p>
@@ -135,7 +174,7 @@ const INPUT_CLASS =
           </button>
           <button
             type="button"
-            class="flex items-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-[#006B9C] hover:cursor-pointer disabled:cursor-not-allowed disabled:opacity-60"
+            class="flex items-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-primary-hover hover:cursor-pointer disabled:cursor-not-allowed disabled:opacity-60"
             :disabled="!canSubmit"
             @click="submit"
           >
@@ -146,4 +185,12 @@ const INPUT_CLASS =
       </div>
     </div>
   </Teleport>
+
+  <ConfirmChangesModal
+    v-if="pendingChanges.length"
+    :changes="pendingChanges"
+    :loading="props.saving"
+    @cancel="pendingChanges = []"
+    @confirm="save"
+  />
 </template>

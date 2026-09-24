@@ -1,8 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
-import api from '@/lib/axios'
-import type { AudienceEntry, DocumentStats, MyUpload, Upload } from '@/types'
-
+import * as documentsApi from '@/services/documents.api'
+import type { AudienceEntry, DocumentStats, MyUpload, Upload } from '@/types/documents.types'
 export const useDocumentsStore = defineStore('documents', () => {
   const documents = ref<Upload[]>([])
   const total = ref(0)
@@ -19,7 +18,7 @@ export const useDocumentsStore = defineStore('documents', () => {
 
   async function fetchDocTypes() {
     try {
-      const { data } = await api.get('/documents/types')
+      const data = await documentsApi.fetchDocTypes()
       docTypes.value = data.types as string[]
       departmentDocTypes.value = (data.department ?? data.types) as string[]
       languageDocTypes.value = (data.language ?? data.types) as string[]
@@ -35,16 +34,22 @@ export const useDocumentsStore = defineStore('documents', () => {
     search?: string
     title?: string
     uploader_id?: string
+    /** Only honoured server-side when listing your own uploads. */
+    status?: 'pending' | 'active' | 'rejected'
+    /** Same gating: lists only your hidden uploads. */
+    hidden?: 'true' | 'false'
+    /** Same gating: lists only your uploads whose expiry has passed. */
+    expired?: 'true' | 'false'
     year_level?: number
+    /** 'date' drops the pins-first ordering — see QueryDocumentsDto.sort. */
+    sort?: 'pinned' | 'date'
     page?: number
     limit?: number
   }) {
     loading.value = true
     error.value = null
     try {
-      const { data } = await api.get<{ items: Upload[]; total: number }>('/documents', {
-        params: filters,
-      })
+      const data = await documentsApi.fetchDocuments(filters)
       documents.value = data.items
       total.value = data.total
     } catch (e: any) {
@@ -59,7 +64,7 @@ export const useDocumentsStore = defineStore('documents', () => {
     loading.value = true
     error.value = null
     try {
-      const { data } = await api.get<Upload>(`/documents/${uploadId}`)
+      const data = await documentsApi.fetchDocument(uploadId)
       currentUpload.value = data
     } catch (e: any) {
       error.value = e.response?.data?.message ?? 'Failed to load document'
@@ -76,12 +81,7 @@ export const useDocumentsStore = defineStore('documents', () => {
   async function stageFile(file: File, onProgress?: (percent: number) => void) {
     const formData = new FormData()
     formData.append('file', file)
-    const { data } = await api.post('/documents/staged-files', formData, {
-      headers: { 'Content-Type': 'multipart/form-data' },
-      onUploadProgress: (e) => {
-        if (onProgress && e.total) onProgress(Math.round((e.loaded / e.total) * 100))
-      },
-    })
+    const data = await documentsApi.stageFile(formData, onProgress)
     return data as {
       id: string
       file_url: string
@@ -93,19 +93,14 @@ export const useDocumentsStore = defineStore('documents', () => {
 
   /** Discard a staged file the user removed from the form. */
   async function deleteStagedFile(id: string) {
-    await api.delete(`/documents/staged-files/${id}`)
+    await documentsApi.deleteStagedFile(id)
   }
 
   async function upload(formData: FormData, onProgress?: (percent: number) => void) {
     loading.value = true
     error.value = null
     try {
-      const { data } = await api.post('/documents', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' },
-        onUploadProgress: (e) => {
-          if (onProgress && e.total) onProgress(Math.round((e.loaded / e.total) * 100))
-        },
-      })
+      const data = await documentsApi.createUpload(formData, onProgress)
       return data
     } catch (e: any) {
       error.value = e.response?.data?.message ?? 'Upload failed'
@@ -119,7 +114,7 @@ export const useDocumentsStore = defineStore('documents', () => {
   // so a paginated list never distorts the numbers.
   async function fetchStats() {
     try {
-      const { data } = await api.get<DocumentStats>('/documents/stats')
+      const data = await documentsApi.fetchDocumentStats()
       stats.value = data
     } catch (e: any) {
       error.value = e.response?.data?.message ?? 'Failed to load document stats'
@@ -130,7 +125,7 @@ export const useDocumentsStore = defineStore('documents', () => {
     loading.value = true
     error.value = null
     try {
-      const { data } = await api.get<MyUpload[]>('/documents/mine')
+      const data = await documentsApi.fetchMyUploads()
       myUploads.value = data
     } catch (e: any) {
       error.value = e.response?.data?.message ?? 'Failed to load your uploads'
@@ -156,7 +151,7 @@ export const useDocumentsStore = defineStore('documents', () => {
     loading.value = true
     error.value = null
     try {
-      const { data } = await api.patch(`/documents/${uploadId}`, payload)
+      const data = await documentsApi.updateDocument(uploadId, payload)
       return data
     } catch (e: any) {
       error.value = e.response?.data?.message ?? 'Update failed'
@@ -171,30 +166,16 @@ export const useDocumentsStore = defineStore('documents', () => {
    * upload was already approved: the new files land hidden until a moderator
    * clears them, while the document itself stays in the feed.
    */
-  async function addFiles(
-    uploadId: string,
-    files: File[],
-    onProgress?: (percent: number) => void,
-  ) {
+  async function addFiles(uploadId: string, files: File[], onProgress?: (percent: number) => void) {
     const formData = new FormData()
     files.forEach((f) => formData.append('files', f))
-    const { data } = await api.post<{
-      files: unknown[]
-      needs_review: boolean
-    }>(`/documents/${uploadId}/files`, formData, {
-      headers: { 'Content-Type': 'multipart/form-data' },
-      onUploadProgress: (e) => {
-        if (onProgress && e.total) onProgress(Math.round((e.loaded / e.total) * 100))
-      },
-    })
+    const data = await documentsApi.addFiles(uploadId, formData, onProgress)
     return data
   }
 
   /** Attach files that were staged while the edit form was open. */
   async function addStagedFiles(uploadId: string, stagedFileIds: string[]) {
-    const { data } = await api.post(`/documents/${uploadId}/files`, {
-      staged_file_ids: stagedFileIds,
-    })
+    const data = await documentsApi.addStagedFiles(uploadId, stagedFileIds)
     return data
   }
 
@@ -204,11 +185,7 @@ export const useDocumentsStore = defineStore('documents', () => {
    * `upload_deleted` rather than refetching an upload that is gone.
    */
   async function removeFile(fileId: string) {
-    const { data } = await api.delete<{
-      message: string
-      upload_deleted: boolean
-      upload_id: string
-    }>(`/documents/files/${fileId}`)
+    const data = await documentsApi.removeFile(fileId)
 
     if (data.upload_deleted) {
       documents.value = documents.value.filter((d) => d.id !== data.upload_id)
@@ -223,8 +200,37 @@ export const useDocumentsStore = defineStore('documents', () => {
     return data
   }
 
+  /**
+   * Hide or show one file. Hiding the last visible file hides its upload too,
+   * which the reply reports as `upload_hidden`.
+   */
+  async function setFileHiddenState(fileId: string, hidden: boolean) {
+    const data = await documentsApi.setFileHidden(fileId, hidden)
+    if (currentUpload.value?.id === data.upload_id) {
+      const f = currentUpload.value.documents.find((x) => x.id === fileId)
+      if (f) f.hidden_at = hidden ? new Date().toISOString() : null
+    }
+    return data
+  }
+
+  /** Pin your own document to the top of your dashboard list. */
+  async function setPinned(uploadId: string, pinned: boolean) {
+    const data = await documentsApi.setPinned(uploadId, pinned)
+    const d = documents.value.find((x) => x.id === uploadId)
+    if (d) d.pinned_at = pinned ? new Date().toISOString() : null
+    return data
+  }
+
+  /** Take a document out of the feed, or put it back. Uploader only. */
+  async function setHidden(uploadId: string, hidden: boolean) {
+    const data = await documentsApi.setHidden(uploadId, hidden)
+    const d = documents.value.find((x) => x.id === uploadId)
+    if (d) d.hidden_at = hidden ? new Date().toISOString() : null
+    return data
+  }
+
   async function deleteDocument(uploadId: string) {
-    await api.delete(`/documents/${uploadId}`)
+    await documentsApi.deleteUpload(uploadId)
     documents.value = documents.value.filter((d) => d.id !== uploadId)
   }
 
@@ -251,6 +257,9 @@ export const useDocumentsStore = defineStore('documents', () => {
     addFiles,
     addStagedFiles,
     removeFile,
+    setHidden,
+    setPinned,
+    setFileHiddenState,
     deleteDocument,
   }
 })
