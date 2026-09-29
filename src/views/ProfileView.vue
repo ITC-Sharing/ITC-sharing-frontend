@@ -181,7 +181,7 @@ async function save() {
        py-1 is not cosmetic: a scroll container clips at its padding box, and
        the avatar's ring-4 is drawn 4px OUTSIDE its box — with no padding the
        ring's top arc is cut off and the circle reads as flattened. -->
-  <div class="mx-auto w-full max-w-4xl min-h-0 flex-1 overflow-y-auto px-6 py-1 scrollbar-primary">
+  <div class="mx-auto w-full max-w-4xl min-h-0 flex-1 overflow-y-auto px-6 py-1">
     <!-- Header: avatar + name + update button -->
     <div class="flex items-start justify-between gap-4 flex-wrap">
       <div class="flex items-center gap-5">

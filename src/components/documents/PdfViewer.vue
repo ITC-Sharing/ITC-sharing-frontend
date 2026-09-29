@@ -347,7 +347,7 @@ onBeforeUnmount(() => {
     <!-- Thumbnail rail -->
     <aside
       v-if="pages.length > 1"
-      class="hidden w-40 shrink-0 overflow-y-auto overscroll-contain border-r border-white/10 bg-black/30 py-3 sm:block scrollbar-primary"
+      class="hidden w-40 shrink-0 overflow-y-auto overscroll-contain border-r border-white/10 bg-black/30 py-3 sm:block"
     >
       <button
         v-for="page in pages"
@@ -380,10 +380,7 @@ onBeforeUnmount(() => {
 
     <!-- Pages -->
     <div class="relative flex min-w-0 flex-1 flex-col">
-      <div
-        ref="scroller"
-        class="flex-1 overflow-auto overscroll-contain p-2 sm:p-4 scrollbar-primary"
-      >
+      <div ref="scroller" class="flex-1 overflow-auto overscroll-contain p-2 sm:p-4">
         <p v-if="loading" class="py-16 text-center text-sm text-white/60">
           {{ t('document.documentDetailsPage.pdfLoading') }}
         </p>

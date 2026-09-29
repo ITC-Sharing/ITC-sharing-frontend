@@ -279,7 +279,7 @@ onBeforeUnmount(() => {
         </div>
 
         <form
-          class="min-h-0 flex-1 space-y-3 overflow-y-auto px-5 py-4 scrollbar-primary"
+          class="min-h-0 flex-1 space-y-3 overflow-y-auto px-5 py-4"
           @submit.prevent="handleSubmit"
         >
           <div class="space-y-2">

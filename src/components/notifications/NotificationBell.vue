@@ -148,7 +148,7 @@ onBeforeUnmount(() => {
       </div>
 
       <!-- List -->
-      <div class="max-h-130 overflow-y-auto px-2 pb-2 pt-1 scrollbar-primary">
+      <div class="max-h-130 overflow-y-auto px-2 pb-2 pt-1">
         <!-- Loading -->
         <div v-if="notifStore.loading" class="flex justify-center py-10">
           <svg

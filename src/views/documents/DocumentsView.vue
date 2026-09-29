@@ -276,7 +276,7 @@ async function onUploaded() {
 
           <!-- Rows scroll, the header does not: a long list should not push the
                pager off the page, and the column names stay readable. -->
-          <div class="max-h-[60vh] divide-y divide-gray-100 overflow-y-auto scrollbar-primary">
+          <div class="max-h-[60vh] divide-y divide-gray-100 overflow-y-auto">
             <DocumentListRow
               v-for="entry in groupedDocs"
               :key="entry.doc.id"

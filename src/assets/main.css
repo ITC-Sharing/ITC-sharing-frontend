@@ -67,27 +67,3 @@ body {
 .no-native-picker::-webkit-inner-spin-button {
   display: none;
 }
-
-/*
- * A slim scrollbar in the app's own colour, for lists that scroll inside a card.
- *
- * The alternative is .scrollbar-hide, which suits a short picker where the bar
- * would be noise. On a long list the bar is the only cue that there is more
- * below, so here it stays — just narrow enough not to compete with the content.
- * The track is transparent so it does not draw a channel down the card.
- */
-.scrollbar-primary {
-  scrollbar-width: thin; /* Firefox */
-  scrollbar-color: var(--color-primary) transparent;
-}
-.scrollbar-primary::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
-}
-.scrollbar-primary::-webkit-scrollbar-track {
-  background: transparent;
-}
-.scrollbar-primary::-webkit-scrollbar-thumb {
-  background-color: var(--color-primary);
-  border-radius: 9999px;
-}

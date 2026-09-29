@@ -319,7 +319,7 @@ onMounted(() => {
              without this it grows and the page scrolls instead. -->
         <!-- Cards on a phone, the table from md up — the same split the
              documents queue uses, driven by the same rows and events. -->
-        <div class="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto scrollbar-primary md:hidden">
+        <div class="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto md:hidden">
           <SubjectReviewCard
             v-for="subject in subjects"
             :key="subject.id"
@@ -377,7 +377,7 @@ onMounted(() => {
              at 400px, and a table that also renders cards ends up with two
              layouts fighting over one set of column spans. Both are driven by
              the same rows, expansion and events. -->
-        <div class="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto scrollbar-primary md:hidden">
+        <div class="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto md:hidden">
           <DocumentReviewCard
             v-for="doc in groups"
             :key="doc.group_id"

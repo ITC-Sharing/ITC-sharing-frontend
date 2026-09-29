@@ -84,7 +84,7 @@ onBeforeUnmount(() => document.removeEventListener('click', handleClickOutside))
 
     <div
       v-if="isOpen && options.length > 0"
-      class="absolute right-0 z-20 mt-2 max-h-60 w-max min-w-full max-w-[90vw] overflow-y-auto rounded-2xl border border-gray-200 bg-white shadow-lg scrollbar-primary"
+      class="absolute right-0 z-20 mt-2 max-h-60 w-max min-w-full max-w-[90vw] overflow-y-auto rounded-2xl border border-gray-200 bg-white shadow-lg"
     >
       <button
         v-for="option in options"

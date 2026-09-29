@@ -148,7 +148,7 @@ onBeforeUnmount(close)
         :class="[
           'flex w-full items-center gap-2.5 px-3 py-2 text-left text-sm font-medium transition-colors hover:cursor-pointer',
           item.tone === 'success'
-            ? 'text-green-600 hover:bg-green-50'
+            ? 'text-primary hover:bg-primary/10'
             : item.tone === 'danger'
               ? 'text-red-600 hover:bg-red-50'
               : 'text-gray-700 hover:bg-gray-50',

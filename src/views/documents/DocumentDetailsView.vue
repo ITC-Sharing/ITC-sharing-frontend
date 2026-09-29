@@ -504,7 +504,7 @@ watch(uploadId, async (id) => {
                a row is 64px (py-3 either side of a 40px thumbnail) plus its 1px
                divider, so the list ends on a complete row instead of slicing
                one through the middle. -->
-          <div class="max-h-[390px] overflow-y-auto scrollbar-primary">
+          <div class="max-h-[390px] overflow-y-auto">
             <FileRow
               v-for="(file, idx) in files"
               :key="file.id"

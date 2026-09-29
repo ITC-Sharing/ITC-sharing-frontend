@@ -159,13 +159,55 @@ const showCreateMajor = ref(false)
 // so this is a prompt to assign someone, not an error.
 const majorsWithoutModerator = ref<{ id: string; acronym: string; name: string }[]>([])
 
+type Moderator = {
+  id: string
+  first_name: string | null
+  last_name: string | null
+  email: string | null
+  assigned_at: string
+}
+
+/** Which rows are open, and the roster each one has fetched. */
+const expandedMajors = ref(new Set<string>())
+const majorModerators = ref(new Map<string, Moderator[]>())
+const loadingModeratorsFor = ref(new Set<string>())
+
 async function loadDepartments() {
+  // Assignments change from the Users tab, so a reload cannot trust what was
+  // fetched before it. Collapsing as well as clearing keeps that honest — an
+  // open row would otherwise sit empty until someone closed and reopened it.
+  expandedMajors.value.clear()
+  majorModerators.value.clear()
+
   await Promise.all([
     loadMajors(),
     api
       .get('/admin/majors/without-moderator')
       .then(({ data }) => (majorsWithoutModerator.value = data)),
   ])
+}
+
+/**
+ * Open a department and, the first time only, fetch who reviews for it.
+ *
+ * Fetched per row rather than joined into the list: most rows are never opened,
+ * and the roster is the one thing here that another tab can change underneath.
+ */
+async function toggleMajor(id: string) {
+  if (expandedMajors.value.has(id)) {
+    expandedMajors.value.delete(id)
+    return
+  }
+  expandedMajors.value.add(id)
+  if (majorModerators.value.has(id)) return
+
+  loadingModeratorsFor.value.add(id)
+  try {
+    const { data } = await api.get(`/admin/majors/${id}/moderators`)
+    majorModerators.value.set(id, data)
+  } finally {
+    loadingModeratorsFor.value.delete(id)
+  }
 }
 
 type MajorRow = { id: string; name: string; acronym: string; image_url: string | null }
@@ -669,47 +711,6 @@ const pendingDocGroups = computed<DocGroup[]>(() => {
   return Array.from(groups.values())
 })
 
-// subject inline edit
-const editingSubjectId = ref<string | null>(null)
-const editSubjectName = ref('')
-const editSubjectSemester = ref('')
-const savingSubjectId = ref<string | null>(null)
-
-function openSubjectEdit(subject: { id: string; name: string; semester?: string | number }) {
-  editingSubjectId.value = subject.id
-  editSubjectName.value = subject.name
-  editSubjectSemester.value = String(subject.semester ?? '')
-}
-
-function closeSubjectEdit() {
-  editingSubjectId.value = null
-}
-
-async function saveSubjectEdit(subject: { id: string; name: string; semester?: string | number }) {
-  savingSubjectId.value = subject.id
-  try {
-    const payload: { name: string; semester?: number } = { name: editSubjectName.value.trim() }
-    if (editSubjectSemester.value) payload.semester = Number(editSubjectSemester.value)
-    await api.patch(`/admin/subjects/${subject.id}`, payload)
-    subject.name = payload.name
-    if (payload.semester) subject.semester = payload.semester
-    closeSubjectEdit()
-  } finally {
-    savingSubjectId.value = null
-  }
-}
-
-async function adminDeleteSubject(id: string, name: string) {
-  if (!confirm(`Delete "${name}"? This cannot be undone.`)) return
-  actioningId.value = id
-  try {
-    await api.delete(`/admin/subjects/${id}`)
-    pendingSubjects.value = pendingSubjects.value.filter((s) => s.id !== id)
-  } finally {
-    actioningId.value = null
-  }
-}
-
 const pendingCount = computed(() => pendingSubjects.value.length + pendingDocGroups.value.length)
 
 async function loadApprovals() {
@@ -1061,11 +1062,9 @@ function clearPendingSubjectFilters() {
   pendingSubjectPeriod.value = 'all'
 }
 
-function onSubjectAction(key: string, subject: { id: string; name: string }) {
-  if (key === 'edit') openSubjectEdit(subject)
-  else if (key === 'approve') approveSubject(subject.id)
+function onSubjectAction(key: string, subject: { id: string }) {
+  if (key === 'approve') approveSubject(subject.id)
   else if (key === 'reject') rejectSubject(subject.id)
-  else adminDeleteSubject(subject.id, subject.name)
 }
 
 const filteredDocGroups = computed(() => {
@@ -1303,7 +1302,7 @@ onMounted(async () => {
       </div>
 
       <!-- Nav -->
-      <nav class="flex-1 px-3 py-5 flex flex-col gap-1 overflow-y-auto scrollbar-primary">
+      <nav class="flex-1 px-3 py-5 flex flex-col gap-1 overflow-y-auto">
         <template
           v-for="item in [
             { tab: 'overview', label: 'Dashboard', icon: 'dashboard' },
@@ -1562,7 +1561,7 @@ onMounted(async () => {
       </header>
 
       <!-- Page content -->
-      <main class="flex-1 overflow-y-auto px-6 py-6 flex flex-col gap-6 scrollbar-primary">
+      <main class="flex-1 overflow-y-auto px-6 py-6 flex flex-col gap-6">
         <!-- ════════════════════════════════════════════════════════════════ -->
         <!-- OVERVIEW TAB                                                     -->
         <!-- ════════════════════════════════════════════════════════════════ -->
@@ -1836,16 +1835,8 @@ onMounted(async () => {
                 <SubjectReviewTable
                   v-if="pagedPendingSubjects.length"
                   :rows="pagedPendingSubjects"
-                  :editing-id="editingSubjectId"
-                  :edit-name="editSubjectName"
-                  :edit-semester="editSubjectSemester"
-                  :saving-id="savingSubjectId"
                   :actioning-id="actioningId"
                   @action="onSubjectAction"
-                  @save="saveSubjectEdit"
-                  @cancel-edit="closeSubjectEdit"
-                  @update:edit-name="editSubjectName = $event"
-                  @update:edit-semester="editSubjectSemester = $event"
                 />
 
                 <!-- Sibling of the table, not inside it: the table component
@@ -1999,7 +1990,7 @@ onMounted(async () => {
 
           <div
             v-else
-            class="min-h-0 overflow-y-auto overscroll-none bg-white rounded-2xl border border-gray-100 scrollbar-primary"
+            class="min-h-0 overflow-y-auto overscroll-none bg-white rounded-2xl border border-gray-100"
           >
             <div
               class="sticky top-0 z-20 grid grid-cols-12 gap-4 border-b border-gray-100 bg-primary px-6 py-3"
@@ -2137,7 +2128,7 @@ onMounted(async () => {
 
           <div
             v-else
-            class="min-h-0 overflow-y-auto overscroll-none bg-white rounded-2xl border border-gray-100 scrollbar-primary"
+            class="min-h-0 overflow-y-auto overscroll-none bg-white rounded-2xl border border-gray-100"
           >
             <div
               class="sticky top-0 z-20 grid grid-cols-12 gap-4 border-b border-gray-100 bg-primary px-6 py-3"
@@ -2501,40 +2492,8 @@ onMounted(async () => {
             </button>
           </div>
 
-          <!-- Nobody assigned yet: admins still review these, so it's a nudge. -->
           <div
-            v-if="majorsWithoutModerator.length"
-            class="flex items-start gap-3 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3"
-          >
-            <svg
-              class="mt-0.5 h-5 w-5 shrink-0 text-amber-500"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="1.8"
-              viewBox="0 0 24 24"
-            >
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                d="M12 9v4m0 4h.01M10.3 3.9L1.8 18a2 2 0 001.7 3h17a2 2 0 001.7-3L13.7 3.9a2 2 0 00-3.4 0z"
-              />
-            </svg>
-            <div class="text-sm text-amber-800">
-              <p class="font-medium">
-                {{ majorsWithoutModerator.length }} department(s) have no moderator
-              </p>
-              <p class="mt-0.5 text-amber-700">
-                Their submissions are reviewed by admins only. Assign someone from the
-                <button class="underline hover:cursor-pointer" @click="activeTab = 'users'">
-                  Users
-                </button>
-                tab.
-              </p>
-            </div>
-          </div>
-
-          <div
-            class="min-h-0 overflow-y-auto overscroll-none bg-white rounded-2xl border border-gray-100 scrollbar-primary"
+            class="min-h-0 overflow-y-auto overscroll-none bg-white rounded-2xl border border-gray-100"
           >
             <div v-if="majors.length === 0" class="text-center py-12 text-gray-400 text-sm">
               No departments yet.
@@ -2542,48 +2501,117 @@ onMounted(async () => {
             <div
               v-for="(major, i) in majors"
               :key="major.id"
-              :class="[
-                'flex items-center gap-4 px-6 py-4',
-                i !== majors.length - 1 ? 'border-b border-gray-100' : '',
-              ]"
+              :class="i !== majors.length - 1 ? 'border-b border-gray-100' : ''"
             >
+              <!-- Click the row to see who reviews for this department. -->
               <div
-                class="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-gray-100 bg-gray-50"
-              >
-                <img
-                  v-if="major.image_url"
-                  :src="major.image_url"
-                  :alt="major.acronym"
-                  class="h-full w-full object-contain"
-                />
-                <span v-else class="text-[11px] font-bold text-gray-300">
-                  {{ major.acronym }}
-                </span>
-              </div>
-
-              <div class="min-w-0 flex-1">
-                <p class="text-sm font-semibold text-gray-900">{{ major.acronym }}</p>
-                <p class="truncate text-xs text-gray-500">{{ major.name }}</p>
-              </div>
-
-              <span
-                v-if="needsModerator(major.id)"
-                class="shrink-0 rounded-full bg-amber-100 px-2.5 py-1 text-[11px] font-medium text-amber-700"
-              >
-                No moderator
-              </span>
-              <code class="shrink-0 text-[11px] text-gray-400">
-                /dep/{{ major.acronym.toLowerCase() }}
-              </code>
-
-              <RowActionsMenu
-                :disabled="deletingMajorId === major.id"
-                :items="[
-                  { key: 'edit', label: 'Edit' },
-                  { key: 'delete', label: 'Delete', tone: 'danger' },
+                :class="[
+                  'flex cursor-pointer items-center gap-4 px-6 py-4 transition-colors',
+                  expandedMajors.has(major.id) ? 'bg-primary/10' : 'hover:bg-primary/5',
                 ]"
-                @select="(key) => onMajorAction(key, major)"
-              />
+                @click="toggleMajor(major.id)"
+              >
+                <svg
+                  class="h-4 w-4 shrink-0 text-gray-400 transition-transform duration-200"
+                  :class="expandedMajors.has(major.id) ? 'rotate-90' : ''"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M9 5l7 7-7 7"
+                  />
+                </svg>
+                <div
+                  class="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-gray-100 bg-gray-50"
+                >
+                  <img
+                    v-if="major.image_url"
+                    :src="major.image_url"
+                    :alt="major.acronym"
+                    class="h-full w-full object-contain"
+                  />
+                  <span v-else class="text-[11px] font-bold text-gray-300">
+                    {{ major.acronym }}
+                  </span>
+                </div>
+
+                <div class="min-w-0 flex-1">
+                  <p class="text-sm font-semibold text-gray-900">{{ major.acronym }}</p>
+                  <p class="truncate text-xs text-gray-500">{{ major.name }}</p>
+                </div>
+
+                <span
+                  v-if="needsModerator(major.id)"
+                  class="shrink-0 rounded-full bg-amber-100 px-2.5 py-1 text-[11px] font-medium text-amber-700"
+                >
+                  No moderator
+                </span>
+                <code class="shrink-0 text-[11px] text-gray-400">
+                  /dep/{{ major.acronym.toLowerCase() }}
+                </code>
+
+                <!-- Its own click target: opening the menu is not opening the row. -->
+                <div @click.stop>
+                  <RowActionsMenu
+                    :disabled="deletingMajorId === major.id"
+                    :items="[
+                      { key: 'edit', label: 'Edit' },
+                      { key: 'delete', label: 'Delete', tone: 'danger' },
+                    ]"
+                    @select="(key) => onMajorAction(key, major)"
+                  />
+                </div>
+              </div>
+
+              <!-- ── Moderators ── -->
+              <div v-if="expandedMajors.has(major.id)" class="bg-primary/10 px-6 pb-4 pl-16">
+                <p v-if="loadingModeratorsFor.has(major.id)" class="py-3 text-sm text-gray-400">
+                  Loading moderators…
+                </p>
+
+                <template v-else>
+                  <p
+                    v-if="!majorModerators.get(major.id)?.length"
+                    class="py-3 text-sm text-gray-500"
+                  >
+                    No moderator assigned. Submissions here are reviewed by admins only — assign
+                    someone from the
+                    <button
+                      type="button"
+                      class="font-semibold text-primary hover:underline"
+                      @click="activeTab = 'users'"
+                    >
+                      Users
+                    </button>
+                    tab.
+                  </p>
+
+                  <div
+                    v-for="mod in majorModerators.get(major.id)"
+                    :key="mod.id"
+                    class="flex items-center gap-3 border-b border-gray-200/60 py-2.5 last:border-0"
+                  >
+                    <div
+                      class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white text-[11px] font-bold text-primary"
+                    >
+                      {{ (mod.first_name?.[0] ?? '') + (mod.last_name?.[0] ?? '') || '?' }}
+                    </div>
+                    <div class="min-w-0 flex-1">
+                      <p class="truncate text-sm font-medium text-gray-900">
+                        {{ mod.first_name }} {{ mod.last_name }}
+                      </p>
+                      <p class="truncate text-xs text-gray-500">{{ mod.email ?? '—' }}</p>
+                    </div>
+                    <p class="shrink-0 text-xs text-gray-400">
+                      since {{ formatDate(mod.assigned_at) }}
+                    </p>
+                  </div>
+                </template>
+              </div>
             </div>
           </div>
         </template>
@@ -2624,15 +2652,15 @@ onMounted(async () => {
 
           <div
             v-else
-            class="min-h-0 overflow-y-auto overscroll-none bg-white rounded-2xl border border-gray-100 scrollbar-primary"
+            class="min-h-0 overflow-y-auto overscroll-none bg-white rounded-2xl border border-gray-100"
           >
             <div
-              class="sticky top-0 z-20 grid grid-cols-12 gap-4 border-b border-gray-100 bg-primary px-6 py-3"
+              class="sticky top-0 z-20 grid grid-cols-14 gap-4 border-b border-gray-100 bg-primary px-6 py-3"
             >
               <p class="col-span-3 text-xs font-semibold text-white uppercase tracking-wide">
                 Document
               </p>
-              <p class="col-span-2 text-xs font-semibold text-white uppercase tracking-wide">
+              <p class="col-span-1 text-xs font-semibold text-white uppercase tracking-wide">
                 Type
               </p>
               <p class="col-span-2 text-xs font-semibold text-white uppercase tracking-wide">
@@ -2644,7 +2672,10 @@ onMounted(async () => {
               <p class="col-span-2 text-xs font-semibold text-white uppercase tracking-wide">
                 Uploader
               </p>
-              <p class="col-span-1 text-xs font-semibold text-white uppercase tracking-wide">
+              <p class="col-span-2 text-xs font-semibold text-white uppercase tracking-wide">
+                Approved by
+              </p>
+              <p class="col-span-2 text-xs font-semibold text-white uppercase tracking-wide">
                 Date
               </p>
               <p
@@ -2666,7 +2697,7 @@ onMounted(async () => {
               <!-- ── Upload row (click to expand) ── -->
               <div
                 :class="[
-                  'grid grid-cols-12 gap-4 px-6 py-3.5 items-center transition-colors cursor-pointer',
+                  'grid grid-cols-14 gap-4 px-6 py-3.5 items-center transition-colors cursor-pointer',
                   expandedUploads.has(doc.id) ? 'bg-primary/10' : 'hover:bg-primary/5',
                 ]"
                 @click="toggleUpload(doc.id)"
@@ -2687,19 +2718,12 @@ onMounted(async () => {
                     />
                   </svg>
                   <FolderIcon class="h-9 w-9 text-primary" />
-                  <div class="min-w-0">
-                    <div class="flex items-center gap-1.5">
-                      <p class="text-sm font-medium text-gray-900 truncate">{{ doc.title }}</p>
-                      <span
-                        v-if="doc.documents?.length > 1"
-                        class="shrink-0 text-[10px] font-bold bg-blue-100 text-primary px-1.5 py-0.5 rounded-full"
-                        >{{ doc.documents.length }} files</span
-                      >
-                    </div>
-                  </div>
+                  <p class="min-w-0 truncate text-sm font-medium text-gray-900">
+                    {{ doc.title }}
+                  </p>
                 </div>
 
-                <div class="col-span-2 min-w-0">
+                <div class="col-span-1 min-w-0">
                   <span
                     class="inline-block max-w-full truncate rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary"
                   >
@@ -2715,8 +2739,14 @@ onMounted(async () => {
                 <p class="col-span-2 truncate text-sm text-gray-600">
                   {{ doc.users?.first_name }} {{ doc.users?.last_name }}
                 </p>
+                <p class="col-span-2 truncate text-sm text-gray-600">
+                  <template v-if="doc.approved_by">
+                    {{ doc.approved_by.first_name }} {{ doc.approved_by.last_name }}
+                  </template>
+                  <span v-else class="text-gray-400">&mdash;</span>
+                </p>
                 <p
-                  class="col-span-1 whitespace-nowrap text-xs text-gray-400"
+                  class="col-span-2 whitespace-nowrap text-xs text-gray-400"
                   :title="`${formatSize(totalSize(doc.documents))} · ${formatDate(doc.uploaded_at)}`"
                 >
                   {{ formatDate(doc.uploaded_at) }}
@@ -2739,7 +2769,7 @@ onMounted(async () => {
                   v-for="file in doc.documents"
                   :key="file.id"
                   type="button"
-                  class="flex w-full items-center gap-3 border-b border-gray-100 py-2 text-left last:border-0 hover:cursor-pointer"
+                  class="flex w-full items-center gap-3 border-b border-gray-300 py-2 text-left last:border-0 hover:cursor-pointer"
                   @click.stop="openPreview(file)"
                 >
                   <FilePreviewThumb
