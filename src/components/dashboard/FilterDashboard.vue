@@ -116,7 +116,7 @@ onBeforeUnmount(close)
       v-if="open"
       data-filter-panel
       :style="{ top: `${pos.top}px`, left: `${pos.left}px`, width: `${pos.width}px` }"
-      class="fixed z-[100] max-h-72 overflow-y-auto overscroll-contain rounded-2xl bg-white py-2 shadow-lg ring-1 ring-black/5 scrollbar-primary"
+      class="fixed z-[100] max-h-72 overflow-y-auto overscroll-contain rounded-2xl bg-white py-2 shadow-lg ring-1 ring-black/5"
       @click.stop
     >
       <button

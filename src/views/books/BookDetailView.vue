@@ -156,7 +156,9 @@ async function submitRequest() {
           <hr class="text-gray-400" />
 
           <!-- Title -->
-          <h1 class="md:text-2xl font-semibold text-xl text-gray-900 leading-tight">{{ book.title }}</h1>
+          <h1 class="md:text-2xl font-semibold text-xl text-gray-900 leading-tight">
+            {{ book.title }}
+          </h1>
 
           <!-- Meta row -->
           <div class="flex flex-wrap items-center gap-4 text-sm text-gray-500">

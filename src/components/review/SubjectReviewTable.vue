@@ -10,6 +10,12 @@ import { formatRelativeDate, yearMajorLabel } from '@/utils/format'
  * leaves as an event — the page that owns the queue owns what happens to it.
  * That keeps the admin screen's filters, paging and counts exactly where they
  * were while still giving both pages one table.
+ *
+ * The row menu offers approve and reject and nothing else. This is a review
+ * queue: the decision is whether the submission is accepted, and renaming or
+ * deleting someone else's pending subject is a different job that belongs on
+ * the Subjects screen, after it exists. Edit and Delete were also dead on the
+ * moderator page, which never handled either key.
  */
 /** Matches the admin table's own date format. */
 function formatDate(d: string) {
@@ -34,29 +40,18 @@ interface SubjectRow {
 
 const props = defineProps<{
   rows: SubjectRow[]
-  /** Which row is open for inline editing, and its working values. */
-  editingId?: string | null
-  editName?: string
-  editSemester?: string
-  savingId?: string | null
   /** The row an action is in flight for; its controls are disabled. */
   actioningId?: string | null
-  /** Actions offered in each row's menu. Omit for a read-only table. */
-  actions?: { key: string; label: string; tone?: 'danger' | 'success' }[]
 }>()
 
 const emit = defineEmits<{
   (e: 'action', key: string, subject: SubjectRow): void
-  (e: 'save', subject: SubjectRow): void
-  (e: 'cancel-edit'): void
-  (e: 'update:editName', value: string): void
-  (e: 'update:editSemester', value: string): void
 }>()
 </script>
 
 <template>
   <div
-    class="flex min-h-0 flex-col overflow-y-auto overscroll-none rounded-2xl border border-gray-100 bg-white scrollbar-primary"
+    class="flex min-h-0 flex-col overflow-y-auto overscroll-none rounded-2xl border border-gray-100 bg-white"
   >
     <div
       class="sticky top-0 z-20 grid grid-cols-12 gap-4 border-t border-white bg-primary px-6 py-3"
@@ -118,56 +113,11 @@ const emit = defineEmits<{
           <RowActionsMenu
             :disabled="props.actioningId === subject.id"
             :items="[
-              { key: 'edit', label: 'Edit' },
               { key: 'approve', label: 'Approve', tone: 'success' },
               { key: 'reject', label: 'Reject', tone: 'danger' },
-              { key: 'delete', label: 'Delete', tone: 'danger' },
             ]"
             @select="(key) => emit('action', key, subject)"
           />
-        </div>
-      </div>
-
-      <!-- Inline edit -->
-      <div
-        v-if="props.editingId === subject.id"
-        class="px-6 pb-4 bg-blue-50/40 border-t border-blue-100"
-      >
-        <div class="flex items-end gap-3 pt-3 flex-wrap">
-          <div class="flex flex-col gap-1 flex-1 min-w-40">
-            <label class="text-xs font-medium text-gray-500">Name</label>
-            <input
-              :value="props.editName"
-              @input="emit('update:editName', ($event.target as HTMLInputElement).value)"
-              class="px-3 py-2 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0057BD] bg-white"
-            />
-          </div>
-          <div class="flex flex-col gap-1 w-36">
-            <label class="text-xs font-medium text-gray-500">Semester</label>
-            <select
-              :value="props.editSemester"
-              @input="emit('update:editSemester', ($event.target as HTMLInputElement).value)"
-              class="px-3 py-2 text-sm border border-gray-200 rounded-xl focus:outline-none bg-white"
-            >
-              <option value="1">Semester 1</option>
-              <option value="2">Semester 2</option>
-            </select>
-          </div>
-          <div class="flex gap-2">
-            <button
-              @click="emit('save', subject)"
-              :disabled="props.savingId === subject.id"
-              class="px-4 py-2 text-sm font-semibold bg-[#0057BD] hover:bg-[#0948A0] text-white rounded-xl transition-colors disabled:opacity-50"
-            >
-              {{ props.savingId === subject.id ? 'Saving…' : 'Save' }}
-            </button>
-            <button
-              @click="emit('cancel-edit')"
-              class="px-4 py-2 text-sm font-medium border border-gray-200 rounded-xl hover:bg-gray-50"
-            >
-              Cancel
-            </button>
-          </div>
         </div>
       </div>
     </div>

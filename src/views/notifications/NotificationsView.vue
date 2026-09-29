@@ -21,7 +21,9 @@ onBeforeUnmount(() => notifStore.disconnectSocket())
     <!-- Header -->
     <div class="flex items-center justify-between gap-3">
       <div class="flex items-center gap-2">
-        <h1 class="md:text-2xl text-xl font-semibold text-gray-900">{{ t('common.notifications.title') }}</h1>
+        <h1 class="md:text-2xl text-xl font-semibold text-gray-900">
+          {{ t('common.notifications.title') }}
+        </h1>
       </div>
       <button
         v-if="notifStore.unreadCount > 0"

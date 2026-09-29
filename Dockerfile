@@ -4,6 +4,13 @@ WORKDIR /app
 COPY package*.json ./
 RUN npm ci
 COPY . .
+
+# Vite substitutes import.meta.env.VITE_API_URL at BUILD time, so the API
+# origin is compiled into the bundle and cannot be changed by an environment
+# variable later. Without this argument a production image ships pointing at
+# localhost:3000 and every request from a real browser fails.
+ARG VITE_API_URL=http://localhost:3000
+ENV VITE_API_URL=$VITE_API_URL
 RUN npm run build
 
 FROM nginx:1.30-alpine as production-stage

@@ -24,7 +24,6 @@ async function openToast(toast: Toast) {
   if (toast.notifId) await notifStore.markRead(toast.notifId)
   await router.push(toast.to)
 }
-
 </script>
 
 <template>

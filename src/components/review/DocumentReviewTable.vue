@@ -118,7 +118,7 @@ function formatSize(kb: number) {
 <template>
   <div
     v-bind="$attrs"
-    class="flex min-h-0 flex-col overflow-y-auto overscroll-none rounded-2xl border border-gray-100 bg-white scrollbar-primary"
+    class="flex min-h-0 flex-col overflow-y-auto overscroll-none rounded-2xl border border-gray-100 bg-white"
   >
     <div
       class="sticky top-0 z-20 grid grid-cols-12 gap-4 border-b border-gray-100 bg-primary px-6 py-3"

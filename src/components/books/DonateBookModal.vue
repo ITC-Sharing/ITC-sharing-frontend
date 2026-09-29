@@ -301,7 +301,7 @@ restoreDraft()
       </div>
 
       <!-- Body -->
-      <div class="min-h-0 flex-1 space-y-4 overflow-y-auto px-5 py-4 scrollbar-primary">
+      <div class="min-h-0 flex-1 space-y-4 overflow-y-auto px-5 py-4">
         <!-- Server error -->
         <p v-if="books.error" class="rounded-xl bg-red-50 px-3 py-2 text-sm text-red-600">
           {{ books.error }}
