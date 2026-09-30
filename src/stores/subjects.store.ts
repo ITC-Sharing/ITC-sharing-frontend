@@ -2,6 +2,7 @@ import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import * as subjectsApi from '@/services/subjects.api'
 import type { MySubject, Subject } from '@/types/subjects.types'
+import { apiErrorMessage } from '@/utils/api-error'
 export const useSubjectsStore = defineStore('subjects', () => {
   const subjects = ref<Subject[]>([])
   const mySubjects = ref<MySubject[]>([])
@@ -25,8 +26,8 @@ export const useSubjectsStore = defineStore('subjects', () => {
       if (options.search?.trim()) params.search = options.search.trim()
       const data = await subjectsApi.fetchSubjects(params)
       subjects.value = data
-    } catch (e: any) {
-      error.value = e.response?.data?.message ?? 'Failed to load subjects'
+    } catch (e: unknown) {
+      error.value = apiErrorMessage(e, 'Failed to load subjects')
     } finally {
       loading.value = false
     }
@@ -39,8 +40,8 @@ export const useSubjectsStore = defineStore('subjects', () => {
     try {
       const data = await subjectsApi.fetchSubjectCounts(majorId)
       countsByYear.value = data
-    } catch (e: any) {
-      error.value = e.response?.data?.message ?? 'Failed to load subject counts'
+    } catch (e: unknown) {
+      error.value = apiErrorMessage(e, 'Failed to load subject counts')
       countsByYear.value = {}
     } finally {
       loading.value = false
@@ -53,8 +54,8 @@ export const useSubjectsStore = defineStore('subjects', () => {
     try {
       const data = await subjectsApi.fetchMySubjects()
       mySubjects.value = data
-    } catch (e: any) {
-      error.value = e.response?.data?.message ?? 'Failed to load your subjects'
+    } catch (e: unknown) {
+      error.value = apiErrorMessage(e, 'Failed to load your subjects')
     } finally {
       loading.value = false
     }
@@ -84,9 +85,8 @@ export const useSubjectsStore = defineStore('subjects', () => {
       const data = await subjectsApi.createSubject(formData)
 
       return data
-    } catch (e: any) {
-      const msg = e.response?.data?.message
-      createError.value = Array.isArray(msg) ? msg.join(', ') : (msg ?? 'Failed to create subject')
+    } catch (e: unknown) {
+      createError.value = apiErrorMessage(e, 'Failed to create subject')
       throw e
     } finally {
       creating.value = false

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, ref, watch, onBeforeUnmount } from 'vue'
 import { useI18n } from 'vue-i18n'
-import type { UploadFile } from '@/types/documents.types'
+import type { PreviewableFile } from '@/types/documents.types'
 import PdfViewer from '@/components/documents/PdfViewer.vue'
 import * as documentsApi from '@/services/documents.api'
 
@@ -19,12 +19,12 @@ import * as documentsApi from '@/services/documents.api'
 // Anything else isn't previewable; the parent downloads it instead.
 const props = defineProps<{
   modelValue: boolean
-  file: UploadFile | null
+  file: PreviewableFile | null
 }>()
 
 const emit = defineEmits<{
   'update:modelValue': [value: boolean]
-  download: [file: UploadFile]
+  download: [file: PreviewableFile]
 }>()
 
 const { t } = useI18n({ useScope: 'global' })
@@ -89,6 +89,8 @@ const kind = computed<'image' | 'pdf' | 'office' | 'none'>(() => {
 const officeSrc = computed(() => {
   if (!props.file) return ''
   if (props.file.preview_url) return props.file.preview_url
+  // No URL to hand Office Online — nothing to embed.
+  if (!props.file.file_url) return ''
   return `https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(props.file.file_url)}`
 })
 
@@ -106,7 +108,7 @@ const embedSrc = computed(() => {
   // fallback for the moments before it arrives, and for the office path with
   // no rendition, which goes to Office Online instead.
   if (kind.value === 'pdf') {
-    return withoutPdfToolbar(freshUrl.value || props.file.file_url)
+    return withoutPdfToolbar(freshUrl.value || props.file.file_url || '')
   }
   if (freshUrl.value) return withoutPdfToolbar(freshUrl.value)
   return props.file.preview_url ? withoutPdfToolbar(props.file.preview_url) : officeSrc.value
@@ -373,7 +375,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', handleKeydown))
       >
         <img
           v-if="kind === 'image'"
-          :src="file.file_url"
+          :src="file.file_url ?? ''"
           :alt="title"
           draggable="false"
           class="max-h-full max-w-full select-none object-contain transition-transform duration-100"

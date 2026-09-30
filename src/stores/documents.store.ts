@@ -2,6 +2,7 @@ import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import * as documentsApi from '@/services/documents.api'
 import type { AudienceEntry, DocumentStats, MyUpload, Upload } from '@/types/documents.types'
+import { apiErrorMessage } from '@/utils/api-error'
 export const useDocumentsStore = defineStore('documents', () => {
   const documents = ref<Upload[]>([])
   const total = ref(0)
@@ -52,8 +53,8 @@ export const useDocumentsStore = defineStore('documents', () => {
       const data = await documentsApi.fetchDocuments(filters)
       documents.value = data.items
       total.value = data.total
-    } catch (e: any) {
-      error.value = e.response?.data?.message ?? 'Failed to load documents'
+    } catch (e: unknown) {
+      error.value = apiErrorMessage(e, 'Failed to load documents')
     } finally {
       loading.value = false
     }
@@ -66,8 +67,8 @@ export const useDocumentsStore = defineStore('documents', () => {
     try {
       const data = await documentsApi.fetchDocument(uploadId)
       currentUpload.value = data
-    } catch (e: any) {
-      error.value = e.response?.data?.message ?? 'Failed to load document'
+    } catch (e: unknown) {
+      error.value = apiErrorMessage(e, 'Failed to load document')
     } finally {
       loading.value = false
     }
@@ -102,8 +103,8 @@ export const useDocumentsStore = defineStore('documents', () => {
     try {
       const data = await documentsApi.createUpload(formData, onProgress)
       return data
-    } catch (e: any) {
-      error.value = e.response?.data?.message ?? 'Upload failed'
+    } catch (e: unknown) {
+      error.value = apiErrorMessage(e, 'Upload failed')
       throw e
     } finally {
       loading.value = false
@@ -116,8 +117,8 @@ export const useDocumentsStore = defineStore('documents', () => {
     try {
       const data = await documentsApi.fetchDocumentStats()
       stats.value = data
-    } catch (e: any) {
-      error.value = e.response?.data?.message ?? 'Failed to load document stats'
+    } catch (e: unknown) {
+      error.value = apiErrorMessage(e, 'Failed to load document stats')
     }
   }
 
@@ -127,8 +128,8 @@ export const useDocumentsStore = defineStore('documents', () => {
     try {
       const data = await documentsApi.fetchMyUploads()
       myUploads.value = data
-    } catch (e: any) {
-      error.value = e.response?.data?.message ?? 'Failed to load your uploads'
+    } catch (e: unknown) {
+      error.value = apiErrorMessage(e, 'Failed to load your uploads')
     } finally {
       loading.value = false
     }
@@ -153,8 +154,8 @@ export const useDocumentsStore = defineStore('documents', () => {
     try {
       const data = await documentsApi.updateDocument(uploadId, payload)
       return data
-    } catch (e: any) {
-      error.value = e.response?.data?.message ?? 'Update failed'
+    } catch (e: unknown) {
+      error.value = apiErrorMessage(e, 'Update failed')
       throw e
     } finally {
       loading.value = false

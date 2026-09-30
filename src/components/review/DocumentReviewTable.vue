@@ -110,7 +110,10 @@ function formatDate(d: string) {
   })
 }
 
-function formatSize(kb: number) {
+function formatSize(kb: number | null | undefined) {
+  // file_size_kb is nullable — legacy rows predate the size being recorded.
+  // An em dash reads better than "0 KB", which would claim the file is empty.
+  if (kb == null) return '—'
   return kb >= 1024 ? `${(kb / 1024).toFixed(1)} MB` : `${Math.round(kb)} KB`
 }
 </script>
