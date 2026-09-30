@@ -41,6 +41,9 @@ esac
 # The Office Online fallback is only reached when a file has no server-generated
 # PDF rendition. It hands Microsoft the document's URL, so it is listed as a
 # source rather than assumed, and can be switched off in one variable.
+# Cloudflare injects its Web Analytics beacon into every HTML response on
+# this zone. Named once so script-src and connect-src cannot drift apart.
+CF_INSIGHTS="https://static.cloudflareinsights.com"
 OFFICE_VIEWER="https://view.officeapps.live.com"
 [ "${CSP_ALLOW_OFFICE_VIEWER:-true}" = "false" ] && OFFICE_VIEWER=""
 
@@ -81,6 +84,14 @@ HEADER="Content-Security-Policy"
 #   worker-src 'self'      The pdf.js worker is emitted as a same-origin asset.
 #            blob:         pdf.js's wrapper path, used if the worker ever moves
 #                          cross-origin.
+#   script-src             Cloudflare's Web Analytics beacon, which it injects
+#   connect-src            into every HTML response on this zone; the beacon
+#                          both loads from and reports back to that origin.
+#                          Allowed deliberately, because the analytics are used.
+#                          Disabling automatic setup in the Cloudflare dashboard
+#                          would be the stricter choice — every extra script-src
+#                          origin is one more place a compromise could inject
+#                          code into the page.
 #   object-src             Document previews are <object type="application/pdf">.
 #   frame-src              BOTH are required, and this was the bug: an earlier
 #                          version set only object-src, on the reasoning that an
@@ -101,7 +112,7 @@ cat > /etc/nginx/snippets/security-headers.conf <<CONF
 # ALL inherited add_header directives the moment a block declares one, so a
 # policy set only at server level would be missing from exactly the responses
 # that matter most.
-add_header ${HEADER} "default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data: blob: ${STORAGE_ORIGIN}; font-src 'self' data:; connect-src 'self' ${API_ORIGIN} ${WS_ORIGIN} ${STORAGE_ORIGIN}; worker-src 'self' blob:; object-src 'self' ${STORAGE_ORIGIN} ${OFFICE_VIEWER}; frame-src 'self' ${STORAGE_ORIGIN} ${OFFICE_VIEWER}; base-uri 'none'; form-action 'self'; frame-ancestors 'none';${UPGRADE}${REPORT} ${CSP_EXTRA:-}" always;
+add_header ${HEADER} "default-src 'none'; script-src 'self' ${CF_INSIGHTS}; style-src 'self'; img-src 'self' data: blob: ${STORAGE_ORIGIN}; font-src 'self' data:; connect-src 'self' ${API_ORIGIN} ${WS_ORIGIN} ${STORAGE_ORIGIN} ${CF_INSIGHTS}; worker-src 'self' blob:; object-src 'self' ${STORAGE_ORIGIN} ${OFFICE_VIEWER}; frame-src 'self' ${STORAGE_ORIGIN} ${OFFICE_VIEWER}; base-uri 'none'; form-action 'self'; frame-ancestors 'none';${UPGRADE}${REPORT} ${CSP_EXTRA:-}" always;
 add_header X-Content-Type-Options "nosniff" always;
 add_header X-Frame-Options "DENY" always;
 add_header Referrer-Policy "strict-origin-when-cross-origin" always;
