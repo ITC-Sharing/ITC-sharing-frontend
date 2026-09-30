@@ -29,7 +29,8 @@ function formatDate(d: string) {
 interface SubjectRow {
   id: string
   name: string
-  semester?: string | number
+  // int NULL in the database — a subject need not name a semester.
+  semester?: string | number | null
   acronym?: string | null
   subject_url?: string | null
   year_level?: number | null

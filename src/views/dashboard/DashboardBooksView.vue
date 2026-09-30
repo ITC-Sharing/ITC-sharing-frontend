@@ -364,12 +364,12 @@ async function confirmDeclineRequest(reason: string) {
 
 // ── Donate / edit / delete a listed book ─────────────────────────────────────
 const showDonate = ref(false)
-const editingBook = ref<any | null>(null)
+const editingBook = ref<MyBook | null>(null)
 const deletingBookId = ref<string | null>(null)
 const showDeleteBookModal = ref(false)
 const deletingBook = ref(false)
 
-function onEditBook(book: any) {
+function onEditBook(book: MyBook) {
   editingBook.value = book
   showDonate.value = true
 }

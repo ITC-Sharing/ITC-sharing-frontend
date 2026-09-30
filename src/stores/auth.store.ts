@@ -129,9 +129,7 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
-  async function forgotPassword(
-    email: string,
-  ): Promise<{ message: string; expires_in: number }> {
+  async function forgotPassword(email: string): Promise<{ message: string; expires_in: number }> {
     loading.value = true
     error.value = null
     try {
@@ -162,11 +160,7 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
-  async function resetPassword(
-    email: string,
-    code: string,
-    password: string,
-  ): Promise<string> {
+  async function resetPassword(email: string, code: string, password: string): Promise<string> {
     loading.value = true
     error.value = null
     try {

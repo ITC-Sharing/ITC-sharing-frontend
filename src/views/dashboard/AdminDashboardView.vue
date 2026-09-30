@@ -13,6 +13,13 @@ import DocumentPreviewModal from '@/components/documents/DocumentPreviewModal.vu
 import type { UploadFile } from '@/types/documents.types'
 import FolderIcon from '@/components/base/FolderIcon.vue'
 import RowActionsMenu from '@/components/base/RowActionsMenu.vue'
+import type { PreviewableFile } from '@/types/documents.types'
+import type {
+  AdminDocument,
+  AdminPendingDocument,
+  AdminPendingSubject,
+  AdminUser,
+} from '@/types/admin.types'
 import Pagination from '@/components/base/Pagination.vue'
 import PageSizeSelect from '@/components/base/PageSizeSelect.vue'
 import SearchDashboard from '@/components/dashboard/SearchDashboard.vue'
@@ -120,7 +127,7 @@ async function loadOverview() {
 }
 
 // ── Users ─────────────────────────────────────────────────────────────────────
-const users = ref<any[]>([])
+const users = ref<AdminUser[]>([])
 const usersLoading = ref(false)
 const userSearch = ref('')
 const userPage = ref(1)
@@ -495,7 +502,7 @@ async function loadUsers() {
 }
 
 // ── Documents ─────────────────────────────────────────────────────────────────
-const allDocs = ref<any[]>([])
+const allDocs = ref<AdminDocument[]>([])
 const docsLoading = ref(false)
 const docSearch = ref('')
 const docTypeFilter = ref('')
@@ -520,7 +527,9 @@ function toggleUpload(id: string) {
   else expandedUploads.value.add(id)
 }
 
-type DocFile = { file_size_kb?: number }
+// file_size_kb is int NULL in the database, so a row can genuinely carry
+// no size — totalSize already coalesces it.
+type DocFile = { file_size_kb?: number | null }
 
 function totalSize(docs: DocFile[]) {
   return docs?.reduce((s, d) => s + (d.file_size_kb ?? 0), 0) ?? 0
@@ -595,7 +604,7 @@ async function loadDocuments() {
   }
 }
 
-async function deleteDocument(doc: any) {
+async function deleteDocument(doc: AdminDocument) {
   if (!confirm(`Delete "${doc.title}"? This cannot be undone.`)) return
   deletingDocId.value = doc.id
   try {
@@ -608,8 +617,8 @@ async function deleteDocument(doc: any) {
 }
 
 // ── Approvals ─────────────────────────────────────────────────────────────────
-const pendingSubjects = ref<any[]>([])
-const pendingDocs = ref<any[]>([])
+const pendingSubjects = ref<AdminPendingSubject[]>([])
+const pendingDocs = ref<AdminPendingDocument[]>([])
 const approvalsLoading = ref(false)
 const actioningId = ref<string | null>(null)
 
@@ -651,14 +660,14 @@ function toggleGroup(groupId: string) {
 }
 
 const previewOpen = ref(false)
-const previewTarget = ref<UploadFile | null>(null)
+const previewTarget = ref<PreviewableFile | null>(null)
 
-function openPreview(file: UploadFile) {
+function openPreview(file: PreviewableFile) {
   previewTarget.value = file
   previewOpen.value = true
 }
 
-async function downloadFile(file: UploadFile) {
+async function downloadFile(file: PreviewableFile) {
   // The bucket is private: ask the API for a fresh authorised link rather than
   // using the one embedded in the list, which expires within minutes.
   const { url } = await documentsApi.fileAccessUrl(file.id, 'download')
@@ -698,7 +707,7 @@ const pendingDocGroups = computed<DocGroup[]>(() => {
     group.fileCount++
     group.files.push({
       id: doc.id,
-      file_url: doc.file_url,
+      file_url: doc.file_url ?? '',
       preview_url: doc.preview_url ?? null,
       file_size_kb: doc.file_size_kb,
       original_name: doc.original_name ?? null,
@@ -1152,7 +1161,11 @@ function formatDate(d: string) {
   })
 }
 
-function formatSize(kb: number) {
+function formatSize(kb: number | null | undefined) {
+  // file_size_kb is nullable — legacy rows were written before the size was
+  // recorded. An em dash reads better in a table than "0 KB", which would
+  // claim the file is empty.
+  if (kb == null) return '—'
   if (kb < 1024) return `${kb} KB`
   return `${(kb / 1024).toFixed(1)} MB`
 }

@@ -17,7 +17,7 @@ import ConfirmDeleteModal from '@/components/base/ConfirmDeleteModal.vue'
 import IconTextButton from '@/components/base/IconTextButton.vue'
 import DocumentPreviewModal from '@/components/documents/DocumentPreviewModal.vue'
 import AddFilesModal from '@/components/documents/AddFilesModal.vue'
-import type { UploadFile } from '@/types/documents.types'
+import type { UploadFile, PreviewableFile } from '@/types/documents.types'
 const { t } = useI18n({ useScope: 'global' })
 
 const route = useRoute()
@@ -218,7 +218,9 @@ async function confirmDelete() {
  * URL is not reachable and the query string never set a filename anyway — the
  * server sets Content-Disposition on the signed URL instead.
  */
-async function getDownloadUrl(file: UploadFile) {
+// Only the id is used — the endpoint re-authorises and signs afresh, so
+// nothing else from the row is needed or trusted.
+async function getDownloadUrl(file: PreviewableFile) {
   const { url } = await documentsApi.fileAccessUrl(file.id, 'download')
   return url
 }
@@ -232,7 +234,7 @@ function triggerDownload(url: string, name: string) {
   document.body.removeChild(a)
 }
 
-async function downloadFile(file: UploadFile) {
+async function downloadFile(file: PreviewableFile) {
   try {
     const url = await getDownloadUrl(file)
     triggerDownload(url, file.original_name?.trim() || 'file')

@@ -6,7 +6,7 @@ import * as documentsApi from '@/services/documents.api'
 import LoadingSpinner from '@/components/base/LoadingSpinner.vue'
 import FileCard from '@/components/documents/FileCard.vue'
 import DocumentPreviewModal from '@/components/documents/DocumentPreviewModal.vue'
-import type { UploadFile, UploadStatus } from '@/types/documents.types'
+import type { UploadFile, UploadStatus, PreviewableFile } from '@/types/documents.types'
 
 /**
  * Every file of one pending submission, as cards.
@@ -70,7 +70,7 @@ function openPreview(file: UploadFile) {
   previewOpen.value = true
 }
 
-async function downloadFile(file: UploadFile) {
+async function downloadFile(file: PreviewableFile) {
   // Private bucket — mint a fresh authorised link at click time.
   const { url } = await documentsApi.fileAccessUrl(file.id, 'download')
   window.open(url, '_blank', 'noopener')

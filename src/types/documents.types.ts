@@ -9,6 +9,23 @@ import type { SubjectRef } from '@/types/subjects.types'
 export type UploadStatus = 'pending' | 'active' | 'rejected'
 
 /** A single file inside an upload, as returned by the feed and detail endpoints. */
+/**
+ * The subset a preview needs: what to call it, and where to fetch it.
+ *
+ * Narrower than UploadFile on purpose. The admin tables carry file rows that
+ * have no review state of their own, and requiring `status` there would mean
+ * inventing a value to satisfy a type rather than to describe the data.
+ *
+ * `file_url` is nullable because the API signs it from a storage ref, and a row
+ * written before the ref existed has nothing to sign.
+ */
+export interface PreviewableFile {
+  id: string
+  original_name: string | null
+  file_url: string | null
+  preview_url: string | null
+}
+
 export interface UploadFile {
   id: string
   file_url: string

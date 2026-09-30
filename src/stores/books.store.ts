@@ -8,6 +8,7 @@ import type {
   MyBook,
   OutgoingBookRequest,
 } from '@/types/books.types'
+import { apiErrorMessage } from '@/utils/api-error'
 export const useBooksStore = defineStore('books', () => {
   const books = ref<Book[]>([])
   // Full filtered count from the server, for a pager. Equals books.length until
@@ -32,8 +33,8 @@ export const useBooksStore = defineStore('books', () => {
       const data = await booksApi.fetchBooks(params)
       books.value = data.items
       booksTotal.value = data.total
-    } catch (e: any) {
-      error.value = e.response?.data?.message ?? 'Failed to load books'
+    } catch (e: unknown) {
+      error.value = apiErrorMessage(e, 'Failed to load books')
     } finally {
       loading.value = false
     }
@@ -45,8 +46,8 @@ export const useBooksStore = defineStore('books', () => {
     try {
       const data = await booksApi.fetchBook(id)
       currentBook.value = data
-    } catch (e: any) {
-      error.value = e.response?.data?.message ?? 'Failed to load book'
+    } catch (e: unknown) {
+      error.value = apiErrorMessage(e, 'Failed to load book')
     } finally {
       loading.value = false
     }
@@ -72,8 +73,8 @@ export const useBooksStore = defineStore('books', () => {
       const data = await booksApi.donateBook(payload)
       books.value.unshift(data)
       return data
-    } catch (e: any) {
-      error.value = e.response?.data?.message ?? 'Failed to list book'
+    } catch (e: unknown) {
+      error.value = apiErrorMessage(e, 'Failed to list book')
       throw e
     } finally {
       loading.value = false
