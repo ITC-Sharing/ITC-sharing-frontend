@@ -1,0 +1,61 @@
+# Checks every change to the frontend before it can be merged.
+#
+# Not a copy of the backend workflow: this project type-checks with vue-tsc,
+# builds with Vite, and runs two linters rather than one.
+name: CI
+
+on:
+  pull_request:
+    branches: [develop, main]
+  push:
+    branches: [develop, main]
+
+# A newer push to the same branch makes the older run pointless.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    name: Type-check, lint, build
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # 20 to match Dockerfile's build stage. Passing on a version the image
+      # never runs would be a check that proves the wrong thing.
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      # Before the build: vue-tsc reports the error against the source line,
+      # where Vite would only report that the build failed.
+      - name: Type-check
+        run: npm run type-check
+
+      # oxlint only, for now.
+      #
+      # `lint:ci` runs both linters without --fix; the `lint` script passes
+      # --fix, which in a throwaway container rewrites the files and then
+      # reports success — a gate that can never fail. But eslint currently
+      # reports 22 errors on a clean checkout (20 no-explicit-any, 2
+      # vue/multi-word-component-names), so enabling it here would make this
+      # workflow red on its first run, and a gate that is always red is a gate
+      # everyone learns to ignore.
+      #
+      # Switch this to `npm run lint:ci` once those 22 are resolved — either by
+      # typing the `any`s or by deciding, deliberately, that the rule is a
+      # warning in this project.
+      - name: Lint
+        run: npx oxlint .
+
+      - name: Build
+        run: npm run build-only
