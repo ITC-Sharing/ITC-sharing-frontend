@@ -1,10 +1,8 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import * as booksApi from '@/services/books.api'
-import type { Paginated } from '@/types/api.types'
 import type {
   Book,
-  BookRequestDetail,
   BookStats,
   IncomingBookRequest,
   MyBook,
