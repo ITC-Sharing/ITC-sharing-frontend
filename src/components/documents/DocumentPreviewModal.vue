@@ -3,6 +3,7 @@ import { computed, ref, watch, onBeforeUnmount } from 'vue'
 import { useI18n } from 'vue-i18n'
 import type { UploadFile } from '@/types/documents.types'
 import PdfViewer from '@/components/documents/PdfViewer.vue'
+import * as documentsApi from '@/services/documents.api'
 
 // Fullscreen in-app viewer for a single file. Handles three kinds inline:
 //  - images        → <img> with zoom, pan and rotate
@@ -27,6 +28,46 @@ const emit = defineEmits<{
 }>()
 
 const { t } = useI18n({ useScope: 'global' })
+
+/**
+ * A URL minted when this modal opens, not when the list was fetched.
+ *
+ * The URLs on the row are presigned with a short TTL — five minutes by default
+ * — and signed once, when the page loaded. Anything opened after that window
+ * gets `403 Request has expired`, which renders as a blank viewer with nothing
+ * in the console to explain it. A page left open on a second screen fails
+ * every time.
+ *
+ * So the modal asks the API for a fresh one. That also re-authorises: the
+ * endpoint checks the viewer against the upload's audience, status and hidden
+ * state before it signs anything, so a link cannot outlive the permission that
+ * produced it.
+ */
+const freshUrl = ref('')
+const loadingUrl = ref(false)
+const urlError = ref(false)
+
+watch(
+  () => [props.modelValue, props.file?.id] as const,
+  async ([open, id]) => {
+    freshUrl.value = ''
+    urlError.value = false
+    if (!open || !id) return
+
+    loadingUrl.value = true
+    try {
+      const { url } = await documentsApi.fileAccessUrl(id, 'preview')
+      freshUrl.value = url
+    } catch {
+      // Falls back to the list's URL below, which may still be valid if the
+      // page was loaded moments ago.
+      urlError.value = true
+    } finally {
+      loadingUrl.value = false
+    }
+  },
+  { immediate: true },
+)
 
 function ext(name: string | null | undefined): string {
   return (name ?? '').split('.').pop()?.toLowerCase() ?? ''
@@ -61,15 +102,19 @@ function withoutPdfToolbar(url: string) {
 /** What the embedded viewer loads: a PDF gets the chrome stripped. */
 const embedSrc = computed(() => {
   if (!props.file) return ''
-  if (kind.value === 'pdf') return withoutPdfToolbar(props.file.file_url)
-  // An office file previews through its PDF rendition; without one it falls back
-  // to Office Online, which isn't a PDF and has no such flags.
+  // The freshly signed URL wherever we have one. The list's URL is the
+  // fallback for the moments before it arrives, and for the office path with
+  // no rendition, which goes to Office Online instead.
+  if (kind.value === 'pdf') {
+    return withoutPdfToolbar(freshUrl.value || props.file.file_url)
+  }
+  if (freshUrl.value) return withoutPdfToolbar(freshUrl.value)
   return props.file.preview_url ? withoutPdfToolbar(props.file.preview_url) : officeSrc.value
 })
 
 /** What a "open in a new tab" link should point at for the current file. */
 const externalSrc = computed(() =>
-  kind.value === 'office' ? officeSrc.value : (props.file?.file_url ?? ''),
+  kind.value === 'office' ? officeSrc.value : freshUrl.value || (props.file?.file_url ?? ''),
 )
 
 const title = computed(() => props.file?.original_name?.trim() || 'Preview')
