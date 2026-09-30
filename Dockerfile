@@ -15,6 +15,16 @@ RUN npm run build
 
 FROM nginx:1.30-alpine as production-stage
 
+# nginx's mime.types maps `js` but not `mjs`, so an ES module is served as
+# application/octet-stream — and browsers refuse module scripts with a
+# non-JavaScript MIME type. pdf.js ships its worker as pdf.worker.min.mjs, so
+# without this the viewer silently drops to a main-thread "fake worker" and
+# fails to render. Vite's dev server sets the type correctly, which is why this
+# only ever appears in a built image.
+RUN sed -i 's|application/javascript\( *\)js;|application/javascript\1js mjs;|' \
+      /etc/nginx/mime.types \
+ && grep -q 'js mjs;' /etc/nginx/mime.types
+
 RUN rm /etc/nginx/conf.d/default.conf
 
 COPY nginx.conf /etc/nginx/conf.d/default.conf
