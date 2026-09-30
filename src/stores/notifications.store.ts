@@ -73,6 +73,17 @@ export const useNotificationsStore = defineStore('notifications', () => {
     socketUsers++
     if (socket) return
     socket = io(import.meta.env.VITE_API_URL, {
+      /**
+       * WebSocket only — no HTTP long-polling fallback.
+       *
+       * Behind a load balancer the polling handshake is several separate
+       * requests that must all reach the same replica, which would mean sticky
+       * sessions. A WebSocket is one connection that stays where it lands, so
+       * plain round-robin is enough. The trade is that a network blocking
+       * WebSockets outright loses real-time updates rather than degrading to
+       * polling; the app still works, the bell just fills on refresh.
+       */
+      transports: ['websocket'],
       // Called on every (re)connect, so a refreshed access token is always used.
       auth: (cb) => cb({ token: accessToken.value ?? '' }),
       withCredentials: true,
