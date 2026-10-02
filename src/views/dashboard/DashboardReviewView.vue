@@ -8,7 +8,9 @@ import SubjectReviewTable from '@/components/review/SubjectReviewTable.vue'
 import SubjectReviewCard from '@/components/review/SubjectReviewCard.vue'
 import DocumentReviewTable, { type DocumentRow } from '@/components/review/DocumentReviewTable.vue'
 import DocumentReviewCard from '@/components/review/DocumentReviewCard.vue'
-import type { UploadFile } from '@/types/documents.types'
+import DocumentPreviewModal from '@/components/documents/DocumentPreviewModal.vue'
+import * as documentsApi from '@/services/documents.api'
+import type { PreviewableFile, UploadFile } from '@/types/documents.types'
 
 /**
  * The review queue, for department moderators.
@@ -215,6 +217,32 @@ const rejectGroup = (g: { group_id: string }) =>
     reason: reason.value.trim(),
   })
 
+/**
+ * Previewing a file from the queue.
+ *
+ * A reviewer has to read the thing before approving it, so the table's file
+ * rows open the same modal the admin dashboard and the per-submission page use
+ * — this screen was the one consumer that listened for neither event, which
+ * made the rows look clickable and do nothing.
+ *
+ * Phone cards are deliberately not wired: DocumentReviewCard routes to the
+ * submission's own page instead, because a card has no room for a folder's
+ * worth of thumbnails.
+ */
+const previewOpen = ref(false)
+const previewTarget = ref<UploadFile | null>(null)
+
+function openPreview(file: UploadFile) {
+  previewTarget.value = file
+  previewOpen.value = true
+}
+
+async function downloadFile(file: PreviewableFile) {
+  // Private bucket — mint a fresh authorised link at click time.
+  const { url } = await documentsApi.fileAccessUrl(file.id, 'download')
+  window.open(url, '_blank', 'noopener')
+}
+
 async function loadScope() {
   try {
     const { data } = await api.get<ReviewerScope>('/admin/scope')
@@ -394,8 +422,11 @@ onMounted(() => {
           :actioning-id="busyId"
           @toggle="toggleExpanded"
           @action="onDocAction"
+          @preview="openPreview"
         />
       </section>
     </template>
+
+    <DocumentPreviewModal v-model="previewOpen" :file="previewTarget" @download="downloadFile" />
   </div>
 </template>
