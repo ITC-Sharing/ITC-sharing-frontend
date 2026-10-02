@@ -195,7 +195,7 @@ function validateSubjectName() {
     return false
   }
 
-  if (name.length > 20) {
+  if (name.length > 100) {
     nameError.value = t('common.subjectCreateModal.nameTooLong')
     return false
   }

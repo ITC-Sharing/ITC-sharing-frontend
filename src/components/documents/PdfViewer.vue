@@ -239,7 +239,22 @@ function teardown() {
   doc.value = null
 }
 
+/**
+ * Which load() call currently owns the component's state.
+ *
+ * `src` changes once on nearly every open: the modal mounts this viewer with
+ * the list's URL and swaps in a freshly signed one the moment it arrives. The
+ * second load tears the first one down — and destroying a pdf.js loading task
+ * REJECTS its promise, so the superseded call lands in the catch below and sets
+ * failed = true on top of a newer load that is about to succeed. That printed
+ * "This PDF couldn't be displayed" above a perfectly rendered document.
+ *
+ * Every write below is gated on still being the newest call.
+ */
+let runId = 0
+
 async function load(src: string) {
+  const run = ++runId
   teardown()
   loading.value = true
   failed.value = false
@@ -251,6 +266,12 @@ async function load(src: string) {
   try {
     loadingTask = pdfjs.getDocument({ url: src })
     const pdf = await loadingTask.promise
+    if (run !== runId) {
+      // Resolved after a newer load took over: release the worker rather than
+      // leaking it. destroy() lives on the loading task, not the document.
+      void pdf.loadingTask.destroy()
+      return
+    }
     doc.value = pdf
 
     // Page boxes are needed up front so the scrollbar is the right length
@@ -271,12 +292,16 @@ async function load(src: string) {
     loading.value = false
 
     await nextTick()
+    if (run !== runId) return
     // Now that the pane is in the DOM its width can be measured; this corrects
     // the provisional scale above before the first page is painted.
     fitToWidth()
     watchPaneWidth()
     observe()
   } catch {
+    // A superseded load reaches here by design — teardown() destroyed its task.
+    // Only the newest call may report failure.
+    if (run !== runId) return
     loading.value = false
     failed.value = true
   }
@@ -388,23 +413,29 @@ onBeforeUnmount(() => {
           {{ t('document.documentDetailsPage.pdfFailed') }}
         </p>
 
-        <div
-          v-for="page in pages"
-          :key="page.num"
-          :ref="(el) => setPageEl(page.num, el as Element | null)"
-          :data-page="page.num"
-          class="mx-auto mb-4 w-fit bg-white shadow-lg"
-          :style="{ minHeight: `${(page.height / page.width) * 200}px` }"
-        >
-          <canvas
-            :ref="(el) => setPageCanvas(page.num, el as Element | null)"
-            class="block"
-            :style="{
-              width: `${page.width * scale}px`,
-              height: `${page.height * scale}px`,
-            }"
-          />
-        </div>
+        <!-- Chained off the two above so loading, failed and the pages are
+             mutually exclusive by construction: the loop used to render
+             regardless, which is what let the failure message sit on top of a
+             document that had rendered perfectly well. -->
+        <template v-else>
+          <div
+            v-for="page in pages"
+            :key="page.num"
+            :ref="(el) => setPageEl(page.num, el as Element | null)"
+            :data-page="page.num"
+            class="mx-auto mb-4 w-fit bg-white shadow-lg"
+            :style="{ minHeight: `${(page.height / page.width) * 200}px` }"
+          >
+            <canvas
+              :ref="(el) => setPageCanvas(page.num, el as Element | null)"
+              class="block"
+              :style="{
+                width: `${page.width * scale}px`,
+                height: `${page.height * scale}px`,
+              }"
+            />
+          </div>
+        </template>
       </div>
 
       <!-- Page counter + zoom -->

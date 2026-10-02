@@ -536,8 +536,13 @@ async function confirmDeleteBook() {
         <p class="text-gray-400 text-xs">{{ t('dashboard.books.incomingHint') }}</p>
       </div>
 
+      <!-- !openedRequest, like the two shelves above: confirming receipt takes
+           the request out of receivedBooks on purpose (the book is a My books
+           listing now), while onConfirmReceived deliberately keeps the panel up
+           so the closing step is seen. Without this guard those two intentions
+           collide and "No book requests yet" prints above the open panel. -->
       <div
-        v-if="bookFilter === 'received' && !receivedBooks.length"
+        v-if="bookFilter === 'received' && !openedRequest && !receivedBooks.length"
         class="flex min-h-[55vh] flex-1 flex-col items-center justify-center gap-2 py-12 text-center md:min-h-0 md:rounded-2xl md:border md:border-gray-100 md:bg-white"
       >
         <p class="text-gray-500 font-medium text-sm">{{ t('dashboard.books.noReceivedYet') }}</p>

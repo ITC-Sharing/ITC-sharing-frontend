@@ -34,8 +34,8 @@ function validate(): boolean {
 
   errors.value.name = !trimmedName
     ? 'Please enter subject name'
-    : trimmedName.length > 20
-      ? 'You can only enter up to 20 characters'
+    : trimmedName.length > 100
+      ? 'You can only enter up to 100 characters'
       : !NAME_PATTERN.test(trimmedName)
         ? 'Subject name must not contain special characters'
         : ''

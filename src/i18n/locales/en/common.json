@@ -59,7 +59,7 @@
     "creating": "Creating...",
     "createButton": "Create",
     "nameRequired": "Please enter subject name",
-    "nameTooLong": "You can only enter up to 20 characters",
+    "nameTooLong": "You can only enter up to 100 characters",
     "nameInvalid": "Subject name must not contain special characters"
   },
   "donateBookModal": {
